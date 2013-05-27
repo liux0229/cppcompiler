@@ -10,6 +10,7 @@ using namespace std;
 
 #include "IPPTokenStream.h"
 #include "DebugPPTokenStream.h"
+#include "Utf8Decoder.h"
 
 // Translation features you need to implement:
 // - utf8 decoder
@@ -130,8 +131,6 @@ const unordered_set<int> SimpleEscapeSequence_CodePoints =
 // Tokenizer
 struct PPTokenizer
 {
-	IPPTokenStream& output;
-
 	PPTokenizer(IPPTokenStream& output)
 		: output(output)
 	{}
@@ -144,16 +143,28 @@ struct PPTokenizer
 		// 2. tokenize resulting stream
 		// 3. call an output.emit_* function for each token.
 
+    // handle EOF
+
 		if (c == EndOfFile)
 		{
-			output.emit_identifier("not_yet_implemented");
+      utf8Decoder.validate();
 			output.emit_eof();
-		}
+		} else {
+      bool accepted = utf8Decoder.put(c);
+      wchar_t result = 0;
+      if (accepted) {
+        // result = utf8Decoder.get();
+        cout << "result=" << utf8Decoder.getStr() << endl;
+      }
 
-		// TIP: Reference implementation is about 1000 lines of code.
-		// It is a state machine with about 50 states, most of which
-		// are simple transitions of the operators.
+      // TIP: Reference implementation is about 1000 lines of code.
+      // It is a state machine with about 50 states, most of which
+      // are simple transitions of the operators.
+    }
 	}
+
+	IPPTokenStream& output;
+  Utf8Decoder utf8Decoder;
 };
 
 int main()

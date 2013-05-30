@@ -5,12 +5,26 @@
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
+
+#include "Utf8Decoder.h"
+#include "Utf8Encoder.h"
+#include "format.h"
+#include "StateMachine.h"
+#include "StateMachines.h"
+#include "PreprocessingToken.h"
+#include "common.h"
+#include "LineSplicer.h"
+#include "TrigraphDecoder.h"
+#include "Tokenizer.h"
 
 using namespace std;
 
+// TODO: remove this
 #include "IPPTokenStream.h"
 #include "DebugPPTokenStream.h"
-#include "Utf8Decoder.h"
+
+using namespace compiler;
 
 // Translation features you need to implement:
 // - utf8 decoder
@@ -20,9 +34,6 @@ using namespace std;
 // - line splicing
 // - newline at eof
 // - comment striping (can be part of whitespace-sequence)
-
-// EndOfFile: synthetic "character" to represent the end of source file
-constexpr int EndOfFile = -1;
 
 // given hex digit character c, return its value
 int HexCharToValue(int c)
@@ -128,13 +139,26 @@ const unordered_set<int> SimpleEscapeSequence_CodePoints =
 	'\'', '"', '?', '\\', 'a', 'b', 'f', 'n', 'r', 't', 'v'
 };
 
-// Tokenizer
-struct PPTokenizer
+void writeToken(const PPToken& token)
 {
-	PPTokenizer(IPPTokenStream& output)
-		: output(output)
-	{}
+  cout << format("{} {} {}", token.typeName(), token.data.size(), token.data) 
+       << endl;
+}
 
+class PPTokenizer
+{
+public:
+	PPTokenizer(IPPTokenStream& output)
+		: output_(output)
+	{
+    using namespace std::placeholders;
+    utf8Decoder_.sendTo(bind(&LineSplicer::put, &lineSplicer_, _1));
+    lineSplicer_.sendTo(bind(&TrigraphDecoder::put, &trigraphDecoder_, _1));
+    trigraphDecoder_.sendTo(bind(&Tokenizer::put, &tokenizer_, _1));
+    tokenizer_.sendTo(bind(&PPTokenizer::received, this, _1));
+  }
+
+#if 0
 	void process(int c)
 	{
 		// TODO:  Your code goes here.
@@ -143,18 +167,33 @@ struct PPTokenizer
 		// 2. tokenize resulting stream
 		// 3. call an output.emit_* function for each token.
 
-    // handle EOF
+    // c = utf8Decoder.put(c);
+    // c = trigraphDecoder.put(c);
+    Utf8Decode(c);
 
 		if (c == EndOfFile)
 		{
-      utf8Decoder.validate();
-			output.emit_eof();
+      utf8Decoder_.validate();
+      if (currentFsm_ != PPTokenType::NotInitialized) {
+        // TODO: handle an empty file case
+        if (previousCh_ != '\n') {
+          current().put('\n');
+        }
+        writeToken(current().get());
+
+        currentFsm_ = PPTokenType::Eof;
+        current().put(c);
+        writeToken(current().get());
+      }
+			output_.emit_eof();
 		} else {
-      bool accepted = utf8Decoder.put(c);
-      wchar_t result = 0;
+      bool accepted = utf8Decoder_.put(c);
       if (accepted) {
-        // result = utf8Decoder.get();
-        cout << "result=" << utf8Decoder.getStr() << endl;
+        int x = utf8Decoder_.get();
+        cout << format("raw={} hex={}", 
+                       Utf8Encoder::encode(x),
+                       utf8Decoder_.getStr())
+             << endl;
       }
 
       // TIP: Reference implementation is about 1000 lines of code.
@@ -162,9 +201,46 @@ struct PPTokenizer
       // are simple transitions of the operators.
     }
 	}
+#endif
+  void process(int c) {
+    if (c == EndOfFile) {
+      if (previous_ != '\n') {
+        utf8Decoder_.put('\n');
+      }
+    }
+    utf8Decoder_.put(c);
+  }
 
-	IPPTokenStream& output;
-  Utf8Decoder utf8Decoder;
+  void received(int c) {
+    previous_ = c;
+  }
+
+  bool insideRawString() const {
+    return false;
+  }
+
+private:
+#if 0
+  StateMachine& current() const {
+    return *stateMachines_[static_cast<int>(currentFsm_)];
+  }
+#endif
+
+	IPPTokenStream& output_;
+  Utf8Decoder utf8Decoder_;
+  LineSplicer lineSplicer_;
+  TrigraphDecoder trigraphDecoder_;
+  Tokenizer tokenizer_;
+#if 0
+  unique_ptr<StateMachine>
+    stateMachines_[static_cast<int>(PPTokenType::Total)] {
+      nullptr,
+      make_unique<NewLineFSM>(),
+      make_unique<EofFSM>()
+    };
+#endif
+  int previous_ { -1 };
+  PPTokenType currentFsm_ { PPTokenType::NotInitialized };
 };
 
 int main()

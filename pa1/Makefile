@@ -1,8 +1,18 @@
+CFLAGS=-g -Wall
+CPPFLAGS=-g -Wall -std=gnu++11
+CC=ccache gcc
+CXX=ccache g++
+
+OBJs=pptoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o
+
 all: pptoken
 
 # build pptoken application
-pptoken: pptoken.cpp IPPTokenStream.h DebugPPTokenStream.h Utf8Decoder.h Utf8Decoder.cpp Exceptions.h
-	g++ -g -std=gnu++11 -Wall -o pptoken pptoken.cpp Utf8Decoder.cpp
+pptoken: clean $(OBJs)
+	g++ -g -std=gnu++11 -Wall -o pptoken $(OBJs)
+
+clean:
+	rm -f *.o pptoken
 
 format: format.h format-test.cpp Exceptions.h
 	g++ -g -std=gnu++11 -Wall -o format format-test.cpp

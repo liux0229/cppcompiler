@@ -6,10 +6,14 @@
 #include <iomanip>
 #include <limits>
 #include <type_traits>
+#include <utility>
 // used for debug output only
 #include <iostream>
 
 namespace compiler {
+
+// Make the function definitions local to file
+namespace {
 
 /*
  * Currently parses fmt at runtime.
@@ -20,20 +24,36 @@ namespace compiler {
 template<typename... Args>
 std::string format(const char* fmt, Args&&... args);
 
-template<typename T>
-typename std::enable_if<!std::is_integral<T>::value>::type
-setFormatHex(std::ostream& oss, T&& value)
+// format.h uses the short-hand FormatThrow instead of Throw defined in
+// common.h to avoid dependency loop
+template<typename... Args>
+void FormatThrow(const char* fmt, Args&&... args)
 {
-  throw CompilerException(format("value cannot be formatted as hex: {}", 
-                                 std::forward<T>(value)));
+  throw CompilerException(format(fmt, std::forward<Args>(args)...));
 }
 
 template<typename T>
-typename std::enable_if<std::is_integral<T>::value>::type
+typename std::enable_if<
+           !std::is_integral<
+             typename std::remove_reference<T>::type
+           >::value
+         >::type
+setFormatHex(std::ostream& oss, T&& value)
+{
+  FormatThrow("value cannot be formatted as hex: {}", 
+              std::forward<T>(value));
+}
+
+template<typename T>
+typename std::enable_if<
+           std::is_integral<
+             typename std::remove_reference<T>::type
+           >::value
+         >::type
 setFormatHex(std::ostream& oss, T&& value)
 {
   int32_t x = static_cast<int32_t>(value);
-  oss << std::showbase << std::hex << std::setfill('0');
+  oss << "0x" << std::hex << std::setfill('0');
   if (x <= std::numeric_limits<uint16_t>::max()) {
     oss << std::setw(4);
   } else {
@@ -50,7 +70,7 @@ void formatOutput(std::ostream& oss, char fmt, T&& value)
       setFormatHex(oss, std::forward<T>(value));
       break;
     default:
-      throw CompilerException(format("Unrecognized fmt character: {}", fmt));
+      FormatThrow("Unrecognized fmt character: {}", fmt);
       break;
   }
   oss << value;
@@ -69,12 +89,11 @@ std::ostream& format(std::ostream& oss, const char* fmt)
       // An escaped '{' character
       ++s;
     } else if (*s == '{') {
-      throw CompilerException(
-              format("fmt should not contain \\{. "
-                     "Fewer arguments are provided. "
-                     "Near '{}' inside '{}'", 
-                     s,
-                     fmt));
+      FormatThrow("fmt should not contain \\{. "
+                  "Fewer arguments are provided. "
+                  "Near '{}' inside '{}'", 
+                  s,
+                  fmt);
     }
     oss << *s++;
   }
@@ -82,13 +101,15 @@ std::ostream& format(std::ostream& oss, const char* fmt)
 }
 
 template<typename T, typename... Args>
-std::ostream& format(std::ostream& oss, const char* fmt, T&& value, Args&&... args)
+std::ostream& format(std::ostream& oss, 
+                     const char* fmt, 
+                     T&& value, 
+                     Args&&... args)
 {
   const char* s = fmt;
   if (!s) {
-    throw CompilerException(
-            format("null fmt with positive number of arguments: {}...",
-                   std::forward<T>(value)));
+    FormatThrow("null fmt with positive number of arguments: {}...",
+                std::forward<T>(value));
   }
 
   while (*s) {
@@ -101,15 +122,13 @@ std::ostream& format(std::ostream& oss, const char* fmt, T&& value, Args&&... ar
       const char* p;
       for (p = s + 1; *p && *p != '}'; ++p) { }
       if (*p != '}') {
-        throw CompilerException(
-                format("ill formed fmt: no enclosing }: '{}' inside '{}'", 
-                       s,
-                       fmt));
+        FormatThrow("ill formed fmt: no enclosing }: '{}' inside '{}'", 
+                    s,
+                    fmt);
       }
       if (p - s > 2) {
-        throw CompilerException(
-                format("Too many characters inside \\{}: {}", 
-                       std::string(s + 1, p - s - 1)));
+        FormatThrow("Too many characters inside \\{}: {}", 
+                    std::string(s + 1, p - s - 1));
       } else if (p - s == 2) {
         formatOutput(oss, *(s + 1), std::forward<T>(value));
       } else {
@@ -121,10 +140,40 @@ std::ostream& format(std::ostream& oss, const char* fmt, T&& value, Args&&... ar
     }
   }
 
-  // if we are still here, this indicates we have not exhausted all the arguments
-  throw CompilerException(
-          format("More arguments provided than needed: {}...",
-                 std::forward<T>(value)));
+  // if we are still here, this indicates we have not exhausted
+  // all the arguments
+  FormatThrow("More arguments provided than needed: {}...",
+              std::forward<T>(value));
+
+  return oss;
+}
+
+std::ostream& formatDumpInternal(std::ostream& oss, int pos)
+{
+  // nothing to dump
+  return oss;
+}
+
+template<typename T, typename... Args>
+std::ostream& formatDumpInternal(
+    std::ostream& oss, int pos, T&& value, Args&&... args)
+{
+  if (pos > 0) {
+    oss << ",";
+  }
+  oss << std::forward<T>(value);
+  return formatDumpInternal(oss, pos + 1, std::forward<Args>(args)...);
+}
+
+// Interesting fact: if rename this formatDump to formatDumpInternal
+// g++ would hang
+template<typename... Args>
+std::string formatDump(Args&&... args)
+{
+  std::ostringstream oss;
+  oss << std::showpoint;
+  formatDumpInternal(oss, 0, std::forward<Args>(args)...);
+  return oss.str();
 }
 
 template<typename... Args>
@@ -132,8 +181,17 @@ std::string format(const char* fmt, Args&&... args)
 {
   std::ostringstream oss;
   oss << std::showpoint;
-  format(oss, fmt, std::forward<Args>(args)...);
+  try {
+    format(oss, fmt, std::forward<Args>(args)...);
+  } catch (const std::exception& e) {
+    FormatThrow(R"(Exeption `{}` while formatting "{}" with \{{}})",
+                e.what(),
+                fmt,
+                formatDump(std::forward<Args>(args)...));
+  }
   return oss.str();
 }
+
+} // anonymous
 
 } // compiler

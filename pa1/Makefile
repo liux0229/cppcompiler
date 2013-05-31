@@ -3,7 +3,7 @@ CPPFLAGS=-g -Wall -std=gnu++11
 CC=ccache gcc
 CXX=ccache g++
 
-OBJs=pptoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o
+OBJs=pptoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o Tokenizer.o UniversalCharNameDecoder.o
 
 all: pptoken
 

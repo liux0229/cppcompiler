@@ -62,4 +62,13 @@ string Utf8Encoder::encode(int x)
   return oss.str();
 }
 
+string Utf8Encoder::encode(const vector<int>& xs)
+{
+  ostringstream oss;
+  for (int x : xs) {
+    encode(oss, x);
+  }
+  return oss.str();
+}
+
 } // compiler

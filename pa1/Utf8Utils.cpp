@@ -1,6 +1,8 @@
 #include "Utf8Utils.h"
 #include "Exceptions.h"
 #include "format.h"
+#include "common.h"
+#include <cctype>
 
 namespace compiler {
 
@@ -41,6 +43,20 @@ void Utf8Utils::bitCopy(int from, int& to, int fromPos, int toPos, int n)
     if ((from & 1 << (i + fromPos)) > 0) {
       to |= 1 << (i + toPos);
     }
+  }
+}
+
+int Utf8Utils::hexToInt(int c)
+{
+  if (isdigit(c)) {
+    return c - '0';
+  } else if (isupper(c)) {
+    return c - 'A' + 10;
+  } else if (islower(c)) {
+    return c - 'a' + 10;
+  } else {
+    Throw("Character [{x}] is not a hex char");
+    return -1;
   }
 }
 

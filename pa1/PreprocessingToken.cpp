@@ -13,6 +13,6 @@ const std::vector<std::string> PPTokenTypes::Names {
   { "preprocessing-op-or-punc" },
   { "non-whitespace-character" },
   { "eof" },
-  { "[not initialized]" }
+  { "[unknown]" }
 };
 

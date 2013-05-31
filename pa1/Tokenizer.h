@@ -1,29 +1,32 @@
 #include "common.h"
 #include "format.h"
 #include "Utf8Encoder.h"
+#include "StateMachine.h"
+#include "PreprocessingToken.h"
 #include <iostream>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace compiler {
 
 class Tokenizer
 {
 public:
-  void sendTo(std::function<void (int)> send) {
-    send_ = send;
-  }
-  void put(int c) {
-    send_(c);
-    if (c == EndOfFile) {
-      std::cout << "EOF" << std::endl;
-    } else {
-      std::cout 
-        << format("token:{} {x}", Utf8Encoder::encode(c), c) 
-        << std::endl;
+  Tokenizer();
+  void put(int c);
+  void sendTo(std::function<void (const PPToken&)> send) {
+    for (auto& fsm : fsms_) {
+      fsm->sendTo(send);
     }
   }
 private:
-  std::function<void (int)> send_;
+  void findFsmAndPut(int c);
+  void printChar(int c);
+  void init(std::unique_ptr<StateMachine>&& fsm);
+
+  std::vector<std::unique_ptr<StateMachine>> fsms_;
+  int current_ { -1 };
 };
 
 }

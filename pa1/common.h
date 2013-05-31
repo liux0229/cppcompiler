@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Exceptions.h"
+#include "format.h"
 #include <cassert>
 #include <utility>
 #include <memory>

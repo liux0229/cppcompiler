@@ -23,19 +23,19 @@ enum class PPTokenType {
   NonWhitespaceChar,
   Eof,
   // Sentinel
-  NotInitialized,
-  Total = NotInitialized
+  Unknown,
+  Total = Unknown
 };
 
 struct PPToken
 {
-  PPToken(PPTokenType _type, std::string _data = "") {
+  PPToken(PPTokenType _type, std::vector<int> _data = {}) {
     type = _type;
     data.swap(_data);
   }
   const std::string& typeName() const {
     return PPTokenTypes::Names[static_cast<int>(type)]; 
   }
-  PPTokenType type { PPTokenType::NotInitialized };
-  std::string data;
+  PPTokenType type { PPTokenType::Unknown };
+  std::vector<int> data;
 };

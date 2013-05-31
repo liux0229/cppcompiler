@@ -19,6 +19,8 @@ public:
 
   static void bitCopy(int from, int& to, int fromPos, int toPos, int n);
 
+  static int hexToInt(int c);
+
 };
 
 } // compiler

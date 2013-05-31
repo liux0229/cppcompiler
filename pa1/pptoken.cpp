@@ -16,6 +16,7 @@
 #include "common.h"
 #include "LineSplicer.h"
 #include "TrigraphDecoder.h"
+#include "UniversalCharNameDecoder.h"
 #include "Tokenizer.h"
 
 using namespace std;
@@ -139,12 +140,6 @@ const unordered_set<int> SimpleEscapeSequence_CodePoints =
 	'\'', '"', '?', '\\', 'a', 'b', 'f', 'n', 'r', 't', 'v'
 };
 
-void writeToken(const PPToken& token)
-{
-  cout << format("{} {} {}", token.typeName(), token.data.size(), token.data) 
-       << endl;
-}
-
 class PPTokenizer
 {
 public:
@@ -154,8 +149,11 @@ public:
     using namespace std::placeholders;
     utf8Decoder_.sendTo(bind(&LineSplicer::put, &lineSplicer_, _1));
     lineSplicer_.sendTo(bind(&TrigraphDecoder::put, &trigraphDecoder_, _1));
-    trigraphDecoder_.sendTo(bind(&Tokenizer::put, &tokenizer_, _1));
-    tokenizer_.sendTo(bind(&PPTokenizer::received, this, _1));
+    trigraphDecoder_.sendTo(bind(&UniversalCharNameDecoder::put, 
+                                 &universalCharNameDecoder_,
+                                 _1));
+    universalCharNameDecoder_.sendTo(bind(&PPTokenizer::receivedChar, this, _1));
+    tokenizer_.sendTo(bind(&PPTokenizer::receivedToken, this, _1));
   }
 
 #if 0
@@ -204,6 +202,8 @@ public:
 #endif
   void process(int c) {
     if (c == EndOfFile) {
+      // TODO: handle empty file and eliminated newline preceded by a newline
+      // and a file ending with '\' (shouldn't and a second newline)
       if (previous_ != '\n') {
         utf8Decoder_.put('\n');
       }
@@ -211,8 +211,18 @@ public:
     utf8Decoder_.put(c);
   }
 
-  void received(int c) {
+  void receivedChar(int c) {
     previous_ = c;
+    tokenizer_.put(c);
+  }
+
+  void receivedToken(const PPToken& token) {
+    printToken(token);
+  }
+
+  void printToken(const PPToken& token) {
+    string encoded = Utf8Encoder::encode(token.data);
+    cout << format("{} {} {}\n", token.typeName(), encoded.size(), encoded);
   }
 
   bool insideRawString() const {
@@ -230,6 +240,7 @@ private:
   Utf8Decoder utf8Decoder_;
   LineSplicer lineSplicer_;
   TrigraphDecoder trigraphDecoder_;
+  UniversalCharNameDecoder universalCharNameDecoder_;
   Tokenizer tokenizer_;
 #if 0
   unique_ptr<StateMachine>
@@ -240,7 +251,7 @@ private:
     };
 #endif
   int previous_ { -1 };
-  PPTokenType currentFsm_ { PPTokenType::NotInitialized };
+  // PPTokenType currentFsm_ { PPTokenType::NotInitialized };
 };
 
 int main()

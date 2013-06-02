@@ -10,3 +10,5 @@
 #include "WhitespaceFSM.h"
 #include "CharacterLiteralFSM.h"
 #include "RawStringLiteralFSM.h"
+#include "StringLiteralFSM.h"
+#include "HeaderNameFSM.h"

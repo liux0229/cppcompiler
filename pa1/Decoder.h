@@ -15,6 +15,8 @@ public:
     send_ = send;
   }
 	virtual void put(int c) = 0;
+  virtual bool turnOffForRawString() const { return true; }
+  virtual bool turnOffForQuotedLiteral() const { return false; }
 protected:
   std::function<void (int)> send_;
 };

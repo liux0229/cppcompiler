@@ -13,6 +13,7 @@ class Utf8Decoder : public Decoder
 {
 public:
 	void put(int c) override;
+  bool turnOffForRawString() const override { return false; }
 private:
   int getCodePoint() const;
   void validate() const;

@@ -79,7 +79,14 @@ public:
     for (int i = 0; i < n - 1; i++) {
       decoders_[i]->sendTo([this, i](int x) {
           /* cout << format("decoder {} produced `{}`\n", i, char(x)); */
-          decoders_[i + 1]->put(x);
+          if ((tokenizer_.insideRawString() && 
+               decoders_[i + 1]->turnOffForRawString()) ||
+              (tokenizer_.insideQuotedLiteral() &&
+               decoders_[i + 1]->turnOffForQuotedLiteral())) {
+            receivedChar(x);
+          } else {
+            decoders_[i + 1]->put(x);
+          }
       });
     }
 
@@ -134,10 +141,6 @@ public:
       cout << format("{} {} {}", token.typeName(), encoded.size(), encoded) 
            << endl;
     }
-  }
-
-  bool insideRawString() const {
-    return false;
   }
 
 private:

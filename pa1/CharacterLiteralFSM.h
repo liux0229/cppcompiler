@@ -1,20 +1,17 @@
 #pragma once
 
-#include "StateMachine.h"
-#include <vector>
+#include "QuotedLiteralFSM.h"
 
 namespace compiler {
 
-class CharacterLiteralFSM : public StateMachine
+class CharacterLiteralFSM : public QuotedLiteralFSM
 {
-public:
-  StateMachine* put(int x) override;
-  StateMachine* put(const std::vector<int>& ch) override;
-private:
-  bool extend(int x);
-  std::vector<int> ch_;
-  int octal_ { 0 };
-  bool hex_ { false };
+  // TODO: character literal cannot be empty
+protected:
+  char getQuote() const override { return '\''; }
+  std::vector<std::string> getEncoding() const override {
+    return { "u", "U", "L" };
+  }
 };
 
 }

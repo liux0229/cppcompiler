@@ -14,6 +14,7 @@ Tokenizer::Tokenizer()
   auto ppNumber = init<PPNumberFSM>();
   auto characterLiteral = init<CharacterLiteralFSM>();
   auto rawStringLiteral = init<RawStringLiteralFSM>();
+  auto stringLiteral = init<StringLiteralFSM>();
   auto ppOpOrPunc = init<PPOpOrPuncFSM>();
   init<WhiteSpaceFSM>();
   // must be the last
@@ -22,7 +23,8 @@ Tokenizer::Tokenizer()
   identifier->setTransfer({
       ppOpOrPunc,
       characterLiteral,
-      rawStringLiteral
+      rawStringLiteral,
+      stringLiteral
   });
   ppNumber->setTransfer({
       ppOpOrPunc
@@ -36,21 +38,45 @@ StateMachine* Tokenizer::init()
   return fsms_.back().get();
 }
 
+void Tokenizer::sendTo(function<void (const PPToken&)> send) {
+  send_ = send;
+  auto s = [this](const PPToken& token) {
+    includeDetector_.put(token);
+    send_(token);
+  };
+  for (auto& fsm : fsms_) {
+    fsm->sendTo(s);
+  }
+  headerNameFsm_.sendTo(s);
+}
+
 void Tokenizer::put(int c)
 {
   // printChar(c);
 
-  StateMachine* r {nullptr};
-  if (!current_ ||
-      !(r = current_->put(c)) /* current FSM cannot accept c */) {
+  if (current_) {
+    // need to return two values from put to simplify this
+    if (current_ == &headerNameFsm_ && !headerNameFsm_.inside()) {
+      current_ = nullptr;
+    } else {
+      current_ = current_->put(c); 
+    }
+  }
+  if (!current_) {
     findFsmAndPut(c);
-  } else {
-    current_ = r;
   }
 }
 
 void Tokenizer::findFsmAndPut(int c)
 {
+  // only invoke HeaderNameFSM when the context is right
+  if (includeDetector_.canMatchHeader()) {
+    current_ = headerNameFsm_.put(c);
+    if (current_) {
+      return;
+    }
+  }
+
   for (auto& fsm : fsms_) {
     StateMachine* r = fsm->put(c);
     if (r) {
@@ -59,7 +85,6 @@ void Tokenizer::findFsmAndPut(int c)
       break;
     }
   }
-  // CHECK(i < fsms_.size());
 }
 
 void Tokenizer::printChar(int c)
@@ -71,6 +96,18 @@ void Tokenizer::printChar(int c)
       << format("token:{} {x}", Utf8Encoder::encode(c), c) 
       << std::endl;
   }
+}
+
+bool Tokenizer::insideRawString() const
+{
+  auto s = dynamic_cast<RawStringLiteralFSM*>(current_);
+  return s != nullptr && s->inside();
+}
+
+bool Tokenizer::insideQuotedLiteral() const
+{
+  auto s = dynamic_cast<QuotedLiteralFSM*>(current_);
+  return s != nullptr && s->inside();
 }
 
 }

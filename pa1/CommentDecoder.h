@@ -19,6 +19,7 @@ void checkEof(int c) {
 
 class CommentDecoder : public Decoder {
 public:
+  bool turnOffForQuotedLiteral() const override { return true; }
   void put(int c) override {
     switch (n_) {
       case 0:

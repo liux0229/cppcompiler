@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <memory>
 #include <cctype>
+#include <string>
 
 #include "Utf8Encoder.h"
 #include "Decoders.h"
@@ -14,49 +15,9 @@
 #include "PreprocessingToken.h"
 #include "common.h"
 
+namespace compiler {
+
 using namespace std;
-
-using namespace compiler;
-
-// Translation features you need to implement:
-// - utf8 decoder
-// - utf8 encoder
-// - universal-character-name decoder
-// - trigraphs
-// - line splicing
-// - newline at eof
-// - comment striping (can be part of whitespace-sequence)
-
-// given hex digit character c, return its value
-int HexCharToValue(int c)
-{
-	switch (c)
-	{
-	case '0': return 0;
-	case '1': return 1;
-	case '2': return 2;
-	case '3': return 3;
-	case '4': return 4;
-	case '5': return 5;
-	case '6': return 6;
-	case '7': return 7;
-	case '8': return 8;
-	case '9': return 9;
-	case 'A': return 10;
-	case 'a': return 10;
-	case 'B': return 11;
-	case 'b': return 11;
-	case 'C': return 12;
-	case 'c': return 12;
-	case 'D': return 13;
-	case 'd': return 13;
-	case 'E': return 14;
-	case 'e': return 14;
-	case 'F': return 15;
-	case 'f': return 15;
-	default: throw logic_error("HexCharToValue of nonhex char");
-	}
-}
 
 class PPTokenizer
 {
@@ -162,11 +123,15 @@ private:
   PPToken pToken_;
 };
 
+}
+
 int main()
 {
+  using namespace std;
+  using namespace compiler;
 	try
 	{
-		ostringstream oss;
+    ostringstream oss;
 		oss << cin.rdbuf();
 
 		string input = oss.str();
@@ -187,4 +152,3 @@ int main()
 		return EXIT_FAILURE;
 	}
 }
-

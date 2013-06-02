@@ -27,23 +27,26 @@ StateMachine* IdentifierFSM::put(int c)
     }
   } else {
     if (!Utf8Utils::isIdentifierNonDigit(c) && !isdigit(c)) {
-      if (c == '\'' || c == '"') {
-        vector<int> m = ch_;
-        m.push_back(c);
-        StateMachine* r = tryTransfer(m);
-        if (r) {
-          ch_.clear();
-          return r;
+      StateMachine* r{nullptr};
+      if (canTransfer_()) {
+        if (c == '\'' || c == '"') {
+          vector<int> m = ch_;
+          m.push_back(c);
+          StateMachine* r = tryTransfer(m);
+          if (r) {
+            ch_.clear();
+            return r;
+          }
         }
-      }
 
-      StateMachine* r = tryTransfer(ch_);
+        // c cannot be part of an identifier like op
+        r = tryTransfer(ch_);
+      }
       if (!r) {
         send_(PPToken(PPTokenType::Identifier, ch_));
       }
       ch_.clear();
       // c cannot be the start of an identifier
-      // or the state machine that we might have transfered to
       return nullptr;
     }
   }

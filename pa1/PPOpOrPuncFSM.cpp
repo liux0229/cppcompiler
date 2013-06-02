@@ -13,8 +13,8 @@ const vector<string> Operators =
 {
   "{",  "}",  "[",  "]",  "#",  "##",  "(",  ")",  "<:",  ":>",  "<%",  "%>",
   "%:", "%:%:",     ";",  ":",  "...", "?",   "::",
-  ".",  ".*", "+",  "-",  "*",  "/",   "%",  "ˆ",  "&",   "|",   "~",   "!",
-  "=",  "<",  ">",  "+=", "-=", "*=",  "/=", "%=", "ˆ=",  "&=",  "|=",  "<<",
+  ".",  ".*", "+",  "-",  "*",  "/",   "%",  "^",  "&",   "|",   "~",   "!",
+  "=",  "<",  ">",  "+=", "-=", "*=",  "/=", "%=", "^=",  "&=",  "|=",  "<<",
   ">>", ">>=",      "<<=",      "<=",  ">=", "&&",  "==", "!=",  "||",  "++",
   "--", ",",  "->*",      "->",
   // this special string is necessary to handle the <:: special case
@@ -27,7 +27,7 @@ const unordered_set<string> Digraph =
 {
 	"new", "delete", "and", "and_eq", "bitand",
 	"bitor", "compl", "not", "not_eq", "or",
-	"or_eq", "xor", "xor_eq"
+	"or_eq", "xor", "xor_eq",
 };
 
 PPOpOrPuncFSM::PPOpOrPuncFSM()
@@ -97,7 +97,10 @@ StateMachine* PPOpOrPuncFSM::put(const vector<int>& ch)
   // not allowed to call this while we are in the middle of accepting something
   CHECK(current_ == trie_.root());
 
-  if (Digraph.find(Utf8Encoder::encode(ch)) != Digraph.end()) {
+  string x = Utf8Encoder::encode(ch);
+  // std::cout << "transfered: " << x << std::endl;
+  if (x == "." ||
+      Digraph.find(x) != Digraph.end()) {
     send_(PPToken(PPTokenType::PPOpOrPunc, ch));
     return this;
   } else {

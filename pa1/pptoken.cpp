@@ -97,9 +97,9 @@ public:
 
   void process(int c) {
     if (c == EndOfFile) {
-      // TODO: handle empty file and eliminated newline preceded by a newline
+      // TODO: handle eliminated newline preceded by a newline
       // and a file ending with '\' (shouldn't add a second newline)
-      if (pCh_ != '\n') {
+      if (pCh_ != -1 && pCh_ != '\n') {
         decoders_.front()->put('\n');
       }
     }
@@ -111,13 +111,20 @@ public:
     tokenizer_.put(c);
   }
 
+  bool isLiteral(const PPToken& token) const {
+    return pToken_.type == PPTokenType::CharacterLiteral ||
+           pToken_.type == PPTokenType::StringLiteral;
+  }
+
+  PPTokenType getUserDefined(PPTokenType type) const {
+    return type == PPTokenType::CharacterLiteral ?
+              PPTokenType::UserDefinedCharacterLiteral :
+              PPTokenType::UserDefinedStringLiteral;
+  }
+
   bool canMergeIntoUserDefined(const PPToken& token) const {
-    bool isCharOrString = pToken_.type == PPTokenType::CharacterLiteral ||
-                          pToken_.type == PPTokenType::StringLiteral;
-    bool isIdentifier = 
-      token.type == PPTokenType::Identifier ||
-      // a little hacky
-      (token.type == PPTokenType::PPOpOrPunc && isalpha(token.data[0]));
+    bool isCharOrString = isLiteral(token);
+    bool isIdentifier = token.type == PPTokenType::Identifier;
 
     return isCharOrString && isIdentifier;
   }
@@ -126,11 +133,16 @@ public:
   if (canMergeIntoUserDefined(token)) {
       vector<int> data = pToken_.data;
       data.insert(data.end(), token.data.begin(), token.data.end());
-      pToken_ = PPToken(PPTokenType::UserDefinedCharacterLiteral, move(data));
+      pToken_ = PPToken(getUserDefined(pToken_.type), move(data));
     } else {
+      if (isLiteral(pToken_)) {
+        printToken(pToken_);
+      }
       pToken_ = token;
     }
-    printToken(pToken_);
+    if (!isLiteral(pToken_)) {
+      printToken(pToken_);
+    }
   }
 
   void printToken(const PPToken& token) {

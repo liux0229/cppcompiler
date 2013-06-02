@@ -87,7 +87,10 @@ namespace {
   }
 
   bool isNonDigit(int c) {
-    return isalpha(c) || c == '_';
+    // cannot call isalpha if c is not within [0,255]
+    return (c >= 'a' && c <= 'z') || 
+           (c >= 'A' && c <= 'Z') ||
+           c == '_';
   }
 }
 

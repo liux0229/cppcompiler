@@ -21,7 +21,7 @@ public:
   bool insideRawString() const;
   bool insideQuotedLiteral() const;
 private:
-  template<typename T> StateMachine* init();
+  template<typename T> T* init();
   void findFsmAndPut(int c);
   void printChar(int c);
   StateMachine* init(std::unique_ptr<StateMachine>&& fsm);
@@ -31,6 +31,7 @@ private:
   StateMachine* current_ { nullptr };
   std::function<void (const PPToken&)> send_;
   IncludeDetector includeDetector_;
+  PPToken pToken_;
 };
 
 }

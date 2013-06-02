@@ -26,21 +26,23 @@ bool RawStringLiteralFSM::extend(int x)
       Throw("Raw string literal not terminated: {}", Utf8Encoder::encode(ch_));
     }
     // we always have enough chars to compare if we are here
-    if (x == '"' && ch_.back() == ')') {
+    if (x == '"') {
       // try to compare the d-char sequence
       int na = ch_.size();
       int nb = dChar_.size();
-      bool failed = false;
-      for (int i = 0; i < nb; ++i) {
-        if (ch_[na - 2 - i] != dChar_[nb - 1 - i]) {
-          failed = true;
-          break;
+      if (ch_[na - 1 - nb] == ')') {
+        bool failed = false;
+        for (int i = 0; i < nb; ++i) {
+          if (ch_[na - 1 - i] != dChar_[nb - 1 - i]) {
+            failed = true;
+            break;
+          }
         }
-      }
-      if (!failed) {
-        rChar_ = false;
-        dChar_.clear();
-        return true;
+        if (!failed) {
+          rChar_ = false;
+          dChar_.clear();
+          return true;
+        }
       }
     }
   }

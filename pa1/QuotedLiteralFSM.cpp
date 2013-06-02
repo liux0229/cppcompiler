@@ -80,7 +80,7 @@ StateMachine* QuotedLiteralFSM::put(int x)
   
   bool terminated = extend(x);
   if (terminated) {
-    send_(PPToken(PPTokenType::CharacterLiteral, ch_));
+    send_(PPToken(tokenType(), ch_));
     ch_.clear();
     CHECK(octal_ == 0);
     CHECK(!hex_);

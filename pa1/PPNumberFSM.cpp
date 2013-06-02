@@ -2,8 +2,11 @@
 #include "Utf8Utils.h"
 #include "common.h"
 #include <cctype>
+#include <vector>
 
 namespace compiler {
+
+using namespace std;
 
 bool PPNumberFSM::canExtend(int c) const
 {
@@ -33,6 +36,7 @@ StateMachine* PPNumberFSM::put(int c)
     if (!isdigit(c)) {
       if (c != '.') {
         t->put(ch_[0]);
+        ch_.clear();
         return t->put(c);
       } else {
         // '..': we don't know how to parse this until the next character
@@ -46,14 +50,20 @@ StateMachine* PPNumberFSM::put(int c)
     }
   } else if (ch_.size() == 2 && ch_[0] == '.' && ch_[1] == '.') {
     if (isdigit(c)) {
-      t->put(ch_[0]);
+      // note we must call this overload to let the
+      // target fsm know it should not wait for more input
+      // also note the use of explicit ctor
+      t->put(vector<int>{ ch_[0] }); 
+                          
       ch_.erase(ch_.begin());
+      ch_.push_back(c);
       return this;
     } else {
       // we cannot process the three characters, run the loop for the outer
       // layer
       t->put(ch_[0]);
       t->put(ch_[1]);
+      ch_.clear();
       return t->put(c);
     }
   }

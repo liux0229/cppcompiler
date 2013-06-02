@@ -20,6 +20,10 @@ Tokenizer::Tokenizer()
   // must be the last
   init<NonWhiteSpaceCharFSM>();
 
+  identifier->setCanTransfer([this]() {
+    return pToken_.type != PPTokenType::StringLiteral &&
+           pToken_.type != PPTokenType::CharacterLiteral;
+  });
   identifier->setTransfer({
       ppOpOrPunc,
       characterLiteral,
@@ -32,15 +36,16 @@ Tokenizer::Tokenizer()
 }
 
 template<typename T>
-StateMachine* Tokenizer::init()
+T* Tokenizer::init()
 {
   fsms_.push_back(make_unique<T>());
-  return fsms_.back().get();
+  return static_cast<T* >(fsms_.back().get());
 }
 
 void Tokenizer::sendTo(function<void (const PPToken&)> send) {
   send_ = send;
   auto s = [this](const PPToken& token) {
+    pToken_ = token;
     includeDetector_.put(token);
     send_(token);
   };

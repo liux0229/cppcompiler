@@ -16,6 +16,7 @@ public:
     } else {
       if (has_) {
         send_(PPToken(PPTokenType::WhitespaceSequence));
+        has_ = false;
       }
       return nullptr;
     }

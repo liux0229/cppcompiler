@@ -15,10 +15,16 @@ public:
   bool inside() const { return !ch_.empty(); }
 protected:
   virtual char getQuote() const = 0;
+  virtual PPTokenType getTokenType() const = 0;
   virtual std::vector<std::string> getEncoding() const = 0;
 private:
   char quote() {
     return quote_ > 0 ? quote_ : (quote_ = getQuote());
+  }
+  PPTokenType tokenType() {
+    return tokenType_ == PPTokenType::Unknown ?
+              (tokenType_ = getTokenType()) :
+              tokenType_;
   }
   const std::vector<std::string>& encoding() {
     if (encoding_.empty()) {
@@ -30,6 +36,7 @@ private:
     return encoding_;
   }
   char quote_ { 0 };
+  PPTokenType tokenType_ { PPTokenType::Unknown };
   std::vector<std::string> encoding_;
 
   bool extend(int x);

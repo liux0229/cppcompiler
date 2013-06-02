@@ -6,13 +6,13 @@ namespace compiler {
 class EofFSM : public StateMachine
 {
 public:
-  bool put(int x) override {
+  StateMachine* put(int x) override {
     if (x != EndOfFile) {
-      return false;
+      return nullptr;
     }
     
     send_(PPToken(PPTokenType::Eof));
-    return true;
+    return this;
   }
 };
 

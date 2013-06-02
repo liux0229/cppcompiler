@@ -1,7 +1,6 @@
 #include "Tokenizer.h"
 #include "common.h"
-#include "NewLineFSM.h"
-#include "EofFSM.h"
+#include "StateMachines.h"
 
 namespace compiler {
 
@@ -9,32 +8,54 @@ using namespace std;
 
 Tokenizer::Tokenizer()
 {
-  init(make_unique<NewLineFSM>());
-  init(make_unique<EofFSM>());
+  init<NewLineFSM>();
+  init<EofFSM>();
+  auto identifier = init<IdentifierFSM>();
+  auto ppNumber = init<PPNumberFSM>();
+  auto characterLiteral = init<CharacterLiteralFSM>();
+  auto rawStringLiteral = init<RawStringLiteralFSM>();
+  auto ppOpOrPunc = init<PPOpOrPuncFSM>();
+  init<WhiteSpaceFSM>();
+  // must be the last
+  init<NonWhiteSpaceCharFSM>();
+
+  identifier->setTransfer({
+      ppOpOrPunc,
+      characterLiteral,
+      rawStringLiteral
+  });
+  ppNumber->setTransfer({
+      ppOpOrPunc
+  });
 }
 
-void Tokenizer::init(unique_ptr<StateMachine>&& fsm)
+template<typename T>
+StateMachine* Tokenizer::init()
 {
-  fsms_.push_back(move(fsm));
+  fsms_.push_back(make_unique<T>());
+  return fsms_.back().get();
 }
 
 void Tokenizer::put(int c)
 {
-  printChar(c);
+  // printChar(c);
 
-  if (current_ == -1 ||
-      !fsms_[current_]->put(c) /* current FSM cannot accept c */) {
+  StateMachine* r {nullptr};
+  if (!current_ ||
+      !(r = current_->put(c)) /* current FSM cannot accept c */) {
     findFsmAndPut(c);
+  } else {
+    current_ = r;
   }
 }
 
 void Tokenizer::findFsmAndPut(int c)
 {
-  int i;
-  for (i = 0; i < static_cast<int>(fsms_.size()); ++i) {
-    auto& fsm = fsms_[i];
-    if (fsm->put(c)) {
-      current_ = i;
+  for (auto& fsm : fsms_) {
+    StateMachine* r = fsm->put(c);
+    if (r) {
+      // the last FSM (non-whitespace) never changes the current FSM
+      current_ = r != fsms_.back().get() ? r : nullptr;
       break;
     }
   }

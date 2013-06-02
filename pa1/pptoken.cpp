@@ -6,24 +6,15 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
+#include <cctype>
 
-#include "Utf8Decoder.h"
 #include "Utf8Encoder.h"
-#include "format.h"
-#include "StateMachine.h"
-#include "StateMachines.h"
+#include "Decoders.h"
+#include "Tokenizer.h"
 #include "PreprocessingToken.h"
 #include "common.h"
-#include "LineSplicer.h"
-#include "TrigraphDecoder.h"
-#include "UniversalCharNameDecoder.h"
-#include "Tokenizer.h"
 
 using namespace std;
-
-// TODO: remove this
-#include "IPPTokenStream.h"
-#include "DebugPPTokenStream.h"
 
 using namespace compiler;
 
@@ -67,162 +58,82 @@ int HexCharToValue(int c)
 	}
 }
 
-// See C++ standard 2.11 Identifiers and Appendix/Annex E.1
-const vector<pair<int, int>> AnnexE1_Allowed_RangesSorted =
-{
-	{0xA8,0xA8},
-	{0xAA,0xAA},
-	{0xAD,0xAD},
-	{0xAF,0xAF},
-	{0xB2,0xB5},
-	{0xB7,0xBA},
-	{0xBC,0xBE},
-	{0xC0,0xD6},
-	{0xD8,0xF6},
-	{0xF8,0xFF},
-	{0x100,0x167F},
-	{0x1681,0x180D},
-	{0x180F,0x1FFF},
-	{0x200B,0x200D},
-	{0x202A,0x202E},
-	{0x203F,0x2040},
-	{0x2054,0x2054},
-	{0x2060,0x206F},
-	{0x2070,0x218F},
-	{0x2460,0x24FF},
-	{0x2776,0x2793},
-	{0x2C00,0x2DFF},
-	{0x2E80,0x2FFF},
-	{0x3004,0x3007},
-	{0x3021,0x302F},
-	{0x3031,0x303F},
-	{0x3040,0xD7FF},
-	{0xF900,0xFD3D},
-	{0xFD40,0xFDCF},
-	{0xFDF0,0xFE44},
-	{0xFE47,0xFFFD},
-	{0x10000,0x1FFFD},
-	{0x20000,0x2FFFD},
-	{0x30000,0x3FFFD},
-	{0x40000,0x4FFFD},
-	{0x50000,0x5FFFD},
-	{0x60000,0x6FFFD},
-	{0x70000,0x7FFFD},
-	{0x80000,0x8FFFD},
-	{0x90000,0x9FFFD},
-	{0xA0000,0xAFFFD},
-	{0xB0000,0xBFFFD},
-	{0xC0000,0xCFFFD},
-	{0xD0000,0xDFFFD},
-	{0xE0000,0xEFFFD}
-};
-
-// See C++ standard 2.11 Identifiers and Appendix/Annex E.2
-const vector<pair<int, int>> AnnexE2_DisallowedInitially_RangesSorted =
-{
-	{0x300,0x36F},
-	{0x1DC0,0x1DFF},
-	{0x20D0,0x20FF},
-	{0xFE20,0xFE2F}
-};
-
-// See C++ standard 2.13 Operators and punctuators
-const unordered_set<string> Digraph_IdentifierLike_Operators =
-{
-	"new", "delete", "and", "and_eq", "bitand",
-	"bitor", "compl", "not", "not_eq", "or",
-	"or_eq", "xor", "xor_eq"
-};
-
-// See `simple-escape-sequence` grammar
-const unordered_set<int> SimpleEscapeSequence_CodePoints =
-{
-	'\'', '"', '?', '\\', 'a', 'b', 'f', 'n', 'r', 't', 'v'
-};
-
 class PPTokenizer
 {
 public:
-	PPTokenizer(IPPTokenStream& output)
-		: output_(output)
+  template<typename T>
+  void init()
+  {
+    decoders_.push_back(make_unique<T>());
+  }
+
+	PPTokenizer()
 	{
+    init<Utf8Decoder>();
+    init<LineSplicer>();
+    init<TrigraphDecoder>();
+    init<UniversalCharNameDecoder>();
+    init<CommentDecoder>();
+
+    int n = decoders_.size();
+    for (int i = 0; i < n - 1; i++) {
+      decoders_[i]->sendTo([this, i](int x) {
+          /* cout << format("decoder {} produced `{}`\n", i, char(x)); */
+          decoders_[i + 1]->put(x);
+      });
+    }
+
     using namespace std::placeholders;
-    utf8Decoder_.sendTo(bind(&LineSplicer::put, &lineSplicer_, _1));
-    lineSplicer_.sendTo(bind(&TrigraphDecoder::put, &trigraphDecoder_, _1));
-    trigraphDecoder_.sendTo(bind(&UniversalCharNameDecoder::put, 
-                                 &universalCharNameDecoder_,
-                                 _1));
-    universalCharNameDecoder_.sendTo(bind(&PPTokenizer::receivedChar, this, _1));
+    decoders_.back()->sendTo(bind(&PPTokenizer::receivedChar, this, _1));
     tokenizer_.sendTo(bind(&PPTokenizer::receivedToken, this, _1));
   }
 
-#if 0
-	void process(int c)
-	{
-		// TODO:  Your code goes here.
-
-		// 1. do translation features
-		// 2. tokenize resulting stream
-		// 3. call an output.emit_* function for each token.
-
-    // c = utf8Decoder.put(c);
-    // c = trigraphDecoder.put(c);
-    Utf8Decode(c);
-
-		if (c == EndOfFile)
-		{
-      utf8Decoder_.validate();
-      if (currentFsm_ != PPTokenType::NotInitialized) {
-        // TODO: handle an empty file case
-        if (previousCh_ != '\n') {
-          current().put('\n');
-        }
-        writeToken(current().get());
-
-        currentFsm_ = PPTokenType::Eof;
-        current().put(c);
-        writeToken(current().get());
-      }
-			output_.emit_eof();
-		} else {
-      bool accepted = utf8Decoder_.put(c);
-      if (accepted) {
-        int x = utf8Decoder_.get();
-        cout << format("raw={} hex={}", 
-                       Utf8Encoder::encode(x),
-                       utf8Decoder_.getStr())
-             << endl;
-      }
-
-      // TIP: Reference implementation is about 1000 lines of code.
-      // It is a state machine with about 50 states, most of which
-      // are simple transitions of the operators.
-    }
-	}
-#endif
   void process(int c) {
     if (c == EndOfFile) {
       // TODO: handle empty file and eliminated newline preceded by a newline
-      // and a file ending with '\' (shouldn't and a second newline)
-      if (previous_ != '\n') {
-        utf8Decoder_.put('\n');
+      // and a file ending with '\' (shouldn't add a second newline)
+      if (pCh_ != '\n') {
+        decoders_.front()->put('\n');
       }
     }
-    utf8Decoder_.put(c);
+    decoders_.front()->put(c);
   }
 
   void receivedChar(int c) {
-    previous_ = c;
+    pCh_ = c;
     tokenizer_.put(c);
   }
 
+  bool canMergeIntoUserDefined(const PPToken& token) const {
+    bool isCharOrString = pToken_.type == PPTokenType::CharacterLiteral ||
+                          pToken_.type == PPTokenType::StringLiteral;
+    bool isIdentifier = 
+      token.type == PPTokenType::Identifier ||
+      // a little hacky
+      (token.type == PPTokenType::PPOpOrPunc && isalpha(token.data[0]));
+
+    return isCharOrString && isIdentifier;
+  }
+
   void receivedToken(const PPToken& token) {
-    printToken(token);
+  if (canMergeIntoUserDefined(token)) {
+      vector<int> data = pToken_.data;
+      data.insert(data.end(), token.data.begin(), token.data.end());
+      pToken_ = PPToken(PPTokenType::UserDefinedCharacterLiteral, move(data));
+    } else {
+      pToken_ = token;
+    }
+    printToken(pToken_);
   }
 
   void printToken(const PPToken& token) {
-    string encoded = Utf8Encoder::encode(token.data);
-    cout << format("{} {} {}\n", token.typeName(), encoded.size(), encoded);
+    if (token.type == PPTokenType::Eof) {
+      cout << token.typeName() << endl;
+    } else {
+      string encoded = Utf8Encoder::encode(token.data);
+      cout << format("{} {} {}", token.typeName(), encoded.size(), encoded) 
+           << endl;
+    }
   }
 
   bool insideRawString() const {
@@ -230,28 +141,10 @@ public:
   }
 
 private:
-#if 0
-  StateMachine& current() const {
-    return *stateMachines_[static_cast<int>(currentFsm_)];
-  }
-#endif
-
-	IPPTokenStream& output_;
-  Utf8Decoder utf8Decoder_;
-  LineSplicer lineSplicer_;
-  TrigraphDecoder trigraphDecoder_;
-  UniversalCharNameDecoder universalCharNameDecoder_;
+  vector<unique_ptr<Decoder>> decoders_;
   Tokenizer tokenizer_;
-#if 0
-  unique_ptr<StateMachine>
-    stateMachines_[static_cast<int>(PPTokenType::Total)] {
-      nullptr,
-      make_unique<NewLineFSM>(),
-      make_unique<EofFSM>()
-    };
-#endif
-  int previous_ { -1 };
-  // PPTokenType currentFsm_ { PPTokenType::NotInitialized };
+  int pCh_ { -1 };
+  PPToken pToken_;
 };
 
 int main()
@@ -263,9 +156,7 @@ int main()
 
 		string input = oss.str();
 
-		DebugPPTokenStream output;
-
-		PPTokenizer tokenizer(output);
+		PPTokenizer tokenizer;
 
 		for (char c : input)
 		{

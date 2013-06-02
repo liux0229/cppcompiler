@@ -29,6 +29,7 @@ enum class PPTokenType {
 
 struct PPToken
 {
+  PPToken() { }
   PPToken(PPTokenType _type, std::vector<int> _data = {}) {
     type = _type;
     data.swap(_data);

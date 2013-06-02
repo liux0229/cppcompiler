@@ -21,12 +21,13 @@ public:
     }
   }
 private:
+  template<typename T> StateMachine* init();
   void findFsmAndPut(int c);
   void printChar(int c);
-  void init(std::unique_ptr<StateMachine>&& fsm);
+  StateMachine* init(std::unique_ptr<StateMachine>&& fsm);
 
   std::vector<std::unique_ptr<StateMachine>> fsms_;
-  int current_ { -1 };
+  StateMachine* current_ { nullptr };
 };
 
 }

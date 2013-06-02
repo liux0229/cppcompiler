@@ -1,18 +1,15 @@
 #pragma once
 
+#include "Decoder.h"
 #include <functional>
 #include <algorithm>
 
 namespace compiler {
 
-class TrigraphDecoder {
+class TrigraphDecoder : public Decoder {
 public:
-  void sendTo(std::function<void (int)> send) {
-    send_ = send;
-  }
-  void put(int c);
+  void put(int c) override;
 private:
-  std::function<void (int)> send_;
   int n_ { 0 };
 };
 

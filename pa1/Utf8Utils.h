@@ -21,6 +21,14 @@ public:
 
   static int hexToInt(int c);
 
+  static bool isIdentifierNonDigit(int c);
+
+  static bool isIdentifierStart(int c);
+
+  static bool isWhiteSpaceNoNewLine(int c);
+
+  static bool isWhiteSpace(int c);
+
 };
 
 } // compiler

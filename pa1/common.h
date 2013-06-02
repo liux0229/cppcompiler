@@ -5,6 +5,7 @@
 #include <cassert>
 #include <utility>
 #include <memory>
+#include <iostream> // so that clients can easily use std::cout to debug
 
 namespace compiler {
 

@@ -1,16 +1,14 @@
 #pragma once
 
 #include "common.h"
+#include "Decoder.h"
 #include <functional>
 
 namespace compiler {
 
-class LineSplicer {
+class LineSplicer : public Decoder {
 public:
-  void sendTo(std::function<void (int)> send) {
-    send_ = send;
-  }
-  void put(int c) {
+  void put(int c) override {
     switch (n_) {
       case 0:
         if (c != '\\') {
@@ -37,7 +35,6 @@ public:
   }
 private:
   int n_ { 0 };
-  std::function<void (int)> send_;
 };
 
 }

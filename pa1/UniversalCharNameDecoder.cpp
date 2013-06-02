@@ -23,6 +23,7 @@ void UniversalCharNameDecoder::put(int c)
       }  else {
         n_ = 0;
         send_('\\');
+        send_(c);
       }
       break;
     default:

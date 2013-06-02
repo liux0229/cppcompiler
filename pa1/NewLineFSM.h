@@ -6,13 +6,13 @@ namespace compiler {
 class NewLineFSM : public StateMachine
 {
 public:
-  bool put(int x) override {
+  StateMachine* put(int x) override {
     if (x != '\n') {
-      return false;
+      return nullptr;
     }
 
     send_(PPToken(PPTokenType::NewLine));
-    return true;
+    return this;
   }
 };
 

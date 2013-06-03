@@ -32,6 +32,8 @@ public:
 
   static bool isValidUnicode(int x);
 
+  static int getSimpleEscaped(int x);
+
   static int getEscapedOctal(std::vector<int>::const_iterator begin,
                              std::vector<int>::const_iterator end);
 

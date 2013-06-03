@@ -167,12 +167,35 @@ bool Utf8Utils::isWhiteSpace(int c) {
   return isWhiteSpaceNoNewLine(c) || c == '\n';
 }
 
+int Utf8Utils::getSimpleEscaped(int x)
+{
+  static const map<int, int> simples = {
+    { 'n', '\n' },
+    { 't', '\t' },
+    { 'v', '\v' }, 
+    { 'b', '\b' },
+    { 'r', '\r' },
+    { 'f', '\f' },
+    { 'a', '\a' },
+    { '\\', '\\' },
+    { '?', '?' },
+    { '\'', '\'' },
+    { '"', '"' }
+  };
+  auto it = simples.find(x);
+  if (it == simples.end()) {
+    Throw("Bad simple escape sequence \\{}", static_cast<char>(x));
+  }
+  return it->second;
+}
+
 int Utf8Utils::getEscapedOctal(
                     vector<int>::const_iterator begin,
                     vector<int>::const_iterator end)
 {
   int s = 0;
   for (auto it = begin; it != end; ++it) {
+    CHECK(*it >= '0' && *it <= '7');
     s = s * 8 + (*it - '0');
   }
   return s;
@@ -200,9 +223,14 @@ int Utf8Utils::getEscapedCodePoint(
   int codePoint;
   if (*begin == '\\') {
     if (*(begin + 1) != 'x') {
-      CHECK(begin + 4 <= end);
-      codePoint = getEscapedOctal(begin + 1, begin + 4);
-      begin += 4;
+      if (isdigit(*(begin + 1))) {
+        CHECK(begin + 4 <= end);
+        codePoint = getEscapedOctal(begin + 1, begin + 4);
+        begin += 4;
+      } else {
+        codePoint = getSimpleEscaped(*(begin + 1));
+        begin += 2;
+      }
     } else {
       auto it = begin;
       for (it += 2; it < end && isxdigit(*it); ++it) {

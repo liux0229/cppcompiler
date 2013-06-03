@@ -54,6 +54,12 @@ void PostTokenizer::put(const PPToken& token)
       case PPTokenType::UserDefinedStringLiteral:
         strLiteralPT_.put(token);
         break;
+      case PPTokenType::PPNumber:
+        if (!floatLiteralPT_.put(token) && 
+            !intLiteralPT_.put(token)) {
+          Throw("Bad pp-num: {}", token.dataStrU8());
+        }
+        break;
       case PPTokenType::WhitespaceSequence:
       case PPTokenType::NewLine:
         break;

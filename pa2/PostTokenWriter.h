@@ -26,7 +26,11 @@ struct PostTokenWriter
 	}
 
 	// output: literal <source> <type> <hexdump(data,nbytes)>
-	void emit_literal(const std::string& source, EFundamentalType type, const void* data, size_t nbytes)
+	void emit_literal(
+          const std::string& source, 
+          EFundamentalType type, 
+          const void* data, 
+          size_t nbytes)
 	{
 		std::cout << "literal " << source << " " << FundamentalTypeToStringMap.at(type) << " " << HexDump(data, nbytes) << std::endl;
 	}
@@ -64,13 +68,19 @@ struct PostTokenWriter
 	}
 
 	// output: user-defined-literal <source> <ud_suffix> <prefix>
-	void emit_user_defined_literal_integer(const std::string& source, const std::string& ud_suffix, const std::string& prefix)
+	void emit_user_defined_literal_integer(
+          const std::string& source, 
+          const std::string& ud_suffix, 
+          const std::string& prefix)
 	{
 		std::cout << "user-defined-literal " << source << " " << ud_suffix << " integer " << prefix << std::endl;
 	}
 
 	// output: user-defined-literal <source> <ud_suffix> <prefix>
-	void emit_user_defined_literal_floating(const std::string& source, const std::string& ud_suffix, const std::string& prefix)
+	void emit_user_defined_literal_floating(
+          const std::string& source, 
+          const std::string& ud_suffix, 
+          const std::string& prefix)
 	{
 		std::cout << "user-defined-literal " << source << " " << ud_suffix << " floating " << prefix << std::endl;
 	}

@@ -4,7 +4,7 @@ CC=ccache gcc
 CXX=ccache g++
 
 PPTokenOBJs=pptoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o Tokenizer.o UniversalCharNameDecoder.o PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o PPTokenizer.o
-PostTokenOBJs=posttoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o Tokenizer.o UniversalCharNameDecoder.o PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o PPTokenizer.o PostTokenizer.o CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o Utf16Encoder.o
+PostTokenOBJs=posttoken.o Utf8Decoder.o Utf8Utils.o Utf8Encoder.o PreprocessingToken.o TrigraphDecoder.o Tokenizer.o UniversalCharNameDecoder.o PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o PPTokenizer.o PostTokenizer.o CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o Utf16Encoder.o FloatLiteralPostTokenizer.o IntegerLiteralPostTokenizer.o
 
 all: clean pptoken posttoken
 

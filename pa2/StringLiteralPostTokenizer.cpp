@@ -117,20 +117,21 @@ void StringLiteralPostTokenizer::handle()
     string e = getEncoding(token.data, start);
     string s = getSuffix(token, quote());
 
-    if (i == 0) {
+    if (!encoding.empty() && !e.empty() && encoding != e) {
+      Throw("Concatenating strings failed: encoding does not match: {} {}",
+            encoding,
+            e);
+    }
+    if (!suffix.empty() && !s.empty() && suffix != s) {
+      Throw("Concatenating strings failed: suffix does not match: {} {}",
+            suffix,
+            s);
+    }
+    if (!e.empty()) {
       encoding = e;
+    }
+    if (!s.empty()) {
       suffix = s;
-    } else {
-      if (encoding != e) {
-        Throw("Concatenating strings failed: encoding does not match: {} {}",
-              encoding,
-              e);
-      }
-      if (suffix != s) {
-        Throw("Concatenating strings failed: suffix does not match: {} {}",
-              suffix,
-              s);
-      }
     }
 
     if (token.data[start] == 'R') {
@@ -147,10 +148,10 @@ void StringLiteralPostTokenizer::handle()
   EFundamentalType type = toType(encoding);
   if (type == FT_CHAR) {
     string x = Utf8Encoder::encode(codePoints);
-    output(type, codePoints.size(), x.data(), x.size(), suffix);
+    output(type, x.size(), x.data(), x.size(), suffix);
   } else if (type == FT_CHAR16_T) {
     vector<char16_t> x = Utf16Encoder::encode(codePoints);
-    output(type, codePoints.size(), &x[0], x.size() * sizeof(x[0]), suffix);
+    output(type, x.size(), &x[0], x.size() * sizeof(x[0]), suffix);
   } else {
     CHECK(type == FT_CHAR32_T || type == FT_WCHAR_T);
     output(type, 

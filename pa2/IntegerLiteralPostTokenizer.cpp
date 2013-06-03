@@ -21,7 +21,7 @@ bool isInteger(It start, It end)
     if (start + 1 == end) {
       return true;
     } else {
-      if (*start == 'x' || *start == 'X') {
+      if (*(start + 1) == 'x' || *(start + 1) == 'X') {
         hex = true;
         start += 2;
       } else {
@@ -29,6 +29,9 @@ bool isInteger(It start, It end)
         start += 1;
       }
     }
+  }
+  if (hex && start == end) {
+    return false;
   }
   while (start < end) {
     if (oct) {
@@ -51,6 +54,7 @@ bool isInteger(It start, It end)
 
 bool raise(uint64_t& r, uint64_t base, uint64_t s) 
 {
+  // cout << format("raise: {} * {} + {}", r, base, s) << endl;
   uint64_t m = numeric_limits<uint64_t>::max();
   if (r > m / base) {
     return false;
@@ -69,9 +73,11 @@ bool parseInteger(It start, It end, bool& octOrHex, uint64_t& r)
   bool hex = false;
   if (*start == '0') {
     if (start + 1 == end) {
+      r = 0;
+      octOrHex = true;
       return true;
     } else {
-      if (*start == 'x' || *start == 'X') {
+      if (*(start + 1) == 'x' || *(start + 1) == 'X') {
         hex = true;
         start += 2;
       } else {
@@ -79,6 +85,10 @@ bool parseInteger(It start, It end, bool& octOrHex, uint64_t& r)
         start += 1;
       }
     }
+  }
+  // cout << format("oct: {} hex: {}", oct, hex) << endl;
+  if (hex && start == end) {
+    return false;
   }
   r = 0;
   while (start < end) {
@@ -130,6 +140,7 @@ vector<EFundamentalType> getList(bool _unsigned,
                                  bool _longlong,
                                  bool hex)
 {
+  // cout << format("{} {} {} {}", _unsigned, _long, _longlong, hex) << endl;
   if (!_unsigned && !_long && !_longlong) {
     if (!hex) {
       return { 
@@ -260,11 +271,12 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
     }
     if (count[0] == 1) {
       _long = true;
-    } else if (count[2] == 2) {
+    } else if (count[0] == 2) {
       _longlong = true;
     }
   } catch (const CompilerException& e) {
     cerr << format("ERROR: {} while parsing {}\n", e.what(), token.dataStrU8());
+    return false;
   }
 
   uint64_t r{0};
@@ -276,11 +288,17 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
   vector<EFundamentalType> types 
     = getList(_unsigned, _long, _longlong, octOrHex);
   EFundamentalType type;
+  bool fnd = false;
   for (auto t : types) {
     if (r <= getMax(t)) {
       type = t;
+      fnd = true;
       break;
     }
+  }
+  if (!fnd) {
+    cerr << format("ERROR: {} too large for its type", r, types.back()) << endl;
+    return false;
   }
 
   string str = token.dataStrU8();
@@ -328,6 +346,12 @@ bool IntegerLiteralPostTokenizer::put(const PPToken& token)
   // to simplify parsing, require ud-suffix to start with '_'
   auto it = find(token.data.begin(), token.data.end(), '_');
   if (it != token.data.end()) {
+    // make sure the suffix does not contain '+' or '-'
+    if (find(it, token.data.end(), '+') != token.data.end() ||
+        find(it, token.data.end(), '-') != token.data.end()) {
+      cerr << format("bad ud_suffix for {}", token.dataStrU8()) << endl;
+      return false;
+    }
     return handleUserDefined(
               token,
               token.data.begin(), 

@@ -5,6 +5,12 @@
 #include <cctype>
 #include <unordered_set>
 #include <algorithm>
+#include <vector>
+
+
+namespace compiler {
+
+using namespace std;
 
 namespace {
 
@@ -12,11 +18,19 @@ bool isOctal(int x) {
   return x >= '0' && x <= '7';
 }
 
+bool lastIsBackSlash(const vector<int>& ch)
+{
+  int i;
+  for (i = ch.size() - 1; i >= 0; i--) {
+    if (ch[i] != '\\') {
+      break;
+    }
+  }
+  CHECK(i >= 0);
+  return (ch.size() - 1 - i) % 2 == 1;
 }
 
-namespace compiler {
-
-using namespace std;
+}
 
 const unordered_set<int> SimpleEscape =
 {
@@ -34,7 +48,7 @@ bool QuotedLiteralFSM::extend(int x)
     ++octal_;
   } else if (hex_ && isxdigit(x)) {
     /* no-op */
-  } else if (ch_.back() == '\\') {
+  } else if (lastIsBackSlash(ch_)) {
     if (isOctal(x)) {
       octal_ = 1;
     } else if (x == 'x') {

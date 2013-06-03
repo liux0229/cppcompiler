@@ -39,12 +39,12 @@ void floatLiteralInternal(It start, It end)
       }
       if (it == end - 1) {
         Throw("Unexpected end of input after {}", char(*it));
-      } else if (*it == '+' || *it == '-') {
+      } else if (*(it + 1) == '+' || *(it + 1) == '-') {
         ++it;
       }
       exp = true;
     } else {
-      Throw("Unexpected character {}:({x})", char(*it), char(*it));
+      Throw("Unexpected character {x}", *it);
     }
   }
 
@@ -128,6 +128,12 @@ bool FloatLiteralPostTokenizer::put(const PPToken& token)
   // to simplify parsing, require ud-suffix to start with '_'
   auto it = find(token.data.begin(), token.data.end(), '_');
   if (it != token.data.end()) {
+    // make sure the suffix does not contain '+' or '-'
+    if (find(it, token.data.end(), '+') != token.data.end() ||
+        find(it, token.data.end(), '-') != token.data.end()) {
+      cerr << format("bad ud_suffix for {}", token.dataStrU8()) << endl;
+      return false;
+    }
     return handleUserDefined(
               token,
               token.data.begin(), 

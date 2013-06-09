@@ -81,10 +81,11 @@ bool FloatLiteralPostTokenizer::handleUserDefined(
         It end,
         const string& udSuffix) {
   if (floatLiteral(start, end)) {
-    writer_.emit_user_defined_literal_floating(
-      token.dataStrU8(),
-      udSuffix,
-      Utf8Encoder::encode(vector<int>(start, end)));
+    writer_.put(*GetPostTokenLiteral::get(
+                  token.dataStrU8(),
+                  FT_DOUBLE,
+                  Utf8Encoder::encode(vector<int>(start, end)),
+                  udSuffix));
     return true;
   } else {
     return false;
@@ -107,17 +108,14 @@ bool FloatLiteralPostTokenizer::handleFloat(const PPToken& token)
     return false;
   }
   
+  using GetPostTokenLiteral::get;
   string input = token.dataStrU8();
   if (type == FT_FLOAT) {
-    float x = PA2Decode_float(input);
-    writer_.emit_literal(input, type, &x, sizeof(x));
+    writer_.put(*get(input, type, PA2Decode_float(input)));
   } else if (type == FT_DOUBLE) {
-    double x = PA2Decode_double(input);
-    writer_.emit_literal(input, type, &x, sizeof(x));
+    writer_.put(*get(input, type, PA2Decode_double(input)));
   } else {
-    long double x = PA2Decode_long_double(input);
-    // cout << "x=" << x << '\n';
-    writer_.emit_literal(input, type, &x, sizeof(x));
+    writer_.put(*get(input, type, PA2Decode_long_double(input)));
   }
 
   return true;

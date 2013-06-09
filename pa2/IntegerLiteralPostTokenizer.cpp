@@ -214,10 +214,11 @@ bool IntegerLiteralPostTokenizer::handleUserDefined(
     return false;
   }
 
-  writer_.emit_user_defined_literal_integer(
-    token.dataStrU8(),
-    udSuffix,
-    Utf8Encoder::encode(vector<int>(start, end)));
+  writer_.put(*GetPostTokenLiteral::get(
+                  token.dataStrU8(), 
+                  FT_INT, // internal defined
+                  Utf8Encoder::encode(vector<int>(start, end)),
+                  udSuffix));
 
   return true;
 }
@@ -301,36 +302,31 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
     return false;
   }
 
+  using GetPostTokenLiteral::get;
   string str = token.dataStrU8();
   switch (type) {
     case FT_INT: {
-      int x = int(r);
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (int)r));
       break;
     }
     case FT_UNSIGNED_INT: {
-      unsigned int x = (unsigned int)r;
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (unsigned int)r));
       break;
     }
     case FT_LONG_INT: {
-      long x = long(r);
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (long)r));
       break;
     }
     case FT_UNSIGNED_LONG_INT: {
-      unsigned long x = (unsigned long)r;
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (unsigned long)r));
       break;
     }
     case FT_LONG_LONG_INT: {
-      long long x = (long long)r;
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (long long)r));
       break;
     }
     case FT_UNSIGNED_LONG_LONG_INT: {
-      unsigned long long x = (unsigned long long)r;
-      writer_.emit_literal(str, type, &x, sizeof(x));
+      writer_.put(*get(str, type, (unsigned long long)r));
       break;
     }
     default:

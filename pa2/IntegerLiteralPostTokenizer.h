@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PreprocessingToken.h"
-#include "PostTokenWriter.h"
+#include "PostTokenReceiver.h"
 #include "PostTokenUtils.h"
 #include <vector>
 #include <string>
@@ -11,7 +11,7 @@ namespace compiler {
 class IntegerLiteralPostTokenizer
 {
 public:
-  IntegerLiteralPostTokenizer(PostTokenWriter& writer)
+  IntegerLiteralPostTokenizer(PostTokenReceiver& writer)
     : writer_(writer) {
   }
   bool put(const PPToken& token);
@@ -22,7 +22,7 @@ private:
           std::vector<int>::const_iterator end,
           const std::string& udSuffix);
   bool handleInteger(const PPToken& token);
-	PostTokenWriter& writer_;
+	PostTokenReceiver& writer_;
 };
 
 }

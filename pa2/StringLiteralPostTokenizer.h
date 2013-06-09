@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PreprocessingToken.h"
-#include "PostTokenWriter.h"
+#include "PostTokenReceiver.h"
 #include "PostTokenUtils.h"
 #include <vector>
 #include <string>
@@ -11,7 +11,7 @@ namespace compiler {
 class StringLiteralPostTokenizer
 {
 public:
-  StringLiteralPostTokenizer(PostTokenWriter& writer)
+  StringLiteralPostTokenizer(PostTokenReceiver& writer)
     : writer_(writer) {
   }
   void put(const PPToken& token);
@@ -25,7 +25,7 @@ private:
               const void *data, 
               int size, 
               std::string suffix);
-	PostTokenWriter& writer_;
+	PostTokenReceiver& writer_;
   std::vector<PPToken> tokens_;
 };
 

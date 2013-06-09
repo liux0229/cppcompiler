@@ -1,5 +1,3 @@
-// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
-
 #include "common.h"
 #include "PostTokenizer.h"
 #include "PPTokenizer.h"
@@ -13,16 +11,6 @@ using namespace compiler;
 
 int main()
 {
-	// TODO:
-	// 1. apply your code from PA1 to produce `preprocessing-tokens`
-	// 2. "post-tokenize" the `preprocessing-tokens` as described in PA2
-	// 3. write them out in the PA2 output format specifed
-
-	// You may optionally use the above starter code.
-	//
-	// In particular there is the DebugPostTokenOutputStream class which helps form the
-	// correct output format:
-
 	try
 	{
     ostringstream oss;

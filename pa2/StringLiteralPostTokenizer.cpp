@@ -145,48 +145,23 @@ void StringLiteralPostTokenizer::handle()
   codePoints.push_back(0);
 
   // output according to encoding
+  using GetPostTokenLiteral::get;
   EFundamentalType type = toType(encoding);
   if (type == FT_CHAR) {
-    string x = Utf8Encoder::encode(codePoints);
-    output(type, x.size(), x.data(), x.size(), suffix);
+    writer_.put(*get(getSource(), 
+                type, 
+                Utf8Encoder::encode(codePoints),
+                suffix));
   } else if (type == FT_CHAR16_T) {
-    vector<char16_t> x = Utf16Encoder::encode(codePoints);
-    output(type, x.size(), &x[0], x.size() * sizeof(x[0]), suffix);
+    writer_.put(*get(getSource(), 
+                type, 
+                Utf16Encoder::encode(codePoints),
+                suffix));
   } else {
     CHECK(type == FT_CHAR32_T || type == FT_WCHAR_T);
-    output(type, 
-           codePoints.size(), 
-           &codePoints[0], 
-           codePoints.size() * sizeof(int), 
-           suffix);
+    writer_.put(*get(getSource(), type, codePoints, suffix));
   }
 }
-
-void StringLiteralPostTokenizer::output(
-        EFundamentalType type, 
-        int count, 
-        const void *data, 
-        int size,
-        string suffix)
-{
-  if (suffix.empty()) {
-    writer_.emit_literal_array(
-                getSource(),
-                count,
-                type,
-                data,
-                size);
-  } else {
-    writer_.emit_user_defined_literal_string_array(
-                getSource(),
-                suffix,
-                count,
-                type,
-                data,
-                size);
-  }
-}
-
 
 void StringLiteralPostTokenizer::put(const PPToken& token)
 {
@@ -203,7 +178,7 @@ void StringLiteralPostTokenizer::terminate()
     handle();
   } catch (const CompilerException& e) {
     cerr << format("ERROR: {}\n", e.what());
-    writer_.emit_invalid(getSource());
+    writer_.put(PostTokenInvalid(getSource()));
   }
 
   tokens_.clear();

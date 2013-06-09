@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PreprocessingToken.h"
-#include "PostTokenWriter.h"
+#include "PostTokenReceiver.h"
 #include "CharLiteralPostTokenizer.h"
 #include "StringLiteralPostTokenizer.h"
 #include "FloatLiteralPostTokenizer.h"
@@ -15,7 +15,7 @@ public:
   void put(const PPToken& token);
 private:
   void handleSimpleOrIdentifier(const PPToken& token);
-	PostTokenWriter writer_;
+	PostTokenReceiver writer_;
   CharLiteralPostTokenizer charLiteralPT_ {writer_};
   StringLiteralPostTokenizer strLiteralPT_ {writer_};
   FloatLiteralPostTokenizer floatLiteralPT_ {writer_};

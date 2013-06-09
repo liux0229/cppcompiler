@@ -7,6 +7,7 @@
 #include <cctype>
 #include <algorithm>
 #include <string>
+#include <memory>
 
 namespace compiler {
 
@@ -38,42 +39,21 @@ void CharLiteralPostTokenizer::output(const PPToken& token,
                                       int codePoint,
                                       const string& suffix)
 {
-  // storage for the values
-  char ch;
-  char16_t ch16;
-  char32_t ch32;
-  void *pData;
-  int size;
-
+  using GetPostTokenLiteral::get;
+  string source = token.dataStrU8();
+  unique_ptr<PostToken> pt;
   if (type == FT_CHAR) {
-    ch = codePoint;
-    pData = &ch;
-    size = 1;
+    pt = get(source, type, (char)codePoint, suffix);
   } else if (type == FT_CHAR16_T) {
-    ch16 = codePoint;
-    pData = &ch16;
-    size = 2;
+    pt = get(source, type, (char16_t)codePoint, suffix);
   } else if (type == FT_CHAR32_T || type == FT_WCHAR_T) {
-    ch32 = codePoint;
-    pData = &ch32;
-    size = 4;
+    pt = get(source, type, (char32_t)codePoint, suffix);
   } else if (type == FT_INT) {
-    pData = &codePoint;
-    size = 4;
+    pt = get(source, type, codePoint, suffix);
   } else {
     CHECK(false);
   }
-
-  if (suffix.empty()) {
-    writer_.emit_literal(token.dataStrU8(), type, pData, size);
-  } else {
-    writer_.emit_user_defined_literal_character(
-        token.dataStrU8(), 
-        suffix, 
-        type, 
-        pData, 
-        size);
-  }
+  writer_.put(*pt);
 }
 
 void CharLiteralPostTokenizer::handle(const PPToken& token, 

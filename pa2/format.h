@@ -7,6 +7,7 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+#include <vector>
 // used for debug output only
 #include <iostream>
 
@@ -14,6 +15,19 @@ namespace compiler {
 
 // Make the function definitions local to file
 namespace {
+
+template<typename T>
+std::ostream& operator<<(std::ostream& oss, const std::vector<T>& v)
+{
+  oss << "[";
+  const char* sep = "";
+  for (const auto& e : v) {
+    oss << sep << e;
+    sep = ",";
+  }
+  oss << "]";
+  return oss;
+}
 
 /*
  * Currently parses fmt at runtime.
@@ -161,7 +175,7 @@ std::ostream& formatDumpInternal(
   if (pos > 0) {
     oss << ",";
   }
-  oss << std::forward<T>(value);
+  oss << "<" << std::forward<T>(value) << ">";
   return formatDumpInternal(oss, pos + 1, std::forward<Args>(args)...);
 }
 

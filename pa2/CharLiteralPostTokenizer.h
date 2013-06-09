@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PreprocessingToken.h"
-#include "PostTokenWriter.h"
+#include "PostTokenReceiver.h"
 #include <string>
 
 namespace compiler {
@@ -9,7 +9,7 @@ namespace compiler {
 class CharLiteralPostTokenizer
 {
 public:
-  CharLiteralPostTokenizer(PostTokenWriter& writer)
+  CharLiteralPostTokenizer(PostTokenReceiver& writer)
     : writer_(writer) {
   }
   void put(const PPToken& token);
@@ -20,7 +20,7 @@ private:
               int codePoint, 
               const std::string& suffix);
   void handle(const PPToken& token, const std::string& suffix = "");
-	PostTokenWriter& writer_;
+	PostTokenReceiver& writer_;
 };
 
 }

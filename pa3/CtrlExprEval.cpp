@@ -1,5 +1,7 @@
 #include "common.h"
 #include "CtrlExprEval.h"
+#include <functional>
+#include <unordered_map>
 
 namespace compiler {
 
@@ -17,13 +19,125 @@ bool PA3Mock_IsDefinedIdentifier(const string& identifier)
 		return identifier[0] % 2;
 }
 
+typedef unique_ptr<PostToken> UToken;
+typedef unique_ptr<PostTokenLiteralBase> UTokenLiteral;
+
+// TODO: more type checks between T and the type specifier
+template<typename T>
+UTokenLiteral getToken(EFundamentalType type, T data) {
+  return make_unique<PostTokenLiteral<T>>("", type, data, "");
+}
+
+UTokenLiteral toLiteral(UToken&& token) {
+  CHECK(token->getType() == PostTokenType::Literal);
+  return UTokenLiteral(static_cast<PostTokenLiteralBase*>(token.release()));
+}
+
+UTokenLiteral unaryPlus(const UTokenLiteral& token) {
+  return toLiteral(token->copy()); 
+}
+
+UTokenLiteral unaryMinus(const UTokenLiteral& token) {
+  if (token->isSigned()) {
+    return getToken(token->type, -token->toSigned64());
+  } else {
+    return getToken(token->type, -token->toUnsigned64());
+  }
+}
+
+UTokenLiteral unaryNot(const UTokenLiteral& token) {
+  return getToken(FT_LONG_LONG_INT, token->isIntegralZero() ? 1 : 0);
+}
+
+UTokenLiteral unaryComp(const UTokenLiteral& token) {
+  if (token->isSigned()) {
+    return getToken(token->type, ~token->toSigned64());
+  } else {
+    return getToken(token->type, ~token->toUnsigned64());
+  }
+}
+
+const map<ETokenType, 
+          function<UTokenLiteral (const UTokenLiteral&)>> unaryOps = {
+  { OP_PLUS, unaryPlus },
+  { OP_MINUS, unaryMinus },
+  { OP_LNOT, unaryNot },
+  { OP_COMPL, unaryComp }
+};
+
+UTokenLiteral operator*(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+  if (!lhs->isSigned() || !rhs->isSigned()) {
+    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
+                    lhs->toUnsigned64() * rhs->toUnsigned64());
+  } else {
+    return getToken(FT_LONG_LONG_INT, 
+                    lhs->toSigned64() * rhs->toSigned64());
+  }
+}
+
+UTokenLiteral operator/(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+  if (rhs->isIntegralZero()) {
+    Throw("0 as divisor when evaluating {}/{}", 
+          lhs->toIntegralStr(),
+          rhs->toIntegralStr());
+  }
+  if (!lhs->isSigned() || !rhs->isSigned()) {
+    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
+                    lhs->toUnsigned64() / rhs->toUnsigned64());
+  } else {
+    return getToken(FT_LONG_LONG_INT, 
+                    lhs->toSigned64() / rhs->toSigned64());
+  }
+}
+
+UTokenLiteral operator%(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+  if (rhs->isIntegralZero()) {
+    Throw("0 as divisor when evaluating {}%{}", 
+          lhs->toIntegralStr(),
+          rhs->toIntegralStr());
+  }
+  // cout << format("{}/{}", lhs->toIntegralStr(), rhs->toIntegralStr()) 
+  //      << endl;
+  if (!lhs->isSigned() || !rhs->isSigned()) {
+    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
+                    lhs->toUnsigned64() % rhs->toUnsigned64());
+  } else {
+    return getToken(FT_LONG_LONG_INT, 
+                    lhs->toSigned64() % rhs->toSigned64());
+  }
+}
+
+const map<ETokenType, 
+          function<UTokenLiteral (const UTokenLiteral&,
+                                  const UTokenLiteral&)>
+         > binaryOps = {
+  { OP_STAR, operator* },
+  { OP_DIV,  operator/ },
+  { OP_MOD,  operator% }
+};
+
+UTokenLiteral apply(ETokenType type, const UTokenLiteral& token)
+{
+  auto it = unaryOps.find(type);
+  CHECK(it != unaryOps.end());
+  return it->second(token);
+}
+
+UTokenLiteral apply(ETokenType type, 
+             const UTokenLiteral& lhs, 
+             const UTokenLiteral& rhs)
+{
+  auto it = binaryOps.find(type);
+  CHECK(it != binaryOps.end());
+  return it->second(lhs, rhs);
+}
+
 }
 
 namespace ControlExpression {
 
 struct Node;
 typedef unique_ptr<Node> UNode;
-typedef unique_ptr<PostToken> UToken;
 
 struct Node 
 {
@@ -49,14 +163,20 @@ public:
     return *tokens_[current_];
   }
 
-  void next() { ++current_; }
+  void next() { 
+    CHECK(current_ < tokens_.size());
+    ++current_; 
+  }
 
   ETokenType getOp() const {
     CHECK(cur().getType() == PostTokenType::Simple);
-    return static_cast<const PostTokenSimple&>(token).type;
+    return static_cast<const PostTokenSimple&>(cur()).type;
   }
 
   bool isOp(ETokenType type) const {
+    if (current_ >= tokens_.size()) {
+      return false;
+    }
     auto& token = cur();
     if (token.getType() != PostTokenType::Simple) {
       return false;
@@ -83,15 +203,19 @@ public:
   }
 
   template<typename T>
-  UToken getIntegerConstant(T value) const {
+  UTokenLiteral getIntegerConstant(T value) const {
     // don't preserve the source for now
-    return GetPostTokenLiteral::get("", FT_LONG_LONG_INT, (long long)value);
+    return make_unique<PostTokenLiteral<T>>(
+              "", 
+              FT_LONG_LONG_INT, 
+              (long long)value, 
+              "");
   }
 
-  UToken primary() {
+  UTokenLiteral primary() {
     if (isOp(OP_LPAREN)) {
       next();
-      UToken root = control();
+      UTokenLiteral root = control();
       expectRParen();
       return root;
     } else if (isIdentifier() && cur().source == "defined") {
@@ -121,7 +245,7 @@ public:
     }
   }
 
-  UToken unary() {
+  UTokenLiteral unary() {
     ETokenType op;
     if (isOp(OP_PLUS)  ||
         isOp(OP_MINUS) ||
@@ -129,30 +253,44 @@ public:
         isOp(OP_COMPL)) {
       op = getOp();
       next();
-      UToken t = primary();
+      UTokenLiteral t = primary();
+      return apply(op, t);
     } else {
       return primary();
     }
   }
 
-  UToken control() {
-    // check left over tokens
-    return unary();
+  UTokenLiteral mul() {
+    UTokenLiteral lhs = unary();
+
+    while (isOp(OP_STAR)  ||
+           isOp(OP_DIV) ||
+           isOp(OP_MOD)) {
+      ETokenType op = getOp();
+      next();
+      UTokenLiteral rhs = unary();
+      lhs = apply(op, lhs, rhs);
+    }
+
+    return lhs;
   }
 
-  UToken parse() {
+  UTokenLiteral control() {
+    // check left over tokens
+    return mul();
+  }
+
+  UTokenLiteral parse() {
     current_ = 0;
     return control();
   }
 
   void parseAndEvaluate() {
     try {
-      UToken result = parse();
-      CHECK(result->getType() == PostTokenType::Literal);
-      cout << static_cast<PostTokenLiteralBase&>(*result).toIntegralStr() 
-           << endl;
+      UTokenLiteral result = parse();
+      cout << result->toIntegralStr() << endl;
     } catch (const CompilerException& e) {
-      cerr << format("ERROR: parse or eval error `{}`", e.what());
+      cerr << format("ERROR: parse or eval error `{}`", e.what()) << endl;
       cout << "error" << endl;
     }
   }

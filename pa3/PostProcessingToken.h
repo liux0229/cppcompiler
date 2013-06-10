@@ -220,11 +220,17 @@ struct PostTokenLiteralBase : public PostToken
     return !udSuffix.empty();
   }
 
-  // we could define this according to type,
-  // but using type traits in the derived class makes this simpler
+  // we could define these according to type,
+  // but using type traits in the derived class makes these simpler
   virtual bool isIntegral() const = 0;
+  virtual bool isSigned() const = 0;
 
-  virtual std::unique_ptr<PostToken> promoteTo64() const = 0;
+  virtual bool isIntegralZero() const = 0;
+
+  virtual long long toSigned64() const = 0;
+  virtual unsigned long long toUnsigned64() const = 0;
+
+  virtual std::unique_ptr<PostTokenLiteralBase> promoteTo64() const = 0;
 
   virtual std::string toIntegralStr() const = 0;
 
@@ -271,7 +277,7 @@ struct PostTokenLiteral : public PostTokenLiteralBase
     : PostTokenLiteralBase(_source, _type, _udSuffix),
       data(_data) { }
 
-  std::unique_ptr<PostToken> copy() const {
+  std::unique_ptr<PostToken> copy() const override {
     return make_unique<PostTokenLiteral<T>>(*this);
   }
 
@@ -279,7 +285,28 @@ struct PostTokenLiteral : public PostTokenLiteralBase
     return !isUserDefined() && std::is_integral<T>::value;
   }
 
-  std::unique_ptr<PostToken> promoteTo64() const override {
+  bool isSigned() const override {
+    CHECK(isIntegral());
+    return std::is_signed<T>::value;
+  }
+
+  long long toSigned64() const override {
+    // Do not allow cast unsigned to signed
+    CHECK(isSigned());
+    return (long long)ToInteger<T>()(data);
+  }
+
+  unsigned long long toUnsigned64() const override {
+    // Do not allow cast unsigned to signed
+    CHECK(isIntegral());
+    return (unsigned long long)ToInteger<T>()(data);
+  }
+
+  bool isIntegralZero() const override {
+    return toUnsigned64() == 0ULL;
+  }
+
+  std::unique_ptr<PostTokenLiteralBase> promoteTo64() const override {
     CHECK(isIntegral());
     if (std::is_signed<T>::value) {
       return make_unique<PostTokenLiteral<long long>>(

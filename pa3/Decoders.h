@@ -1,0 +1,6 @@
+#include "Decoder.h"
+#include "Utf8Decoder.h"
+#include "LineSplicer.h"
+#include "TrigraphDecoder.h"
+#include "UniversalCharNameDecoder.h"
+#include "CommentDecoder.h"

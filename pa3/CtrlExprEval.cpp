@@ -2,12 +2,20 @@
 #include "CtrlExprEval.h"
 #include <functional>
 #include <unordered_map>
+#include <utility>
+#include <vector>
+#include <algorithm>
 
 namespace compiler {
 
 using namespace std;
 
+namespace ControlExpression {
+
 namespace {
+
+typedef unsigned long long ULL;
+typedef long long LL;
 
 // mock implementation of IsDefinedIdentifier for PA3
 // return true iff first code point is odd
@@ -65,65 +73,87 @@ const map<ETokenType,
   { OP_COMPL, unaryComp }
 };
 
-UTokenLiteral operator*(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    lhs->toUnsigned64() * rhs->toUnsigned64());
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    lhs->toSigned64() * rhs->toSigned64());
-  }
-}
-
-UTokenLiteral operator/(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+void checkDivisorZero(const UTokenLiteral& lhs, const UTokenLiteral& rhs)
+{
   if (rhs->isIntegralZero()) {
-    Throw("0 as divisor when evaluating {}/{}", 
+    Throw("Divide by 0. LHS: {}, RHS: {}", 
           lhs->toIntegralStr(),
           rhs->toIntegralStr());
   }
+}
+
+#define OPERATOR(op) {\
+  [](ULL a, ULL b) -> ULL { return a op b; }, \
+  [](LL a, LL b) -> LL { return a op b; } }
+
+const map<ETokenType,
+          pair<pair<function<ULL (ULL, ULL)>, 
+                    function<LL (LL, LL)>>,
+               function<void (const UTokenLiteral&, 
+                               const UTokenLiteral&)>
+              >
+         > promotedBinaryOps {
+  { OP_STAR,  { OPERATOR(*), nullptr } },
+  { OP_DIV,   { OPERATOR(/), checkDivisorZero } },
+  { OP_MOD,   { OPERATOR(%), checkDivisorZero } },
+  { OP_PLUS,  { OPERATOR(+), nullptr } },
+  { OP_MINUS, { OPERATOR(-), nullptr } },
+  { OP_AMP,  { OPERATOR(&), nullptr } },
+  { OP_XOR,   { OPERATOR(^), nullptr } },
+  { OP_BOR,   { OPERATOR(|), nullptr } }
+};
+
+#undef OPERATOR
+
+UTokenLiteral promotedBinaryOp(
+    const UTokenLiteral& lhs,
+    const UTokenLiteral& rhs,
+    const function<ULL (ULL, ULL)>& unsignedOp,
+    const function<LL (LL, LL)>& signedOp,
+    const function<void (const UTokenLiteral&, 
+                         const UTokenLiteral&)>& checker) {
+  if (checker) {
+    checker(lhs, rhs);
+  }
   if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    lhs->toUnsigned64() / rhs->toUnsigned64());
+    return getToken(FT_UNSIGNED_LONG_LONG_INT,
+                    unsignedOp(lhs->toUnsigned64(), rhs->toUnsigned64()));
   } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    lhs->toSigned64() / rhs->toSigned64());
+    return getToken(FT_LONG_LONG_INT,
+                    signedOp(lhs->toSigned64(), rhs->toSigned64()));
   }
 }
 
-UTokenLiteral operator%(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (rhs->isIntegralZero()) {
-    Throw("0 as divisor when evaluating {}%{}", 
-          lhs->toIntegralStr(),
-          rhs->toIntegralStr());
-  }
-  // cout << format("{}/{}", lhs->toIntegralStr(), rhs->toIntegralStr()) 
-  //      << endl;
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    lhs->toUnsigned64() % rhs->toUnsigned64());
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    lhs->toSigned64() % rhs->toSigned64());
-  }
-}
+#define OPERATOR(op) {\
+  [](ULL a, ULL b) -> LL { return (long long)(a op b); }, \
+  [](LL a, LL b) -> LL { return a op b; } }
 
-UTokenLiteral operator+(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    lhs->toUnsigned64() + rhs->toUnsigned64());
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    lhs->toSigned64() + rhs->toSigned64());
-  }
-}
+const map<ETokenType,
+          pair<function<LL (ULL, ULL)>, 
+               function<LL (LL, LL)>
+              >
+         > relOps {
+  { OP_LT, OPERATOR(<)  },
+  { OP_LE, OPERATOR(<=) },
+  { OP_GT, OPERATOR(>)  },
+  { OP_GE, OPERATOR(>=) },
+  { OP_EQ, OPERATOR(==) },
+  { OP_NE, OPERATOR(!=) }
+};
 
-UTokenLiteral operator-(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+#undef OPERATOR
+
+UTokenLiteral relOp(
+    const UTokenLiteral& lhs,
+    const UTokenLiteral& rhs,
+    const function<LL (ULL, ULL)>& unsignedOp,
+    const function<LL (LL, LL)>& signedOp) {
   if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    lhs->toUnsigned64() - rhs->toUnsigned64());
+    return getToken(FT_LONG_LONG_INT, 
+                    unsignedOp(lhs->toUnsigned64(), rhs->toUnsigned64()));
   } else {
     return getToken(FT_LONG_LONG_INT, 
-                    lhs->toSigned64() - rhs->toSigned64());
+                    signedOp(lhs->toSigned64(), rhs->toSigned64()));
   }
 }
 
@@ -162,63 +192,12 @@ UTokenLiteral operator>>(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
   }
 }
 
-// TODO: we can turn this into a combination of the base structure plus a
-// functor
-UTokenLiteral operator<(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    (unsigned long long)(lhs->toUnsigned64() < rhs->toUnsigned64()));
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    (long long)(lhs->toSigned64() < rhs->toSigned64()));
-  }
-}
-
-UTokenLiteral operator<=(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    (unsigned long long)(lhs->toUnsigned64() <= rhs->toUnsigned64()));
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    (long long)(lhs->toSigned64() >= rhs->toSigned64()));
-  }
-}
-
-UTokenLiteral operator>(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    (unsigned long long)(lhs->toUnsigned64() > rhs->toUnsigned64()));
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    (long long)(lhs->toSigned64() > rhs->toSigned64()));
-  }
-}
-
-UTokenLiteral operator>=(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
-  if (!lhs->isSigned() || !rhs->isSigned()) {
-    return getToken(FT_UNSIGNED_LONG_LONG_INT, 
-                    (unsigned long long)(lhs->toUnsigned64() >= rhs->toUnsigned64()));
-  } else {
-    return getToken(FT_LONG_LONG_INT, 
-                    (long long)(lhs->toSigned64() >= rhs->toSigned64()));
-  }
-}
-
 const map<ETokenType, 
           function<UTokenLiteral (const UTokenLiteral&,
                                   const UTokenLiteral&)>
-         > binaryOps = {
-  { OP_STAR, operator* },
-  { OP_DIV,  operator/ },
-  { OP_MOD,  operator% },
-  { OP_PLUS,  operator+ },
-  { OP_MINUS,  operator- },
+         > binaryOps {
   { OP_LSHIFT, leftShift }, // somehow using operator<< does not work
-  { OP_RSHIFT, operator>> },
-  { OP_LT, operator< },
-  { OP_LE, operator<= },
-  { OP_GT, operator> },
-  { OP_GE, operator>= }
+  { OP_RSHIFT, operator>> }
 };
 
 UTokenLiteral apply(ETokenType type, const UTokenLiteral& token)
@@ -232,28 +211,40 @@ UTokenLiteral apply(ETokenType type,
              const UTokenLiteral& lhs, 
              const UTokenLiteral& rhs)
 {
-  auto it = binaryOps.find(type);
-  CHECK(it != binaryOps.end());
-  return it->second(lhs, rhs);
-}
-
-}
-
-namespace ControlExpression {
-
-struct Node;
-typedef unique_ptr<Node> UNode;
-
-struct Node 
-{
-  UToken eval() {
-    return nullptr;
+  {
+    auto it = promotedBinaryOps.find(type);
+    if (it != promotedBinaryOps.end()) {
+      auto& ops = it->second.first;
+      auto& checker = it->second.second;
+      return promotedBinaryOp(lhs, rhs, ops.first, ops.second, checker);
+    }
   }
-  UToken token;
-  UNode left;
-  UNode right;
+  {
+    auto it = relOps.find(type);
+    if (it != relOps.end()) {
+      auto& ops = it->second;
+      return relOp(lhs, rhs, ops.first, ops.second);
+    }
+  }
+  {
+    auto it = binaryOps.find(type);
+    CHECK(it != binaryOps.end());
+    return it->second(lhs, rhs);
+  }
+}
+
+const vector<vector<ETokenType>> binaryOpTable {
+  { OP_STAR, OP_DIV, OP_MOD },
+  { OP_PLUS, OP_MINUS },
+  { OP_LSHIFT, OP_RSHIFT },
+  { OP_LT, OP_LE, OP_GT, OP_GE },
+  { OP_EQ, OP_NE },
+  { OP_AMP },
+  { OP_XOR },
+  { OP_BOR },
 };
 
+} // anoymous
 
 class Parser
 {
@@ -290,7 +281,8 @@ public:
   }
 
   bool isIdentifier() const {
-    return cur().getType() == PostTokenType::Identifier;
+    return current_ < tokens_.size() &&
+           cur().getType() == PostTokenType::Identifier;
   }
 
   const string& identifierOrKeyword() const {
@@ -317,10 +309,10 @@ public:
               "");
   }
 
-  UTokenLiteral primary() {
+  UTokenLiteral primary(bool eval) {
     if (isOp(OP_LPAREN)) {
       next();
-      UTokenLiteral root = control();
+      UTokenLiteral root = control(eval);
       expectRParen();
       return root;
     } else if (isIdentifier() && cur().source == "defined") {
@@ -350,7 +342,7 @@ public:
     }
   }
 
-  UTokenLiteral unary() {
+  UTokenLiteral unary(bool eval) {
     ETokenType op;
     if (isOp(OP_PLUS)  ||
         isOp(OP_MINUS) ||
@@ -358,80 +350,93 @@ public:
         isOp(OP_COMPL)) {
       op = getOp();
       next();
-      UTokenLiteral t = primary();
-      return apply(op, t);
+      UTokenLiteral t = primary(eval);
+      return eval ? apply(op, t) : move(t);
     } else {
-      return primary();
+      return primary(eval);
     }
   }
 
-  UTokenLiteral mul() {
-    UTokenLiteral lhs = unary();
+  UTokenLiteral getTokenLower(int index, bool eval) {
+    return index == 0 ? unary(eval) : binary(index - 1, eval);
+  }
 
-    while (isOp(OP_STAR) ||
-           isOp(OP_DIV)  ||
-           isOp(OP_MOD)) {
+  UTokenLiteral binary(int index, bool eval) {
+    CHECK(index >= 0);
+    UTokenLiteral lhs = getTokenLower(index, eval);
+
+    const auto& ops = binaryOpTable[index];
+    while (find_if(ops.begin(), 
+                   ops.end(), 
+                   [this](ETokenType t) { return isOp(t); }) 
+            != ops.end()) {
       ETokenType op = getOp();
       next();
-      UTokenLiteral rhs = unary();
-      lhs = apply(op, lhs, rhs);
+      UTokenLiteral rhs = getTokenLower(index, eval);
+      if (eval) {
+        lhs = apply(op, lhs, rhs);
+      }
     }
 
     return lhs;
   }
 
-  UTokenLiteral add() {
-    UTokenLiteral lhs = mul();
-
-    while (isOp(OP_PLUS) ||
-           isOp(OP_MINUS)) {
-      ETokenType op = getOp();
-      next();
-      UTokenLiteral rhs = mul();
-      lhs = apply(op, lhs, rhs);
-    }
-
-    return lhs;
+  UTokenLiteral binary(bool eval) {
+    return binary(binaryOpTable.size() - 1, eval);
   }
 
-  UTokenLiteral shift() {
-    UTokenLiteral lhs = add();
-
-    while (isOp(OP_LSHIFT) ||
-           isOp(OP_RSHIFT)) {
-      ETokenType op = getOp();
+  UTokenLiteral logicalAnd(bool eval) {
+    UTokenLiteral t = binary(eval);
+    eval = eval && !t->isIntegralZero();
+    while (isOp(OP_LAND)) {
       next();
-      UTokenLiteral rhs = add();
-      lhs = apply(op, lhs, rhs);
+      t = binary(eval);
+      eval = eval && !t->isIntegralZero();
+      // if eval started with false, then it does not matter what we return
+      t = getIntegerConstant(eval ? 1 : 0);
     }
-
-    return lhs;
+    return t;
   }
 
-  UTokenLiteral relational() {
-    UTokenLiteral lhs = shift();
-
-    while (isOp(OP_LT) ||
-           isOp(OP_LE) ||
-           isOp(OP_GE) ||
-           isOp(OP_GT)) {
-      ETokenType op = getOp();
+  UTokenLiteral logicalOr(bool eval) {
+    UTokenLiteral t = logicalAnd(eval);
+    eval = eval && t->isIntegralZero();
+    while (isOp(OP_LOR)) {
       next();
-      UTokenLiteral rhs = shift();
-      lhs = apply(op, lhs, rhs);
+      t = logicalAnd(eval);
+      eval = eval && t->isIntegralZero();
+      // if eval started with false, then it does not matter what we return
+      t = getIntegerConstant(!eval ? 1 : 0);
     }
-
-    return lhs;
+    return t;
   }
 
-  UTokenLiteral control() {
-    // check left over tokens
-    return relational();
+  UTokenLiteral control(bool eval) {
+    UTokenLiteral cond = logicalOr(eval);
+    if (isOp(OP_QMARK)) {
+      next();
+      UTokenLiteral lhs = control(eval && !cond->isIntegralZero());
+      if (!isOp(OP_COLON)) {
+        Throw("Expected `:`, got {}", cur().toStr());
+      }
+      next();
+      UTokenLiteral rhs = control(eval && cond->isIntegralZero());
+
+      // if eval started as false then it does not matter what we return
+      return !cond->isIntegralZero() ? move(lhs) : move(rhs);
+    } else {
+      return cond;
+    }
   }
 
   UTokenLiteral parse() {
     current_ = 0;
-    return control();
+    UTokenLiteral t = control(true);
+    if (current_ != tokens_.size()) {
+      CHECK(current_ < tokens_.size());
+      Throw("Trailing tokens: {}...", tokens_[current_]->toStr());
+    }
+    return t;
   }
 
   void parseAndEvaluate() {
@@ -464,8 +469,7 @@ void CtrlExprEval::put(const PostToken& token)
       auto& sToken = static_cast<const PostTokenSimple&>(token);
       if (sToken.type < TOTAL_KEYWORDS) {
         tokens_.push_back(
-            make_unique<PostTokenIdentifier>(
-              TokenTypeToStringMap.at(sToken.type)));
+            make_unique<PostTokenIdentifier>(sToken.source));
         return;
       }
     }

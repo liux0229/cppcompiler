@@ -16,7 +16,7 @@ public:
   }
 
   void put(const PostToken& token) {
-    // debug(token);
+    debug(token);
     if (token.getType() != PostTokenType::Eof) {
       send_(token);
     } else {

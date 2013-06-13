@@ -16,7 +16,7 @@ public:
   }
 
   void put(const PostToken& token) {
-    debug(token);
+    // debug(token, true);
     if (token.getType() != PostTokenType::Eof) {
       send_(token);
     } else {
@@ -29,8 +29,8 @@ private:
     std::cout << token.toStr() << std::endl;
   }
 
-  void debug(const PostToken& token) const {
-    if (token.getType() != PostTokenType::NewLine) {
+  void debug(const PostToken& token, bool printNewLine) const {
+    if (token.getType() != PostTokenType::NewLine || printNewLine) {
       printToken(token); 
     }
   }

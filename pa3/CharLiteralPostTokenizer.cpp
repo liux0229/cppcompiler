@@ -46,8 +46,13 @@ void CharLiteralPostTokenizer::output(const PPToken& token,
     pt = get(source, type, (char)codePoint, suffix);
   } else if (type == FT_CHAR16_T) {
     pt = get(source, type, (char16_t)codePoint, suffix);
-  } else if (type == FT_CHAR32_T || type == FT_WCHAR_T) {
+  } else if (type == FT_CHAR32_T) {
     pt = get(source, type, (char32_t)codePoint, suffix);
+  } else if (type == FT_WCHAR_T) {
+    // the requirement says we should treat wchar_t as char32_t but their
+    // signedness is different; here we depend on wchar_t has the same in memory
+    // representation as char32_t
+    pt = get(source, type, (wchar_t)codePoint, suffix);
   } else if (type == FT_INT) {
     pt = get(source, type, codePoint, suffix);
   } else {

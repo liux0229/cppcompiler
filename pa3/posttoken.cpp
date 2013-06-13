@@ -1,6 +1,7 @@
 #include "common.h"
 #include "PostTokenizer.h"
 #include "PPTokenizer.h"
+#include "PostTokenReceiver.h"
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -19,7 +20,12 @@ int main()
 		string input = oss.str();
 
 		PPTokenizer ppTokenizer;
-    PostTokenizer postTokenizer;
+    PostTokenReceiver postTokenReceiver([](const PostToken& token) {
+      if (token.getType() != PostTokenType::NewLine) {
+        cout << token.toStr() << endl;
+      }
+    });
+    PostTokenizer postTokenizer(postTokenReceiver);
     ppTokenizer.sendTo(bind(&PostTokenizer::put, 
                             &postTokenizer,
                             placeholders::_1));

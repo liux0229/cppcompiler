@@ -26,7 +26,7 @@ void PostTokenizer::put(const PPToken& token)
   try {
     if (token.type != PPTokenType::StringLiteral &&
         token.type != PPTokenType::UserDefinedStringLiteral &&
-        token.type != PPTokenType::NewLine &&
+        (noStrCatForNewLine_ || token.type != PPTokenType::NewLine) &&
         token.type != PPTokenType::WhitespaceSequence) {
       strLiteralPT_.terminate();
     }

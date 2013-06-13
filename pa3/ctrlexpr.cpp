@@ -25,7 +25,8 @@ int main()
 		PPTokenizer ppTokenizer;
     CtrlExprEval ctrlExprEval;
     PostTokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));
-    PostTokenizer postTokenizer(receiver);
+                        
+    PostTokenizer postTokenizer(receiver, true /* noStrCatForNewLine */);
     ppTokenizer.sendTo(bind(&PostTokenizer::put, 
                             &postTokenizer,
                             _1));

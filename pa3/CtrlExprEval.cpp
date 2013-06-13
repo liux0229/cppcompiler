@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <type_traits>
 
 namespace compiler {
 
@@ -29,6 +30,34 @@ bool PA3Mock_IsDefinedIdentifier(const string& identifier)
 
 typedef unique_ptr<PostToken> UToken;
 typedef unique_ptr<PostTokenLiteralBase> UTokenLiteral;
+
+template<typename T>
+UTokenLiteral getIntegerConstant(T value) {
+  // don't preserve the source for now
+  if (is_signed<T>::value) {
+    return make_unique<PostTokenLiteral<T>>(
+        "", 
+        FT_LONG_LONG_INT, 
+        (long long)value, 
+        "");
+  } else {
+    return make_unique<PostTokenLiteral<T>>(
+        "", 
+        FT_UNSIGNED_LONG_LONG_INT, 
+        (unsigned long long)value, 
+        "");
+  }
+}
+
+// Return a 0 constant to indicate type only
+UTokenLiteral getZero(bool isSigned)
+{
+  if (isSigned) {
+    return getIntegerConstant(0);
+  } else {
+    return getIntegerConstant(0u);
+  }
+}
 
 // TODO: more type checks between T and the type specifier
 template<typename T>
@@ -111,7 +140,11 @@ UTokenLiteral promotedBinaryOp(
     const function<ULL (ULL, ULL)>& unsignedOp,
     const function<LL (LL, LL)>& signedOp,
     const function<void (const UTokenLiteral&, 
-                         const UTokenLiteral&)>& checker) {
+                         const UTokenLiteral&)>& checker,
+    bool eval) {
+  if (!eval) {
+    return getZero(lhs->isSigned() && rhs->isSigned());
+  }
   if (checker) {
     checker(lhs, rhs);
   }
@@ -147,7 +180,11 @@ UTokenLiteral relOp(
     const UTokenLiteral& lhs,
     const UTokenLiteral& rhs,
     const function<LL (ULL, ULL)>& unsignedOp,
-    const function<LL (LL, LL)>& signedOp) {
+    const function<LL (LL, LL)>& signedOp,
+    bool eval) {
+  if (!eval) {
+    return getZero(true);
+  }
   if (!lhs->isSigned() || !rhs->isSigned()) {
     return getToken(FT_LONG_LONG_INT, 
                     unsignedOp(lhs->toUnsigned64(), rhs->toUnsigned64()));
@@ -174,7 +211,12 @@ unsigned long long getShiftRHS(const UTokenLiteral& rhs) {
   return r;
 }
 
-UTokenLiteral leftShift(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+UTokenLiteral leftShift(const UTokenLiteral& lhs,
+                        const UTokenLiteral& rhs,
+                        bool eval) {
+  if (!eval) {
+    return getZero(lhs->isSigned());
+  }
   unsigned long long r = getShiftRHS(rhs);
   if (lhs->isSigned()) {
     return getToken(FT_LONG_LONG_INT, lhs->toSigned64() << r);
@@ -183,7 +225,12 @@ UTokenLiteral leftShift(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
   }
 }
 
-UTokenLiteral operator>>(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
+UTokenLiteral rightShift(const UTokenLiteral& lhs,
+                         const UTokenLiteral& rhs,
+                         bool eval) {
+  if (!eval) {
+    return getZero(lhs->isSigned());
+  }
   unsigned long long r = getShiftRHS(rhs);
   if (lhs->isSigned()) {
     return getToken(FT_LONG_LONG_INT, lhs->toSigned64() >> r);
@@ -194,10 +241,11 @@ UTokenLiteral operator>>(const UTokenLiteral& lhs, const UTokenLiteral& rhs) {
 
 const map<ETokenType, 
           function<UTokenLiteral (const UTokenLiteral&,
-                                  const UTokenLiteral&)>
+                                  const UTokenLiteral&,
+                                  bool)>
          > binaryOps {
-  { OP_LSHIFT, leftShift }, // somehow using operator<< does not work
-  { OP_RSHIFT, operator>> }
+  { OP_LSHIFT, leftShift },
+  { OP_RSHIFT, rightShift }
 };
 
 UTokenLiteral apply(ETokenType type, const UTokenLiteral& token)
@@ -209,27 +257,28 @@ UTokenLiteral apply(ETokenType type, const UTokenLiteral& token)
 
 UTokenLiteral apply(ETokenType type, 
              const UTokenLiteral& lhs, 
-             const UTokenLiteral& rhs)
+             const UTokenLiteral& rhs,
+             bool eval)
 {
   {
     auto it = promotedBinaryOps.find(type);
     if (it != promotedBinaryOps.end()) {
       auto& ops = it->second.first;
       auto& checker = it->second.second;
-      return promotedBinaryOp(lhs, rhs, ops.first, ops.second, checker);
+      return promotedBinaryOp(lhs, rhs, ops.first, ops.second, checker, eval);
     }
   }
   {
     auto it = relOps.find(type);
     if (it != relOps.end()) {
       auto& ops = it->second;
-      return relOp(lhs, rhs, ops.first, ops.second);
+      return relOp(lhs, rhs, ops.first, ops.second, eval);
     }
   }
   {
     auto it = binaryOps.find(type);
     CHECK(it != binaryOps.end());
-    return it->second(lhs, rhs);
+    return it->second(lhs, rhs, eval);
   }
 }
 
@@ -299,16 +348,6 @@ public:
     next();
   }
 
-  template<typename T>
-  UTokenLiteral getIntegerConstant(T value) const {
-    // don't preserve the source for now
-    return make_unique<PostTokenLiteral<T>>(
-              "", 
-              FT_LONG_LONG_INT, 
-              (long long)value, 
-              "");
-  }
-
   UTokenLiteral primary(bool eval) {
     if (isOp(OP_LPAREN)) {
       next();
@@ -327,7 +366,9 @@ public:
         target = &identifierOrKeyword();
         next();
       }
-      return getIntegerConstant(PA3Mock_IsDefinedIdentifier(*target));
+      return getIntegerConstant(
+                // Interesting note: bool is unsigned
+                (long long)PA3Mock_IsDefinedIdentifier(*target));
     } else if (cur().getType() == PostTokenType::Literal) {
       auto& t = static_cast<const PostTokenLiteralBase&>(cur());
       if (!t.isIntegral()) {
@@ -351,7 +392,8 @@ public:
       op = getOp();
       next();
       UTokenLiteral t = primary(eval);
-      return eval ? apply(op, t) : move(t);
+      // note t would return the desired type
+      return eval ? apply(op, t) : move(t); 
     } else {
       return primary(eval);
     }
@@ -373,9 +415,7 @@ public:
       ETokenType op = getOp();
       next();
       UTokenLiteral rhs = getTokenLower(index, eval);
-      if (eval) {
-        lhs = apply(op, lhs, rhs);
-      }
+      lhs = apply(op, lhs, rhs, eval);
     }
 
     return lhs;
@@ -393,6 +433,7 @@ public:
       t = binary(eval);
       eval = eval && !t->isIntegralZero();
       // if eval started with false, then it does not matter what we return
+      // but note the returned type is always right
       t = getIntegerConstant(eval ? 1 : 0);
     }
     return t;
@@ -406,6 +447,7 @@ public:
       t = logicalAnd(eval);
       eval = eval && t->isIntegralZero();
       // if eval started with false, then it does not matter what we return
+      // but note the returned type is always right
       t = getIntegerConstant(!eval ? 1 : 0);
     }
     return t;
@@ -422,8 +464,18 @@ public:
       next();
       UTokenLiteral rhs = control(eval && cond->isIntegralZero());
 
+      // statically determine the type of the result
+      bool isSigned = lhs->isSigned() && rhs->isSigned();
+
       // if eval started as false then it does not matter what we return
-      return !cond->isIntegralZero() ? move(lhs) : move(rhs);
+      UTokenLiteral ret = !cond->isIntegralZero() ? move(lhs) : move(rhs);
+
+      // convert if type is not desired
+      if (isSigned != ret->isSigned()) {
+        CHECK(!isSigned);
+        ret = getIntegerConstant(ret->toUnsigned64());
+      }
+      return ret;
     } else {
       return cond;
     }

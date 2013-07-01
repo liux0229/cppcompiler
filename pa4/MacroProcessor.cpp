@@ -20,6 +20,22 @@ size_t skipWhite(const vector<PPToken>& tokens, size_t i) {
   return i;
 }
 
+template<typename T>
+void trim(vector<T>& v, function<bool (const T&)> predicate)
+{
+  if (!v.empty() && predicate(v.back())) {
+    v.pop_back();   
+  }
+
+  size_t i = 0;
+  if (i < v.size() && predicate(v[i])) {
+    ++i;
+  }
+  if (i > 0) {
+    v.erase(v.begin(), v.begin() + i);
+  }
+}
+
 PPToken mergeToken(const PPToken& a, const PPToken& b)
 {
   // cout << format("merge {} with {}\n", a.dataStrU8(), b.dataStrU8());
@@ -58,12 +74,67 @@ PPToken mergeToken(const PPToken& a, const PPToken& b)
   }
 }
 
+PPToken getLiteral(vector<PPToken>&& tokens) {
+  vector<int> data;
+  bool prevSpace = false;
+  data.push_back('"');
+
+  for (auto& t : tokens) {
+    // cout << format("<{}>", t.isWhite() ? " " : t.dataStrU8());
+    if (t.isWhite() || t.type == PPTokenType::NewLine) {
+      if (prevSpace) {
+        continue;
+      }
+      data.push_back(' ');
+      prevSpace = true;
+    } else {
+      prevSpace = false;
+      for (int x : t.data) {
+        if (x == '\\' || x == '"') {
+          data.push_back('\\');
+        }
+        data.push_back(x);
+      }
+    }
+  }
+  // cout << "\n";
+
+  data.push_back('"');
+  return PPToken(PPTokenType::StringLiteral, data);
+}
+
+bool included(const vector<string>& names, const PPToken& token) {
+  if (!token.isId()) {
+    return false;
+  }
+  return find(names.begin(), names.end(), token.dataStrU8()) != names.end();
+}
+
+vector<string> add(const vector<string>& names, const string& name) {
+  vector<string> r(names);
+  r.push_back(name);
+  return r;
+}
+
+vector<string> add(const vector<string>& a, const vector<string>& b) {
+  vector<string> r(a);
+  r.insert(r.end(), b.begin(), b.end());
+  return r;
+}
+
+}
+
+bool MacroProcessor::TextToken::canExpand() {
+  // cout << format("canExpand: {}=>{}\n", parentMacros, token.dataStrU8());
+  if (!expand) {
+    return false;
+  }
+  return expand = !included(parentMacros, token);
 }
 
 string MacroProcessor::Repl::toStr() const {
   if (!isParam()) {
-    CHECK(!token.isWhite());
-    return token.dataStrU8();
+    return token.isWhite() ? " " : token.dataStrU8();
   } else {
     ostringstream oss;
     if (parameter == -2) {
@@ -110,12 +181,13 @@ string MacroProcessor::Macro::toStr() const {
 }
 
 MacroProcessor::TextList
-MacroProcessor::Macro::getReplTextList() const {
+MacroProcessor::Macro::getReplTextList(
+                    const vector<string>& parentMacros) const {
   TextList result;
   for (auto& repl : bodyList) {
     vector<TextToken> text;
     for (auto& r : repl) {
-      text.push_back(TextToken(r.token));
+      text.push_back(TextToken(r.token, parentMacros));
     }
     result.push_back(move(text));
   }
@@ -200,14 +272,16 @@ MacroProcessor::parseRepl(vector<Repl>&& repl) {
   for (size_t i = 0; i < repl.size(); ++i) {
     auto& r = repl[i];
     if (!r.isParam() && isPound(r.token)) {
-      if (i + 1 == repl.size() ||
-          !repl[i + 1].isParam()) {
+      size_t j;
+      for (j = i + 1; j < repl.size() && repl[j].token.isWhite(); ++j) { }
+      if (j == repl.size() ||
+          !repl[j].isParam()) {
         Throw("# must be followed by a parameter in the replacement list");
       }
-      result.push_back(move(repl[i + 1]));
+      result.push_back(move(repl[j]));
       result.back().inplaceExpand = false;
       result.back().literal = true;
-      ++i;
+      i = j;
     } else {
       result.push_back(move(r));
     }
@@ -262,19 +336,28 @@ void MacroProcessor::define(const vector<PPToken>& tokens)
   vector<vector<Repl>> body;
   vector<Repl> repl;
   for (auto& t : bodyOriginal) {
-    if (t.isWhite()) {
-      continue;
-    }
     if (isDoublePound(t)) {
-      body.push_back(parseRepl(move(repl)));
+      body.push_back(
+          type == Macro::Type::Function ?
+            parseRepl(move(repl)) :
+            move(repl));
       repl.clear();
     } else {
       repl.push_back(mapParameter(t, paramList, varArg));
     }
   }
   if (!repl.empty()) {
-    body.push_back(parseRepl(move(repl)));
+    body.push_back(
+        type == Macro::Type::Function ?
+          parseRepl(move(repl)) :
+          move(repl));
   }
+
+  // get rid of the leading and trailing spaces from each repl
+  for (auto& repl : body) {
+    trim<Repl>(repl, [](const Repl& t) { return t.token.isWhite(); });
+  }
+
   if (body.size() > 1) {
     for (size_t i = 0; i < body.size(); ++i) {
       auto& repl = body[i];
@@ -299,7 +382,7 @@ void MacroProcessor::define(const vector<PPToken>& tokens)
     }
   } else {
     macros_.insert(make_pair(name, move(macro)));
-    cout << format("define <{}> to be {}\n", name, macros_[name].toStr());
+    // cout << format("define <{}> to be {}\n", name, macros_[name].toStr());
   }
 }
 
@@ -323,7 +406,7 @@ void MacroProcessor::undefine(const vector<PPToken>& tokens)
   if (name.empty()) {
     Throw("Missing identifier after #undef");
   }
-  cout << format("macro {} undefined\n", name);
+  // cout << format("macro {} undefined\n", name);
   macros_.erase(name);
 }
 
@@ -355,8 +438,9 @@ MacroProcessor::merge(TextList&& textList)
       continue;
     }
     PPToken merged = mergeToken(result.back().token, text[0].token);
-    // insert checks for expand
-    result.back() = TextToken(merged);
+    result.back() = TextToken(merged, 
+                              add(result.back().parentMacros,
+                                  text[0].parentMacros));
 
     result.insert(result.end(), text.begin() + 1, text.end());
   }
@@ -366,7 +450,8 @@ MacroProcessor::merge(TextList&& textList)
 MacroProcessor::TextList
 MacroProcessor::applyFunction(const string& name,
                               const Macro& macro,
-                              vector<vector<PPToken>>&& args) {
+                              vector<vector<PPToken>>&& args,
+                              const vector<string>& parentMacros) {
   size_t nparam = macro.paramList.size();
   if (!macro.varArg) {
     if (nparam != args.size()) {
@@ -404,10 +489,15 @@ MacroProcessor::applyFunction(const string& name,
         }
         auto& arg = args[param];
         vector<TextToken> argText;
-        for (auto& t : arg) {
-          // cout << format("extract param {}: {}\n", param, t.dataStrU8());
-          // TODO: we can move 't' here
-          argText.push_back(TextToken(t));
+
+        if (r.literal) {
+          argText.push_back(TextToken(getLiteral(move(arg)), {}));
+        } else {
+          for (auto& t : arg) {
+            // cout << format("extract param {}: {}\n", param, t.dataStrU8());
+            // TODO: we can move 't' here
+            argText.push_back(TextToken(t, {}));
+          }
         }
 
         if (r.inplaceExpand) {
@@ -416,10 +506,10 @@ MacroProcessor::applyFunction(const string& name,
 
         // now substitue the argument
         for (auto& t : argText) {
-          text.push_back(move(t));
+          text.push_back(TextToken(t.token, add(t.parentMacros, parentMacros)));
         }
       } else {
-        text.push_back(TextToken(r.token));
+        text.push_back(TextToken(r.token, parentMacros));
       }
     } 
     result.push_back(move(text));
@@ -428,17 +518,33 @@ MacroProcessor::applyFunction(const string& name,
   return result;
 }
 
+namespace {
+void debug(const vector<MacroProcessor::TextToken>& text)
+{
+  cout << "replace:";
+  for (auto& t : text) {
+    cout << format("<{}>", 
+                   t.token.isWhite() ? " " : t.token.dataStrU8());
+  }
+  cout << "\n";
+}
+}
+
+// TODO: optimize names (mutate in place)
 vector<MacroProcessor::TextToken>&
 MacroProcessor::replace(vector<TextToken>& text)
 {
+  // debug(text);
+
   bool expanded;
   do {
     expanded = false;
     for (auto it = text.begin(); it != text.end(); ++it) {
       auto& t = it->token;
-      if (!t.isId()) {
+      if (!it->canExpand() || !t.isId()) {
         continue;
       }
+      // cout << format("expanding {}({})\n", t.dataStrU8(), it->parentMacros);
       string name = t.dataStrU8();
       auto itMacro = macros_.find(name);
       if (itMacro == macros_.end()) {
@@ -446,7 +552,7 @@ MacroProcessor::replace(vector<TextToken>& text)
       }
       auto& macro = itMacro->second;
       if (macro.isObject()) {
-        auto result = merge(macro.getReplTextList());
+        auto result = merge(macro.getReplTextList(add(it->parentMacros, name)));
         it = text.erase(it);
         text.insert(it, result.begin(), result.end());
         expanded = true;
@@ -461,7 +567,7 @@ MacroProcessor::replace(vector<TextToken>& text)
             if (isComma(itEnd->token) && count == 1) {
               args.push_back({});
             } else {
-              if (!isRParen(itEnd->token)) {
+              if (!isRParen(itEnd->token) || count > 1) {
                 args.back().push_back(itEnd->token);
               }
             }
@@ -484,7 +590,25 @@ MacroProcessor::replace(vector<TextToken>& text)
           if (args.size() == 1 && args[0].empty()) {
             args.clear();
           }
-          auto result = merge(applyFunction(name, macro, move(args)));
+
+          // trim the leading and trailing whitespaces of each arg
+          for (auto& arg : args) {
+            trim<PPToken>(arg, [](const PPToken& token) {
+              return token.isWhite() || token.type == PPTokenType::NewLine;
+            });
+          }
+
+          auto result = merge(applyFunction(name, 
+                                            macro, 
+                                            move(args), 
+                                            add(it->parentMacros, name)));
+#if 0
+          cout << "argument: ";
+          for (auto& r : result) {
+            cout << format("<{}({})> ", r.token.dataStrU8(), r.parentMacros);
+          }
+          cout << "\n";
+#endif
           it = text.erase(it, itEnd);
           text.insert(it, result.begin(), result.end());
           expanded = true;
@@ -501,7 +625,7 @@ vector<PPToken> MacroProcessor::expand(const vector<PPToken>& rawText)
 {
   vector<TextToken> text;
   for (auto& t : rawText) {
-    text.push_back(TextToken(t));
+    text.push_back(TextToken(t, {}));
   }
   replace(text);
   vector<PPToken> result;

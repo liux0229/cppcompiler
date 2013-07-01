@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <vector>
 
-
 namespace compiler {
 
 using namespace std;

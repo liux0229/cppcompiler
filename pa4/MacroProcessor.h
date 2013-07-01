@@ -7,12 +7,18 @@
 namespace compiler {
 class MacroProcessor 
 {
+public:
   struct TextToken {
-    explicit TextToken(const PPToken& _token)
-      : token(_token) { }
+    explicit TextToken(const PPToken& _token, 
+                       const std::vector<std::string>& _parentMacros)
+      : token(_token),
+        parentMacros(_parentMacros)  { }
+    bool canExpand();
     PPToken token;
+    std::vector<std::string> parentMacros;
     bool expand { true };
   };
+private:
   typedef std::vector<std::vector<TextToken>> TextList;
 
   struct Repl {
@@ -63,7 +69,8 @@ class MacroProcessor
 
     bool isObject() const { return type == Type::Object; }
 
-    TextList getReplTextList() const;
+    TextList getReplTextList(
+              const std::vector<std::string>& parentMacros) const;
 
     // debugging
     std::string toStr() const;
@@ -74,6 +81,7 @@ class MacroProcessor
     // elements in the list are separated by '##'
     ReplList bodyList; 
     // use this to check whether the replacement lists are identifical
+    // TODO: get rid of this
     std::vector<PPToken> bodyOriginal;
   };
 
@@ -95,7 +103,8 @@ private:
   std::vector<TextToken> merge(TextList&& textList);
   TextList applyFunction(const std::string& name,
                          const Macro& macro,
-                         std::vector<std::vector<PPToken>>&& args);
+                         std::vector<std::vector<PPToken>>&& args,
+                         const std::vector<std::string>& parentMacros);
 
   // name to macro
   // name is utf8 data of identifier

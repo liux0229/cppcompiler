@@ -202,6 +202,7 @@ size_t MacroProcessor::parseParam(const vector<PPToken>& tokens,
   // false - expect , or )
   bool expectId = true;
   bool expectEnd = false;
+  bool start = true;
   for (; i < tokens.size(); ++i) {
     auto& t = tokens[i];
     if (t.isWhite()) {
@@ -220,6 +221,8 @@ size_t MacroProcessor::parseParam(const vector<PPToken>& tokens,
       } else if (isEllipse(t)) {
         *varArg = true;
         expectEnd = true;
+      } else if (start && isRParen(t)) {
+        break;
       } else {
         Throw("expect identifier or ..., '{}' received", t.dataStrU8());
       }
@@ -235,6 +238,7 @@ size_t MacroProcessor::parseParam(const vector<PPToken>& tokens,
       }
     }
 
+    start = false;
     expectId = !expectId;
   }
 
@@ -452,6 +456,7 @@ MacroProcessor::applyFunction(const string& name,
                               const Macro& macro,
                               vector<vector<PPToken>>&& args,
                               const vector<string>& parentMacros) {
+  // TODO: figure out the rule for the number of parameters
   size_t nparam = macro.paramList.size();
   if (!macro.varArg) {
     if (nparam != args.size()) {

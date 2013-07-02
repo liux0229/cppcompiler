@@ -51,8 +51,16 @@ struct PPToken
            type == PPTokenType::UserDefinedStringLiteral;
   }
 
+  bool isQuotedOrUserDefinedLiteral() const {
+    return isQuotedLiteral() || isUserDefined();
+  }
+
   bool isWhite() const {
     return type == PPTokenType::WhitespaceSequence;
+  }
+
+  bool isNewLine() const {
+    return type == PPTokenType::NewLine;
   }
 
   bool isId() const {

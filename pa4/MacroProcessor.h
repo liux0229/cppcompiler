@@ -103,7 +103,7 @@ private:
   std::vector<TextToken> merge(TextList&& textList);
   TextList applyFunction(const std::string& name,
                          const Macro& macro,
-                         std::vector<std::vector<PPToken>>&& args,
+                         std::vector<std::vector<TextToken>>&& args,
                          const std::vector<std::string>& parentMacros);
 
   // name to macro

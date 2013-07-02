@@ -1,3 +1,7 @@
+/* TODO:
+ * 1. Space truncation of arguments (e.g. do we need it at the arg parse
+      location
+ */
 #include "MacroProcessor.h"
 #include "PPDirectiveUtil.h"
 #include "PPTokenizer.h"
@@ -12,6 +16,8 @@ namespace compiler {
 using namespace std;
 
 namespace {
+
+const string VA_ARG_STR{"__VA_ARGS__"};
 
 size_t skipWhite(const vector<PPToken>& tokens, size_t i) {
   while (i < tokens.size() && tokens[i].isWhite()) {
@@ -74,12 +80,19 @@ PPToken mergeToken(const PPToken& a, const PPToken& b)
   }
 }
 
-PPToken getLiteral(vector<PPToken>&& tokens) {
+PPToken getLiteral(vector<MacroProcessor::TextToken>&& tokens) {
+  trim<MacroProcessor::TextToken>(
+      tokens, 
+      [](const MacroProcessor::TextToken& t) {
+          return t.token.isWhite() || t.token.isNewLine();
+      });
+
   vector<int> data;
   bool prevSpace = false;
   data.push_back('"');
 
-  for (auto& t : tokens) {
+  for (auto& tt : tokens) {
+    auto& t = tt.token;
     // cout << format("<{}>", t.isWhite() ? " " : t.dataStrU8());
     if (t.isWhite() || t.type == PPTokenType::NewLine) {
       if (prevSpace) {
@@ -90,7 +103,8 @@ PPToken getLiteral(vector<PPToken>&& tokens) {
     } else {
       prevSpace = false;
       for (int x : t.data) {
-        if (x == '\\' || x == '"') {
+        if (t.isQuotedOrUserDefinedLiteral() &&
+            (x == '\\' || x == '"')) {
           data.push_back('\\');
         }
         data.push_back(x);
@@ -258,10 +272,11 @@ MacroProcessor::mapParameter(const PPToken& token,
     auto it = find(paramList.begin(), paramList.end(), name);
     if (it != paramList.end()) {
       param = it - paramList.begin(); 
-    } else if (name == "__VAR_ARGS__") {
+    } else if (name == VA_ARG_STR) {
       if (!varArg) {
-        Throw("use __VAR_ARGS__ in replacement list of a macro which does not"
-              " have the '...' parameter");
+        Throw("use {} in replacement list of a macro which does not"
+              " have the '...' parameter",
+              VA_ARG_STR);
       }
       param = -2;
     }
@@ -300,6 +315,10 @@ void MacroProcessor::define(const vector<PPToken>& tokens)
     Throw("#define must be followed by an identifier");
   }
   string name = tokens[i++].dataStrU8();
+
+  if (name == VA_ARG_STR) {
+    Throw("{} cannot be macro name", VA_ARG_STR);
+  }
 
   Macro::Type type;
   vector<string> paramList;
@@ -438,15 +457,19 @@ MacroProcessor::merge(TextList&& textList)
 
   for (size_t i = 1; i < textList.size(); ++i) {
     auto& text = textList[i];
-    if (text.empty() || result.empty()) {
+    if (text.empty()) {
       continue;
     }
-    PPToken merged = mergeToken(result.back().token, text[0].token);
-    result.back() = TextToken(merged, 
-                              add(result.back().parentMacros,
-                                  text[0].parentMacros));
+    if (result.empty()) {
+      result.insert(result.end(), text.begin(), text.end());
+    } else {
+      PPToken merged = mergeToken(result.back().token, text[0].token);
+      result.back() = TextToken(merged, 
+                                add(result.back().parentMacros,
+                                    text[0].parentMacros));
 
-    result.insert(result.end(), text.begin() + 1, text.end());
+      result.insert(result.end(), text.begin() + 1, text.end());
+    }
   }
   return result;
 }
@@ -454,10 +477,13 @@ MacroProcessor::merge(TextList&& textList)
 MacroProcessor::TextList
 MacroProcessor::applyFunction(const string& name,
                               const Macro& macro,
-                              vector<vector<PPToken>>&& args,
+                              vector<vector<TextToken>>&& args,
                               const vector<string>& parentMacros) {
-  // TODO: figure out the rule for the number of parameters
   size_t nparam = macro.paramList.size();
+  if (nparam == 1 && args.empty()) {
+    // consider the invocation to have one empty argument
+    args.push_back({});
+  }
   if (!macro.varArg) {
     if (nparam != args.size()) {
       Throw("wrong number of args for macro invocation for {}; "
@@ -477,6 +503,8 @@ MacroProcessor::applyFunction(const string& name,
     if (args.size() > nparam) {
       size_t last = nparam;
       for (size_t i = last + 1; i < args.size(); ++i) {
+        args[last].push_back(
+            TextToken(PPToken(PPTokenType::PPOpOrPunc, {','}), {}));
         args[last].insert(args[last].end(), args[i].begin(), args[i].end());
       }
       args.erase(args.begin() + last + 1, args.end());
@@ -501,7 +529,7 @@ MacroProcessor::applyFunction(const string& name,
           for (auto& t : arg) {
             // cout << format("extract param {}: {}\n", param, t.dataStrU8());
             // TODO: we can move 't' here
-            argText.push_back(TextToken(t, {}));
+            argText.push_back(t);
           }
         }
 
@@ -564,16 +592,21 @@ MacroProcessor::replace(vector<TextToken>& text)
         break;
       } else {
         auto itEnd = it + 1;
+        while (itEnd != text.end() && 
+               (itEnd->token.isWhite() || itEnd->token.isNewLine())) {
+          ++itEnd;
+        }
         if (itEnd != text.end() && isLParen(itEnd->token)) {
           // find matching ')' and collect arguments
           int count = 1;
-          vector<vector<PPToken>> args(1);
+          vector<vector<TextToken>> args(1);
           for (++itEnd; itEnd != text.end(); ++itEnd) {
             if (isComma(itEnd->token) && count == 1) {
               args.push_back({});
             } else {
               if (!isRParen(itEnd->token) || count > 1) {
-                args.back().push_back(itEnd->token);
+                // keep the parent macros for this argument token
+                args.back().push_back(*itEnd);
               }
             }
 
@@ -597,10 +630,13 @@ MacroProcessor::replace(vector<TextToken>& text)
           }
 
           // trim the leading and trailing whitespaces of each arg
-          for (auto& arg : args) {
-            trim<PPToken>(arg, [](const PPToken& token) {
-              return token.isWhite() || token.type == PPTokenType::NewLine;
-            });
+          // (not including the ones corresponding to ...)
+          for (size_t i = 0; i < args.size(); ++i) {
+            if (!(macro.varArg && i >= macro.paramList.size())) {
+              trim<TextToken>(args[i], [](const TextToken& t) {
+                return t.token.isWhite() || t.token.isNewLine();
+              });
+            }
           }
 
           auto result = merge(applyFunction(name, 
@@ -623,6 +659,7 @@ MacroProcessor::replace(vector<TextToken>& text)
     }
   } while (expanded);
 
+  // cout << "<replace finished>" << endl;
   return text;
 }
 
@@ -630,6 +667,9 @@ vector<PPToken> MacroProcessor::expand(const vector<PPToken>& rawText)
 {
   vector<TextToken> text;
   for (auto& t : rawText) {
+    if (t.isId() && t.dataStrU8() == VA_ARG_STR) {
+      Throw("{} encountered in text", VA_ARG_STR);
+    }
     text.push_back(TextToken(t, {}));
   }
   replace(text);

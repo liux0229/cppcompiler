@@ -17,11 +17,7 @@ public:
 
   void put(const PostToken& token) {
     // debug(token, true);
-    if (token.getType() != PostTokenType::Eof) {
-      send_(token);
-    } else {
-      printToken(token);
-    }
+    send_(token);
   }
 
 private:

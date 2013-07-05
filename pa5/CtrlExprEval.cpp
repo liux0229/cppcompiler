@@ -18,19 +18,6 @@ namespace {
 typedef unsigned long long ULL;
 typedef long long LL;
 
-// mock implementation of IsDefinedIdentifier for PA3
-// return true iff first code point is odd
-bool PA3Mock_IsDefinedIdentifier(const string& identifier)
-{
-	if (identifier.empty())
-		return false;
-	else
-		return identifier[0] % 2;
-}
-
-typedef unique_ptr<PostToken> UToken;
-typedef unique_ptr<PostTokenLiteralBase> UTokenLiteral;
-
 template<typename T>
 UTokenLiteral getIntegerConstant(T value) {
   // don't preserve the source for now
@@ -298,8 +285,9 @@ const vector<vector<ETokenType>> binaryOpTable {
 class Parser
 {
 public:
-  Parser(vector<UToken> && tokens)
-    : tokens_(move(tokens)) { }
+  Parser(vector<UToken> && tokens, function<bool (const string&)> isDefined)
+    : tokens_(move(tokens)),
+      isDefined_(isDefined)  { }
 
   const PostToken& cur() const {
     if (current_ >= tokens_.size()) {
@@ -368,7 +356,7 @@ public:
       }
       return getIntegerConstant(
                 // Interesting note: bool is unsigned
-                (long long)PA3Mock_IsDefinedIdentifier(*target));
+                (long long)isDefined_(*target));
     } else if (cur().getType() == PostTokenType::Literal) {
       auto& t = static_cast<const PostTokenLiteralBase&>(cur());
       if (!t.isIntegral()) {
@@ -491,28 +479,43 @@ public:
     return t;
   }
 
-  void parseAndEvaluate() {
+  UTokenLiteral parseAndEvaluate() {
     try {
-      UTokenLiteral result = parse();
-      cout << result->toIntegralStr() << endl;
+      return parse();
     } catch (const CompilerException& e) {
       cerr << format("ERROR: parse or eval error `{}`", e.what()) << endl;
-      cout << "error" << endl;
+      return nullptr;
     }
   }
 
 private:
   vector<UToken> tokens_;
   size_t current_ { 0 };
+  function<bool (const string&)> isDefined_;
 };
 
 } // ControlExpression
+
+void CtrlExprEval::printResult() {
+  CHECK(hasResult_);
+  if (printResult_) {
+    if (result_) {
+      cout << result_->toIntegralStr() << endl;
+    } else {
+      cout << "error" << endl;
+    }
+    clearResult();
+  }
+}
 
 void CtrlExprEval::put(const PostToken& token)
 {
   if (token.getType() == PostTokenType::NewLine) {
     if (!tokens_.empty()) {
-      ControlExpression::Parser(move(tokens_)).parseAndEvaluate();
+      result_ = ControlExpression::Parser(move(tokens_), isDefined_)
+                  .parseAndEvaluate();
+      hasResult_ = true;
+      printResult();
     }
     tokens_.clear();
   } else {

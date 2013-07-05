@@ -49,12 +49,14 @@ private:
           std::vector<std::string>&& _paramList,
           bool _varArg,
           ReplList&& _bodyList,
-          std::vector<PPToken>&& _bodyOriginal)
+          std::vector<PPToken>&& _bodyOriginal,
+          bool predefined = false)
       : type(_type),
         paramList(_paramList),
         varArg(_varArg),
         bodyList(_bodyList),
-        bodyOriginal(_bodyOriginal) { }
+        bodyOriginal(_bodyOriginal),
+        predefined_(predefined) { }
 
     bool operator==(const Macro& rhs) const {
       return type == rhs.type &&
@@ -70,6 +72,7 @@ private:
     bool isObject() const { return type == Type::Object; }
 
     TextList getReplTextList(
+              const std::string& name,
               const std::vector<std::string>& parentMacros) const;
 
     // debugging
@@ -83,11 +86,16 @@ private:
     // use this to check whether the replacement lists are identifical
     // TODO: get rid of this
     std::vector<PPToken> bodyOriginal;
+    bool predefined_;
   };
 
 public:
+  MacroProcessor();
   void def(const std::vector<PPToken>& tokens);
   std::vector<PPToken> expand(const std::vector<PPToken>& text);
+  bool isDefined(const std::string& identifier) const {
+    return macros_.find(identifier) != macros_.end();
+  }
 private:
   void define(const std::vector<PPToken>& tokens);
   void undefine(const std::vector<PPToken>& tokens);

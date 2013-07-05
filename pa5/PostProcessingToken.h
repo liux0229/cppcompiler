@@ -41,6 +41,8 @@ struct PostToken
   std::string source;
 };
 
+typedef std::unique_ptr<PostToken> UToken;
+
 struct PostTokenEof : public PostToken
 {
   PostTokenEof() : PostToken("") { }
@@ -237,6 +239,8 @@ struct PostTokenLiteralBase : public PostToken
   EFundamentalType type;
   std::string udSuffix;
 };
+
+typedef std::unique_ptr<PostTokenLiteralBase> UTokenLiteral;
 
 template<typename T, typename E = void>
 struct ToInteger {

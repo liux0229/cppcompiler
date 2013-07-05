@@ -19,13 +19,6 @@ namespace {
 
 const string VA_ARG_STR{"__VA_ARGS__"};
 
-size_t skipWhite(const vector<PPToken>& tokens, size_t i) {
-  while (i < tokens.size() && tokens[i].isWhite()) {
-    ++i;
-  }
-  return i;
-}
-
 template<typename T>
 void trim(vector<T>& v, function<bool (const T&)> predicate)
 {
@@ -196,6 +189,7 @@ string MacroProcessor::Macro::toStr() const {
 
 MacroProcessor::TextList
 MacroProcessor::Macro::getReplTextList(
+                    const string& name,
                     const vector<string>& parentMacros) const {
   TextList result;
   for (auto& repl : bodyList) {
@@ -206,6 +200,12 @@ MacroProcessor::Macro::getReplTextList(
     result.push_back(move(text));
   }
   return result;
+}
+
+MacroProcessor::MacroProcessor()
+{
+  Macro predefined(Macro::Function, {}, false, {}, {}, true);
+  macros_.insert(make_pair("__CPPGM__ ", predefined));
 }
 
 size_t MacroProcessor::parseParam(const vector<PPToken>& tokens, 
@@ -585,7 +585,9 @@ MacroProcessor::replace(vector<TextToken>& text)
       }
       auto& macro = itMacro->second;
       if (macro.isObject()) {
-        auto result = merge(macro.getReplTextList(add(it->parentMacros, name)));
+        auto result = merge(macro.getReplTextList(
+                              name,
+                              add(it->parentMacros, name)));
         it = text.erase(it);
         text.insert(it, result.begin(), result.end());
         expanded = true;

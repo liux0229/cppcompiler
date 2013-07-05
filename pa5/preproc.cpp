@@ -1,15 +1,11 @@
 #include "common.h"
-#include "PPTokenizer.h"
-#include "PPDirective.h"
-#include "PostTokenizer.h"
-#include "PostTokenReceiver.h"
+#include "Preprocessor.h"
 #include <utility>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdexcept>
 #include <fstream>
-#include <sstream>
 
 using namespace std;
 using namespace compiler;
@@ -53,35 +49,10 @@ vector<string> PA5StdIncPaths =
     "/usr/include/"
 };
 
-void process(ifstream& in, ofstream& out)
+void process(const string& source, ostream& out)
 {
-  ostringstream oss;
-  oss << in.rdbuf();
-  string input = oss.str();
-
-  PostTokenReceiver postTokenReceiver([&out](const PostToken& token) {
-    if (token.getType() != PostTokenType::NewLine) {
-      out << token.toStr() << endl;
-    }
-  });
-  PostTokenizer postTokenizer(postTokenReceiver);
-
-  using namespace std::placeholders;
-  PPDirective ppDirective(bind(&PostTokenizer::put, 
-                               &postTokenizer,
-                               _1));
-
-  PPTokenizer ppTokenizer;
-  ppTokenizer.sendTo(bind(&PPDirective::put,
-                          &ppDirective,
-                          _1));
-
-  for (char c : input)
-  {
-    ppTokenizer.process(static_cast<unsigned char>(c));
-  }
-
-  ppTokenizer.process(EndOfFile);
+  Preprocessor processor(source, out);
+  processor.process();
 }
 
 int main(int argc, char** argv)
@@ -106,8 +77,8 @@ int main(int argc, char** argv)
 			string srcfile = args[i+2];
 			out << "sof " << srcfile << endl;
 			ifstream in(srcfile);
-      process(in, out);
-			out << "eof" << endl;
+      process(srcfile, out);
+			// out << "eof" << endl;
 		}
 	}
 	catch (exception& e)

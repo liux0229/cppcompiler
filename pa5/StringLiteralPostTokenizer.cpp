@@ -149,14 +149,14 @@ void StringLiteralPostTokenizer::handle()
   EFundamentalType type = toType(encoding);
   if (type == FT_CHAR) {
     receiver_.put(*get(getSource(), 
-                type, 
-                Utf8Encoder::encode(codePoints),
-                suffix));
+                  type, 
+                  Utf8Encoder::encode(codePoints),
+                  suffix));
   } else if (type == FT_CHAR16_T) {
     receiver_.put(*get(getSource(), 
-                type, 
-                Utf16Encoder::encode(codePoints),
-                suffix));
+                  type, 
+                  Utf16Encoder::encode(codePoints),
+                  suffix));
   } else {
     CHECK(type == FT_CHAR32_T || type == FT_WCHAR_T);
     receiver_.put(*get(getSource(), type, codePoints, suffix));

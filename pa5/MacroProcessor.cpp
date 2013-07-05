@@ -5,6 +5,7 @@
 #include "MacroProcessor.h"
 #include "PPDirectiveUtil.h"
 #include "PPTokenizer.h"
+#include "PredefinedMacros.h"
 #include <string>
 #include <memory>
 #include <sstream>
@@ -190,22 +191,35 @@ string MacroProcessor::Macro::toStr() const {
 MacroProcessor::TextList
 MacroProcessor::Macro::getReplTextList(
                     const string& name,
-                    const vector<string>& parentMacros) const {
+                    const vector<string>& parentMacros,
+                    const PredefinedMacros& predefinedMacros) const {
   TextList result;
-  for (auto& repl : bodyList) {
-    vector<TextToken> text;
-    for (auto& r : repl) {
-      text.push_back(TextToken(r.token, parentMacros));
+  if (predefined) {
+    result.push_back(vector<TextToken>{ 
+                        TextToken(predefinedMacros.get(name), parentMacros)
+                     });
+  } else {
+    for (auto& repl : bodyList) {
+      vector<TextToken> text;
+      for (auto& r : repl) {
+        text.push_back(TextToken(r.token, parentMacros));
+      }
+      result.push_back(move(text));
     }
-    result.push_back(move(text));
   }
   return result;
 }
 
-MacroProcessor::MacroProcessor()
+MacroProcessor::MacroProcessor(const PredefinedMacros& predefinedMacros)
+  : predefinedMacros_(predefinedMacros)
 {
-  Macro predefined(Macro::Function, {}, false, {}, {}, true);
-  macros_.insert(make_pair("__CPPGM__ ", predefined));
+  Macro predefined(Macro::Type::Object, {}, false, {}, {}, true);
+  macros_.insert(make_pair("__CPPGM__", predefined));
+  macros_.insert(make_pair("__cplusplus", predefined));
+  macros_.insert(make_pair("__STDC_HOSTED__", predefined));
+  macros_.insert(make_pair("__CPPGM_AUTHOR__", predefined));
+  macros_.insert(make_pair("__DATE__", predefined));
+  macros_.insert(make_pair("__TIME__", predefined));
 }
 
 size_t MacroProcessor::parseParam(const vector<PPToken>& tokens, 
@@ -587,7 +601,8 @@ MacroProcessor::replace(vector<TextToken>& text)
       if (macro.isObject()) {
         auto result = merge(macro.getReplTextList(
                               name,
-                              add(it->parentMacros, name)));
+                              add(it->parentMacros, name),
+                              predefinedMacros_));
         it = text.erase(it);
         text.insert(it, result.begin(), result.end());
         expanded = true;

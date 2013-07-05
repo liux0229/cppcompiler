@@ -3,6 +3,7 @@
 #include "PPTokenizer.h"
 #include "PostTokenReceiver.h"
 #include "PPDirective.h"
+#include "BuildEnv.h"
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -13,6 +14,7 @@ using namespace compiler;
 
 int main()
 {
+  BuildEnv buildEnv;
 	try
 	{
     using namespace std::placeholders;
@@ -30,7 +32,8 @@ int main()
 
     PPDirective ppDirective(bind(&PostTokenizer::put, 
                                  &postTokenizer,
-                                 _1));
+                                 _1),
+                            buildEnv);
 
 		PPTokenizer ppTokenizer;
     ppTokenizer.sendTo(bind(&PPDirective::put,

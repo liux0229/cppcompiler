@@ -21,6 +21,7 @@ void Preprocessor::process()
   PPDirective ppDirective(bind(&PostTokenizer::put, 
                                &postTokenizer,
                                placeholders::_1),
+                          buildEnv_,
                           &sourceReader_);
 
   PPTokenizer ppTokenizer;

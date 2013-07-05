@@ -1,5 +1,6 @@
 #include "common.h"
 #include "Preprocessor.h"
+#include "BuildEnv.h"
 #include <utility>
 #include <iostream>
 #include <string>
@@ -49,14 +50,15 @@ vector<string> PA5StdIncPaths =
     "/usr/include/"
 };
 
-void process(const string& source, ostream& out)
+void process(BuildEnv buildEnv, const string& source, ostream& out)
 {
-  Preprocessor processor(source, out);
+  Preprocessor processor(buildEnv, source, out);
   processor.process();
 }
 
 int main(int argc, char** argv)
 {
+  BuildEnv buildEnv;
 	try
 	{
 		vector<string> args;
@@ -77,7 +79,7 @@ int main(int argc, char** argv)
 			string srcfile = args[i+2];
 			out << "sof " << srcfile << endl;
 			ifstream in(srcfile);
-      process(srcfile, out);
+      process(buildEnv, srcfile, out);
 			// out << "eof" << endl;
 		}
 	}

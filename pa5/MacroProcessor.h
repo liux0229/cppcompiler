@@ -5,6 +5,9 @@
 #include <string>
 
 namespace compiler {
+
+class PredefinedMacros;
+
 class MacroProcessor 
 {
 public:
@@ -50,13 +53,13 @@ private:
           bool _varArg,
           ReplList&& _bodyList,
           std::vector<PPToken>&& _bodyOriginal,
-          bool predefined = false)
+          bool _predefined = false)
       : type(_type),
         paramList(_paramList),
         varArg(_varArg),
         bodyList(_bodyList),
         bodyOriginal(_bodyOriginal),
-        predefined_(predefined) { }
+        predefined(_predefined) { }
 
     bool operator==(const Macro& rhs) const {
       return type == rhs.type &&
@@ -73,7 +76,8 @@ private:
 
     TextList getReplTextList(
               const std::string& name,
-              const std::vector<std::string>& parentMacros) const;
+              const std::vector<std::string>& parentMacros,
+              const PredefinedMacros& predefinedMacros) const;
 
     // debugging
     std::string toStr() const;
@@ -86,11 +90,11 @@ private:
     // use this to check whether the replacement lists are identifical
     // TODO: get rid of this
     std::vector<PPToken> bodyOriginal;
-    bool predefined_;
+    bool predefined;
   };
 
 public:
-  MacroProcessor();
+  MacroProcessor(const PredefinedMacros&);
   void def(const std::vector<PPToken>& tokens);
   std::vector<PPToken> expand(const std::vector<PPToken>& text);
   bool isDefined(const std::string& identifier) const {
@@ -116,6 +120,7 @@ private:
 
   // name to macro
   // name is utf8 data of identifier
-  std::map<std::string, Macro> macros_;  
+  std::map<std::string, Macro> macros_;
+  const PredefinedMacros& predefinedMacros_;
 };
 }

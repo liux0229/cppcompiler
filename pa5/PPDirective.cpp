@@ -27,6 +27,10 @@ void checkTrailing(const vector<PPToken>& directive, size_t i) {
 
 string postTokenizeToString(const PPToken& token,
                             const string& target) {
+#if 0
+  cout << format("postTokenizeToString: {} {}\n", token.dataStrU8(),
+                                                  token.dataStrU8().size());
+#endif
   if (!token.isStringOrUserDefinedLiteral()) {
     Throw("string literal expected for {}, {} received", 
           target,
@@ -51,6 +55,9 @@ string postTokenizeToString(const PPToken& token,
     } else {
       auto& name = dynamic_cast<const PostTokenLiteral<string>&>(t);
       result = name.data;
+      // post-tokenizer will produce a trailing 0
+      CHECK(result.back() == 0);
+      result.pop_back();
     }
   };
   PostTokenReceiver receiver(receive);
@@ -71,7 +78,7 @@ bool PPDirective::isEnabled(size_t level) const
     return true;
   }
   int state = ifBlock_[ifBlock_.size() - 1 - level];
-  cout << format("if block state = {x}", state) << endl;
+  // cout << format("if block state = {x}", state) << endl;
   return state & 0x1;
 }
 
@@ -175,7 +182,7 @@ bool PPDirective::evaluateIf(const vector<PPToken>& dirs)
   if (!result) {
     Throw("evaluate #if results in error");
   }
-  cout << "evaluate #if => " << result->toIntegralStr() << endl;
+  // cout << "evaluate #if => " << result->toIntegralStr() << endl;
 
   return !result->isIntegralZero();
 }
@@ -231,7 +238,7 @@ void PPDirective::handleElse(const vector<PPToken>& directive)
 
   int& state = ifBlock_.back();
   
-  cout << format("state = {x}", state) << endl;
+  // cout << format("state = {x}", state) << endl;
   state = ((state >> 1) << 1) | !(state >> 1 & 0x1);
   state |= 0x4;
 
@@ -332,12 +339,7 @@ void PPDirective::handlePragma(const vector<PPToken>& dirs)
     return;
   }
 
-  handlePragmaOnce();
-}
-
-void PPDirective::handlePragmaOnce()
-{
-  sourceReader_->pragmaOnce();
+  sourceReader_->pragmaOnce(dirs[0].file);
 }
 
 void PPDirective::handleDirective()
@@ -428,11 +430,11 @@ void PPDirective::handleExpand()
       // assume the only pragma we support is 'once' so we don't need to
       // escape or pre-tokenize
       string type = literal.substr(literal.find('"') + 1);
-      cout << "type=" << type << endl;
+      // cout << "type=" << type << endl;
       CHECK(type.back() == '"');
       type.pop_back();
       if (type == "once") {
-        handlePragmaOnce();
+        sourceReader_->pragmaOnce(token.file);
       }
     }
   }
@@ -440,23 +442,14 @@ void PPDirective::handleExpand()
 
 void PPDirective::put(const PPToken& t)
 {
-  // Directly replace certain predefined macros
-  PPToken replaced, replacedWrapper;
-  bool isReplaced { false };
-  if (isIdentifier(t, "__FILE__")) {
-    replaced = PPToken(PPTokenType::StringLiteral,
-                       stringify(sourceReader_->file()));
-    isReplaced = true; 
-  } else if (isIdentifier(t, "__LINE__")) {
-    replaced = PPToken(PPTokenType::PPNumber,
-                       toVector(format("{}", sourceReader_->line())));
-    isReplaced = true; 
+  // TODO: optimize away this copy
+  PPToken token = t;
+  // track __FILE__ and __LINE__ for identifier (because only identifiers
+  // have the potential of becoming __FILE__ or __LINE__)
+  if (token.isId()) {
+    token.line = sourceReader_->line();
+    token.file = sourceReader_->file();
   }
-  if (isReplaced) {
-    replacedWrapper = t;
-    replacedWrapper.replaced = make_unique<PPToken>(replaced);
-  }
-  const PPToken& token = isReplaced ? replacedWrapper : t;
 
   bool isText = true;
   if (token.type == PPTokenType::Eof) {

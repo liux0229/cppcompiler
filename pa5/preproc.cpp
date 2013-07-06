@@ -53,9 +53,7 @@ int main(int argc, char** argv)
 		{
 			string srcfile = args[i+2];
 			out << "sof " << srcfile << endl;
-			ifstream in(srcfile);
       process(buildEnv, srcfile, out);
-			// out << "eof" << endl;
 		}
 	}
 	catch (exception& e)

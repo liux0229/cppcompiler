@@ -34,28 +34,15 @@ enum class PPTokenType {
 struct PPToken
 {
   PPToken() { }
-  PPToken(PPTokenType _type, std::vector<int> _data = {}) {
+  explicit PPToken(PPTokenType _type, std::vector<int> _data = {}) {
     type = _type;
     data.swap(_data);
   }
-  PPToken(const PPToken& rhs) 
+  PPToken(const PPToken& rhs, const std::string& _file, int64_t _line)
     : type(rhs.type),
-      data(rhs.data) {
-    // make a new copy, optimize later
-    if (rhs.replaced) {
-      replaced.reset(new PPToken(*rhs.replaced));
-    }
-  }
-  PPToken& operator=(const PPToken& rhs) {
-    if (this != &rhs) {
-      type = rhs.type;
-      data = rhs.data;
-      if (rhs.replaced) {
-        replaced.reset(new PPToken(*rhs.replaced));
-      }
-    }
-    return *this;
-  }
+      data(rhs.data),
+      file(_file),
+      line(_line) { }
   const std::string& typeName() const {
     return PPTokenTypes::Names[static_cast<int>(type)]; 
   }
@@ -120,9 +107,12 @@ struct PPToken
   PPTokenType type { PPTokenType::Unknown };
   std::vector<int> data;
 
-  // for replacing __FILE_ and __LINE__
+  // To track __FILE_ and __LINE__
   // optimize later
-  std::unique_ptr<PPToken> replaced;
+  // e.g. we don't need to store a string, just store a "pointer" should be
+  // sufficient
+  std::string file;
+  int64_t line { -1 };
 };
 
 }

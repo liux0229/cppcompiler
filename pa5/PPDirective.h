@@ -33,7 +33,6 @@ private:
   void handleLine(const std::vector<PPToken>& directive);
   void handleError(const std::vector<PPToken>& directive);
   void handlePragma(const std::vector<PPToken>& directive);
-  void handlePragmaOnce();
   void checkEmpty(const char *cur) const;
   void checkElse(const char* cur) const;
 

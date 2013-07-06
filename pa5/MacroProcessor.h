@@ -113,7 +113,7 @@ private:
   std::vector<Repl> parseRepl(std::vector<Repl>&& repl);
   std::vector<TextToken>& replace(std::vector<TextToken>& text);
   std::vector<TextToken> merge(TextList&& textList);
-  TextList applyFunction(const std::string& name,
+  TextList applyFunction(const PPToken& token,
                          const Macro& macro,
                          std::vector<std::vector<TextToken>>&& args,
                          const std::vector<std::string>& parentMacros);

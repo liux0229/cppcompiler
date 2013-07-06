@@ -38,11 +38,16 @@ SourceReader::SourceReader(const string& source)
   open(source);
 }
 
+SourceReader::SourceReader(istream& in, const string& source)
+{
+  open(in, source);
+}
+
 void SourceReader::open(const string& name)
 {
   PA5FileId id;
   if (PA5GetFileId(name, id)) {
-    cout << format("pragma once check {} {}\n", id.first, id.second);
+    // cout << format("pragma once check {} {}\n", id.first, id.second);
     if (pragmaOnced_.find(id) != pragmaOnced_.end()) {
       // cout << format("ignore {} because it has been pragma onced\n", name);
       return;
@@ -50,10 +55,15 @@ void SourceReader::open(const string& name)
   }
   
   fstream in(name);
+  open(in, name);
+}
+
+void SourceReader::open(istream& in, const string& name)
+{
   ostringstream oss;
   oss << in.rdbuf();
   names_.push_back(name);
-  cout << "push " << name << endl;
+  // cout << "push " << name << endl;
   sources_.push_back(make_pair(oss.str(), 0));
   lines_.push_back(1); 
 }
@@ -70,7 +80,7 @@ string SourceReader::getPathRel(const string& source) const
 
 void SourceReader::include(const string& source)
 {
-  cout << format("request include {}\n", source);
+  // cout << format("request include {}\n", source);
 
   string pathRel = getPathRel(source);
   if (ifstream(pathRel)) {
@@ -88,7 +98,6 @@ bool SourceReader::get(char& c)
          sources_.back().second == sources_.back().first.size()) {
     sources_.pop_back();
 
-    lastName_ = names_.back();
     names_.pop_back();
 
     lines_.pop_back();
@@ -108,11 +117,11 @@ bool SourceReader::get(char& c)
   return true;
 }
 
-void SourceReader::pragmaOnce()
+void SourceReader::pragmaOnce(const string& source)
 {
   PA5FileId id;
-  CHECK(PA5GetFileId(file(), id));
-  cout << format("pragma once {} {}\n", id.first, id.second);
+  CHECK(PA5GetFileId(source, id));
+  // cout << format("pragma once {} {}\n", id.first, id.second);
   pragmaOnced_.insert(id);
 }
 

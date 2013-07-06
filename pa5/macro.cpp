@@ -4,6 +4,7 @@
 #include "PostTokenReceiver.h"
 #include "PPDirective.h"
 #include "BuildEnv.h"
+#include "SourceReader.h"
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -15,14 +16,7 @@ using namespace compiler;
 int main()
 {
   BuildEnv buildEnv;
-	try
-	{
-    using namespace std::placeholders;
-    ostringstream oss;
-		oss << cin.rdbuf();
-
-		string input = oss.str();
-
+	try {
     PostTokenReceiver postTokenReceiver([](const PostToken& token) {
       if (token.getType() != PostTokenType::NewLine) {
         cout << token.toStr() << endl;
@@ -30,26 +24,25 @@ int main()
     });
     PostTokenizer postTokenizer(postTokenReceiver);
 
+    SourceReader sourceReader(cin, "[stdin]");
     PPDirective ppDirective(bind(&PostTokenizer::put, 
                                  &postTokenizer,
-                                 _1),
-                            buildEnv);
+                                 placeholders::_1),
+                            buildEnv,
+                            &sourceReader);
 
-		PPTokenizer ppTokenizer;
+    PPTokenizer ppTokenizer;
     ppTokenizer.sendTo(bind(&PPDirective::put,
-                            &ppDirective,
-                            _1));
+                       &ppDirective,
+                       placeholders::_1));
 
-		for (char c : input)
-		{
-			unsigned char code_unit = c;
-			ppTokenizer.process(code_unit);
-		}
+    for (char c; sourceReader.get(c); )
+    {
+      ppTokenizer.process(static_cast<unsigned char>(c));
+    }
 
-		ppTokenizer.process(EndOfFile);
-	}
-	catch (exception& e)
-	{
+    ppTokenizer.process(EndOfFile);
+	} catch (exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}

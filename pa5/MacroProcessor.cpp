@@ -48,7 +48,7 @@ PPToken mergeToken(const PPToken& a, const PPToken& b)
         token.type != PPTokenType::NewLine) {
       // cout << "received token " << token.dataStrU8() << endl;
       ++tokenCount;
-      merged = token;
+      merged = PPToken(token, a.file, a.line);
     }
   };
 
@@ -195,9 +195,16 @@ MacroProcessor::Macro::getReplTextList(
                     const PredefinedMacros& predefinedMacros) const {
   TextList result;
   if (predefined) {
+    string name = token.dataStrU8();
     PPToken replaced;
-    if (token.replaced) {
-      replaced = *token.replaced;
+    if (name == "__LINE__") {
+      CHECK(token.line >= 1);
+      replaced = PPToken(PPTokenType::PPNumber,
+                         toVector(format("{}", token.line)));
+    } else if (name == "__FILE__") {
+      CHECK(!token.file.empty());
+      replaced = PPToken(PPTokenType::StringLiteral,
+                         stringify(token.file));
     } else {
       replaced = predefinedMacros.get(token.dataStrU8());
     }
@@ -208,7 +215,10 @@ MacroProcessor::Macro::getReplTextList(
     for (auto& repl : bodyList) {
       vector<TextToken> text;
       for (auto& r : repl) {
-        text.push_back(TextToken(r.token, parentMacros));
+        // annotate line and file info
+        text.push_back(
+            TextToken(PPToken(r.token, token.file, token.line), 
+                      parentMacros));
       }
       result.push_back(move(text));
     }
@@ -497,7 +507,7 @@ MacroProcessor::merge(TextList&& textList)
 }
 
 MacroProcessor::TextList
-MacroProcessor::applyFunction(const string& name,
+MacroProcessor::applyFunction(const PPToken& root,
                               const Macro& macro,
                               vector<vector<TextToken>>&& args,
                               const vector<string>& parentMacros) {
@@ -510,7 +520,7 @@ MacroProcessor::applyFunction(const string& name,
     if (nparam != args.size()) {
       Throw("wrong number of args for macro invocation for {}; "
             "{} expected, {} received",
-            name,
+            root.dataStrU8(),
             macro.paramList.size(),
             args.size());
     }
@@ -518,7 +528,7 @@ MacroProcessor::applyFunction(const string& name,
     if (nparam > args.size()) {
       Throw("wrong number of args for macro invocation for {}; "
             ">= {} expected, {} received",
-            name,
+            root.dataStrU8(),
             macro.paramList.size(),
             args.size());
     }
@@ -561,10 +571,15 @@ MacroProcessor::applyFunction(const string& name,
 
         // now substitue the argument
         for (auto& t : argText) {
-          text.push_back(TextToken(t.token, add(t.parentMacros, parentMacros)));
+          // t.parentMacros tracks the parent macros in the inplace replacement
+          text.push_back(
+              TextToken(PPToken(t.token, root.file, root.line), 
+                        add(t.parentMacros, parentMacros)));
         }
       } else {
-        text.push_back(TextToken(r.token, parentMacros));
+        text.push_back(
+            TextToken(PPToken(r.token, root.file, root.line), 
+                      parentMacros));
       }
     } 
     result.push_back(move(text));
@@ -586,6 +601,8 @@ void debug(const vector<MacroProcessor::TextToken>& text)
 }
 
 // TODO: optimize names (mutate in place)
+// taking a TextToken vector is necessary, consider the case ggg(a b c d)
+// where ggg was produced by ##
 vector<MacroProcessor::TextToken>&
 MacroProcessor::replace(vector<TextToken>& text)
 {
@@ -595,7 +612,7 @@ MacroProcessor::replace(vector<TextToken>& text)
   do {
     expanded = false;
     for (auto it = text.begin(); it != text.end(); ++it) {
-      auto& t = it->token;
+      const auto& t = it->token;
       if (!it->canExpand() || !t.isId()) {
         continue;
       }
@@ -664,7 +681,7 @@ MacroProcessor::replace(vector<TextToken>& text)
             }
           }
 
-          auto result = merge(applyFunction(name, 
+          auto result = merge(applyFunction(t, 
                                             macro, 
                                             move(args), 
                                             add(it->parentMacros, name)));

@@ -11,31 +11,6 @@
 using namespace std;
 using namespace compiler;
 
-// For pragma once implementation:
-// system-wide unique file id type `PA5FileId`
-typedef pair<unsigned long int, unsigned long int> PA5FileId;
-
-// bootstrap system call interface, used by PA5GetFileId
-extern "C" long int syscall(long int n, ...) throw ();
-
-// PA5GetFileId returns true iff file found at path `path`.
-// out parameter `out_fileid` is set to file id
-bool PA5GetFileId(const string& path, PA5FileId& out_fileid)
-{
-	struct
-	{
-			unsigned long int dev;
-			unsigned long int ino;
-			long int unused[16];
-	} data;
-
-	int res = syscall(4, path.c_str(), &data);
-
-	out_fileid = make_pair(data.dev, data.ino);
-
-	return res == 0;
-}
-
 // OPTIONAL: Also search `PA5StdIncPaths`
 // on `--stdinc` command-line switch (not by default)
 vector<string> PA5StdIncPaths =

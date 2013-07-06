@@ -190,13 +190,19 @@ string MacroProcessor::Macro::toStr() const {
 
 MacroProcessor::TextList
 MacroProcessor::Macro::getReplTextList(
-                    const string& name,
+                    const PPToken& token,
                     const vector<string>& parentMacros,
                     const PredefinedMacros& predefinedMacros) const {
   TextList result;
   if (predefined) {
+    PPToken replaced;
+    if (token.replaced) {
+      replaced = *token.replaced;
+    } else {
+      replaced = predefinedMacros.get(token.dataStrU8());
+    }
     result.push_back(vector<TextToken>{ 
-                        TextToken(predefinedMacros.get(name), parentMacros)
+                        TextToken(replaced, parentMacros)
                      });
   } else {
     for (auto& repl : bodyList) {
@@ -220,6 +226,8 @@ MacroProcessor::MacroProcessor(const PredefinedMacros& predefinedMacros)
   macros_.insert(make_pair("__CPPGM_AUTHOR__", predefined));
   macros_.insert(make_pair("__DATE__", predefined));
   macros_.insert(make_pair("__TIME__", predefined));
+  macros_.insert(make_pair("__FILE__", predefined));
+  macros_.insert(make_pair("__LINE__", predefined));
 }
 
 size_t MacroProcessor::parseParam(const vector<PPToken>& tokens, 
@@ -600,7 +608,7 @@ MacroProcessor::replace(vector<TextToken>& text)
       auto& macro = itMacro->second;
       if (macro.isObject()) {
         auto result = merge(macro.getReplTextList(
-                              name,
+                              t,
                               add(it->parentMacros, name),
                               predefinedMacros_));
         it = text.erase(it);

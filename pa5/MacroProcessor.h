@@ -75,7 +75,7 @@ private:
     bool isObject() const { return type == Type::Object; }
 
     TextList getReplTextList(
-              const std::string& name,
+              const PPToken& token,
               const std::vector<std::string>& parentMacros,
               const PredefinedMacros& predefinedMacros) const;
 

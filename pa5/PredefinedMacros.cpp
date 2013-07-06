@@ -1,21 +1,9 @@
 #include "PredefinedMacros.h"
+#include "PPDirectiveUtil.h"
 
 namespace compiler {
 
 using namespace std;
-
-namespace {
-vector<int> toVector(const string& s)
-{
-  vector<int> r;
-  r.reserve(s.size());
-  for (char c : s) {
-    r.push_back(static_cast<unsigned char>(c));
-  }
-  return r;
-}
-
-}
 
 PredefinedMacros::PredefinedMacros(BuildEnv buildEnv)
 {
@@ -31,7 +19,7 @@ PredefinedMacros::PredefinedMacros(BuildEnv buildEnv)
   macros_.insert(
       make_pair("__CPPGM_AUTHOR__", 
                 PPToken(PPTokenType::StringLiteral, 
-                        toVector(R"("Xin Rocky Liu")"))));
+                        stringify("Xin Rocky Liu"))));
   macros_.insert(
       make_pair("__DATE__", 
                 PPToken(PPTokenType::StringLiteral, 
@@ -47,8 +35,9 @@ PPToken PredefinedMacros::get(const string& name) const
   auto it = macros_.find(name);
   if (it != macros_.end()) {
     return it->second;
+  } else {
+    CHECK(false);
   }
-  return PPToken {};
 }
 
 }

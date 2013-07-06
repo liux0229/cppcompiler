@@ -4,6 +4,7 @@
 #include "Utf8Encoder.h"
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace compiler {
 
@@ -37,6 +38,24 @@ struct PPToken
     type = _type;
     data.swap(_data);
   }
+  PPToken(const PPToken& rhs) 
+    : type(rhs.type),
+      data(rhs.data) {
+    // make a new copy, optimize later
+    if (rhs.replaced) {
+      replaced.reset(new PPToken(*rhs.replaced));
+    }
+  }
+  PPToken& operator=(const PPToken& rhs) {
+    if (this != &rhs) {
+      type = rhs.type;
+      data = rhs.data;
+      if (rhs.replaced) {
+        replaced.reset(new PPToken(*rhs.replaced));
+      }
+    }
+    return *this;
+  }
   const std::string& typeName() const {
     return PPTokenTypes::Names[static_cast<int>(type)]; 
   }
@@ -53,6 +72,11 @@ struct PPToken
 
   bool isQuotedOrUserDefinedLiteral() const {
     return isQuotedLiteral() || isUserDefined();
+  }
+
+  bool isStringOrUserDefinedLiteral() const {
+    return type == PPTokenType::StringLiteral ||
+           type == PPTokenType::UserDefinedStringLiteral;
   }
 
   bool isWhite() const {
@@ -95,6 +119,10 @@ struct PPToken
 
   PPTokenType type { PPTokenType::Unknown };
   std::vector<int> data;
+
+  // for replacing __FILE_ and __LINE__
+  // optimize later
+  std::unique_ptr<PPToken> replaced;
 };
 
 }

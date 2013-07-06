@@ -1,3 +1,7 @@
+// Refactoring idea:
+// 1. clean up the predefined-macro path (PPDirective directly does the job)
+// 2. Separate out #if handling
+// 3. remove suffix check after post-tokenize a string literal
 #include "PPDirective.h"
 #include "PPDirectiveUtil.h"
 #include "CtrlExprEval.h"
@@ -5,6 +9,7 @@
 #include "PostTokenizer.h"
 #include "SourceReader.h"
 #include "common.h"
+#include <sstream>
 
 namespace compiler {
 
@@ -19,7 +24,46 @@ void checkTrailing(const vector<PPToken>& directive, size_t i) {
           directive[i].dataStrU8());
   }
 }
+
+string postTokenizeToString(const PPToken& token,
+                            const string& target) {
+  if (!token.isStringOrUserDefinedLiteral()) {
+    Throw("string literal expected for {}, {} received", 
+          target,
+          token.dataStrU8());
+  }
+
+  string result;
+  int count = 0;
+  auto receive = [&](const PostToken& token) {
+    if (count++ > 0) {
+      return;
+    }
+    auto& t = dynamic_cast<const PostTokenLiteralBase&>(token);
+    if (t.isUserDefined()) {
+      Throw("Use of user-defined string literal for {}: {}", 
+            target,
+            t.toStr());
+    } else if (t.type != FT_CHAR) {
+      Throw("{} is not a UTF8 string: {}",
+            target,
+            t.toStr());
+    } else {
+      auto& name = dynamic_cast<const PostTokenLiteral<string>&>(t);
+      result = name.data;
+    }
+  };
+  PostTokenReceiver receiver(receive);
+  PostTokenizer postTokenizer(receiver, 
+                              /* noStrCatForNewLine, not significant */
+                              true);
+  postTokenizer.put(token);
+  postTokenizer.put(PPToken(PPTokenType::Eof, {}));
+  
+  return result;
 }
+
+} // anoymous
 
 bool PPDirective::isEnabled(size_t level) const
 {
@@ -208,28 +252,48 @@ void PPDirective::handleInclude(const vector<PPToken>& dirs)
   auto expanded = macroProcessor_.expand(
                     vector<PPToken>(dirs.begin() + 1, dirs.end()));
   size_t i = skipWhite(expanded, 0);
+
+  if (skipWhite(expanded, i + 1) < expanded.size()) {
+    Throw("Trailing token after header-name");
+  }
+
   if (i < expanded.size() && expanded[i].type == PPTokenType::HeaderName) {
     string header = expanded[i].dataStrU8();
     header = header.substr(1, header.size() - 2);
     sourceReader_->include(header);
-  } else if (i < expanded.size() &&
-             expanded[i].isQuotedOrUserDefinedLiteral()) {
+  } else if (i < expanded.size()) {
+    sourceReader_->include(postTokenizeToString(expanded[i],
+                                                "header-name"));
+  } else {
+    Throw("header-name or string-literal expected after #include");
+  }
+}
+
+void PPDirective::handleLine(const vector<PPToken>& dirs)
+{
+  auto expanded = macroProcessor_.expand(
+                    vector<PPToken>(dirs.begin() + 1, dirs.end()));
+  size_t i = skipWhite(expanded, 0);
+  if (i == expanded.size() || expanded[i].type != PPTokenType::PPNumber) {
+    Throw("expect pp-number after #line");
+  }
+  {
     int count = 0;
     auto receive = [&](const PostToken& token) {
       if (count++ > 0) {
         return;
       }
-      auto& t = dynamic_cast<const PostTokenLiteralBase&>(token);
-      if (t.isUserDefined()) {
-        Throw("Use of user-defined string literal for header-name: {}", 
-              t.toStr());
-      } else if (t.type != FT_CHAR) {
-        Throw("Header-name is not a UTF8 string: {}",
-              t.toStr());
-      } else {
-        auto& name = dynamic_cast<const PostTokenLiteral<string>&>(t);
-        sourceReader_->include(name.data);
+      if (token.getType() != PostTokenType::Literal) {
+        Throw("expect literal after #line, got {}", token.toStr());
       }
+      auto& t = dynamic_cast<const PostTokenLiteralBase&>(token);
+      if (!t.isIntegral()) {
+        Throw("expect integer after #line, got {}", token.toStr());
+      }
+      long long number = t.toSigned64();
+      CHECK(number >= 0);
+      // so the next __LINE__ will get number
+      sourceReader_->line() = number - 1; 
     };
     PostTokenReceiver receiver(receive);
     PostTokenizer postTokenizer(receiver, 
@@ -237,9 +301,43 @@ void PPDirective::handleInclude(const vector<PPToken>& dirs)
                                 true);
     postTokenizer.put(expanded[i]);
     postTokenizer.put(PPToken(PPTokenType::Eof, {}));
-  } else {
-    Throw("header-name or string-literal expected after #include");
   }
+  i = skipWhite(expanded, i + 1);
+  if (i < expanded.size()) {
+    if (skipWhite(expanded, i + 1) < expanded.size()) {
+      Throw("Trailing token after #line number file");
+    }
+    sourceReader_->file() = postTokenizeToString(expanded[i], "file"); 
+  }
+}
+
+void PPDirective::handleError(const vector<PPToken>& dirs)
+{
+  ostringstream oss;
+  for (size_t i = 1; i < dirs.size(); ++i) {
+    oss << (dirs[i].isWhite() ? " " : dirs[i].dataStrU8());
+  }
+  Throw("#error:{}", oss.str());
+}
+
+void PPDirective::handlePragma(const vector<PPToken>& dirs)
+{
+  vector<PPToken> tokens;
+  for (size_t i = 1; i < dirs.size(); ++i) {
+    if (!dirs[i].isWhite()) {
+      tokens.push_back(dirs[i]);
+    }
+  }
+  if (tokens.size() != 1 || !isIdentifier(tokens[0], "once")) {
+    return;
+  }
+
+  handlePragmaOnce();
+}
+
+void PPDirective::handlePragmaOnce()
+{
+  sourceReader_->pragmaOnce();
 }
 
 void PPDirective::handleDirective()
@@ -281,6 +379,12 @@ void PPDirective::handleDirective()
       macroProcessor_.def(directive);
     } else if (dir == "include") {
       handleInclude(directive);
+    } else if (dir == "line") {
+      handleLine(directive);
+    } else if (dir == "error") {
+      handleError(directive);
+    } else if (dir == "pragma") {
+      handlePragma(directive);
     } else {
       Throw("bad preprocessing directive {}", dir);
     }
@@ -299,13 +403,61 @@ void PPDirective::handleExpand()
   vector<PPToken> expanded = macroProcessor_.expand(text_);
   text_.clear();
 
-  for (auto& token : expanded) {
-    send_(token);
+  for (size_t i = 0; i < expanded.size(); ++i) {
+    auto& token = expanded[i];
+    if (!isIdentifier(token, "_Pragma")) {
+      send_(token);
+    } else {
+      size_t j = i + 1;
+      for (; j < expanded.size() && expanded[j].isWhite(); ++j) { }
+      if (j == expanded.size() || !isLParen(expanded[j])) {
+        Throw("_Pragma must be followed by (");
+      }
+      for (++j; j < expanded.size() && expanded[j].isWhite(); ++j) { }
+      if (j == expanded.size() || 
+          expanded[j].type != PPTokenType::StringLiteral) {
+        Throw("_Pragma( must be followed by a string-literal");
+      }
+      string literal = expanded[j].dataStrU8();
+      for (++j; j < expanded.size() && expanded[j].isWhite(); ++j) { }
+      if (j == expanded.size() || !isRParen(expanded[j])) {
+        Throw("_Pragma not closed by )");
+      }
+      i = j;
+
+      // assume the only pragma we support is 'once' so we don't need to
+      // escape or pre-tokenize
+      string type = literal.substr(literal.find('"') + 1);
+      cout << "type=" << type << endl;
+      CHECK(type.back() == '"');
+      type.pop_back();
+      if (type == "once") {
+        handlePragmaOnce();
+      }
+    }
   }
 }
 
-void PPDirective::put(const PPToken& token)
+void PPDirective::put(const PPToken& t)
 {
+  // Directly replace certain predefined macros
+  PPToken replaced, replacedWrapper;
+  bool isReplaced { false };
+  if (isIdentifier(t, "__FILE__")) {
+    replaced = PPToken(PPTokenType::StringLiteral,
+                       stringify(sourceReader_->file()));
+    isReplaced = true; 
+  } else if (isIdentifier(t, "__LINE__")) {
+    replaced = PPToken(PPTokenType::PPNumber,
+                       toVector(format("{}", sourceReader_->line())));
+    isReplaced = true; 
+  }
+  if (isReplaced) {
+    replacedWrapper = t;
+    replacedWrapper.replaced = make_unique<PPToken>(replaced);
+  }
+  const PPToken& token = isReplaced ? replacedWrapper : t;
+
   bool isText = true;
   if (token.type == PPTokenType::Eof) {
     if (!ifBlock_.empty()) {

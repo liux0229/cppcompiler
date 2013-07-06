@@ -39,4 +39,19 @@ size_t skipWhite(const std::vector<PPToken>& tokens, size_t i) {
   return i;
 }
 
+std::vector<int> toVector(const std::string& s)
+{
+  std::vector<int> r;
+  r.reserve(s.size());
+  for (char c : s) {
+    r.push_back(static_cast<unsigned char>(c));
+  }
+  return r;
+}
+
+std::vector<int> stringify(const std::string& s)
+{
+  return toVector("\"" + s + "\"");
+}
+
 } }

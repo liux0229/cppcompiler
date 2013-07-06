@@ -1,7 +1,3 @@
-/* TODO:
- * 1. Space truncation of arguments (e.g. do we need it at the arg parse
-      location
- */
 #include "MacroProcessor.h"
 #include "PPDirectiveUtil.h"
 #include "PPTokenizer.h"

@@ -1,7 +1,3 @@
-// Refactoring idea:
-// 1. clean up the predefined-macro path (PPDirective directly does the job)
-// 2. Separate out #if handling
-// 3. remove suffix check after post-tokenize a string literal
 #include "PPDirective.h"
 #include "PPDirectiveUtil.h"
 #include "CtrlExprEval.h"

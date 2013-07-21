@@ -38,6 +38,8 @@ struct PostToken
   virtual PostTokenType getType() const = 0;
   virtual std::unique_ptr<PostToken> copy() const = 0;
 
+  bool isSimple() const { return getType() == PostTokenType::Simple; }
+
   std::string source;
 };
 
@@ -92,7 +94,7 @@ struct PostTokenSimple : public PostToken
       type(_type) { }
   std::string getName() const override { return "simple"; }
   std::string getDataStr() const override {
-    return format(" {}", TokenTypeToStringMap.at(type));
+    return format(" {}", getSimpleTokenTypeName(type));
   }
   PostTokenType getType() const override { return PostTokenType::Simple; }
   std::unique_ptr<PostToken> copy() const override {

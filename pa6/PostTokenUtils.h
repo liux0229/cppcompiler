@@ -14,6 +14,8 @@
 
 namespace compiler {
 
+namespace {
+
 // See 3.9.1: Fundamental Types
 enum EFundamentalType
 {
@@ -232,6 +234,10 @@ enum ETokenType
 	OP_COMMA,
 	OP_ARROWSTAR,
 	OP_ARROW,
+
+  // helper tokens for parsing
+  OP_RSHIFT_1,
+  OP_RSHIFT_2,
 };
 
 // StringToETokenTypeMap map of `simple` `preprocessing-tokens` to ETokenType
@@ -505,6 +511,12 @@ const std::map<ETokenType, std::string> TokenTypeToStringMap =
 	{OP_ARROWSTAR, "OP_ARROWSTAR"},
 	{OP_ARROW, "OP_ARROW"}
 };
+
+std::string getSimpleTokenTypeName(ETokenType type) {
+  return TokenTypeToStringMap.at(type); 
+}
+
+}
 
 namespace {
 

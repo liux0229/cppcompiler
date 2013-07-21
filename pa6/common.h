@@ -11,6 +11,8 @@ namespace compiler {
 
 #define CHECK(f) assert(f)
 
+#define MEM_FUNC(obj, ptr) ((obj).*ptr)
+
 namespace {
 
 // EndOfFile: synthetic "character" to represent the end of source file

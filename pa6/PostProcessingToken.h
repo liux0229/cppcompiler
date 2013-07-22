@@ -33,12 +33,20 @@ struct PostToken
     return format("{} {}{}", getName(), source, getDataStr());
   }
 
+  // Simple form which is most representative of this PostToken
+  // e.g. used for parser output
+  virtual std::string toSimpleStr() const {
+    return toStr();
+  }
+
   virtual std::string getName() const = 0;
   virtual std::string getDataStr() const { return ""; }
   virtual PostTokenType getType() const = 0;
   virtual std::unique_ptr<PostToken> copy() const = 0;
 
+  // utility functions
   bool isSimple() const { return getType() == PostTokenType::Simple; }
+  bool isIdentifier() const { return getType() == PostTokenType::Identifier; }
 
   std::string source;
 };
@@ -81,6 +89,7 @@ struct PostTokenIdentifier : public PostToken
 {
   PostTokenIdentifier(const std::string& _source) : PostToken(_source) { }
   std::string getName() const override { return "identifier"; }
+  std::string toSimpleStr() const override { return source; }
   PostTokenType getType() const override { return PostTokenType::Identifier; }
   std::unique_ptr<PostToken> copy() const override {
     return make_unique<PostTokenIdentifier>(*this);
@@ -93,6 +102,9 @@ struct PostTokenSimple : public PostToken
     : PostToken(_source),
       type(_type) { }
   std::string getName() const override { return "simple"; }
+  std::string toSimpleStr() const override { 
+    return getSimpleTokenTypeName(type);
+  }
   std::string getDataStr() const override {
     return format(" {}", getSimpleTokenTypeName(type));
   }

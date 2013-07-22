@@ -10,6 +10,12 @@
 namespace compiler {
 
 #define CHECK(f) assert(f)
+#define MCHECK(f, msg) do {\
+                         if (!(f)) {\
+                           std::cerr << (msg).c_str() << std::endl;\
+                           assert(f);\
+                         }\
+                       } while (false)
 
 #define MEM_FUNC(obj, ptr) ((obj).*ptr)
 

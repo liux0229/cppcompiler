@@ -65,6 +65,7 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(ExclusiveOrExpression, exclusive-orExpression),
   Z(AndExpression, and-expression),
   Z(EqualityExpression, equality-expression),
+  Z(EqualityOperator, equality-operator),
   Z(RelationalExpression, relational-expression),
   Z(RelationalOperator, relational-operator),
   Z(ShiftExpression, shift-expression),

@@ -45,6 +45,7 @@ bool DoRecog(BuildEnv env, const string& source)
         if (static_cast<const PostTokenSimple&>(token).type == OP_RSHIFT) {
           tokens.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_1));
           tokens.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_2));
+          return;
         }
       }
       tokens.push_back(token.copy());

@@ -21,7 +21,10 @@ struct ASTNode
       token(nullptr),
       children(std::move(_children)) { 
     for (auto& c : children) {
-      CHECK(c);
+      MCHECK(
+         c,
+         format("null child encountered while creating {}",
+                getASTTypeName(type)));
     }
   }
 

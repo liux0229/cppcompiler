@@ -6,11 +6,18 @@
 //    1) we could report the failure happens when try to parse a certain NT
 //    2) Display the line and the relevant position
 //       ERROR: expect OP_RPAREN; got: simple sizeof KW_SIZEOF
+// PLAN: fix remaining bugs
 #include "Parser.h"
 #include <memory>
 #include <vector>
 #include <functional>
 #include <sstream>
+
+#define LOG() cout << format("[{}] index={} [{}]\n", \
+                             __FUNCTION__, index_, cur().toStr());
+
+#define expect(type) expectFromFunc(type, __FUNCTION__)
+#define BAD_EXPECT(msg) complainExpect(msg, __FUNCTION__)
 
 namespace compiler {
 
@@ -19,7 +26,7 @@ using namespace std;
 // TODO: this function can be optimized by using a single ostringstream
 // as the "environment"
 string ASTNode::toStr(string indent, bool collapse) const {
-  const char* indentInc = "  ";
+  const char* indentInc = "|  ";
   ostringstream oss;
   if (isTerminal) {
     oss << indent;
@@ -49,7 +56,7 @@ public:
     : tokens_(tokens) { }
   AST process() {
     AST root = constantExpression();
-    cout << root->toStr(true /* collapse */) << endl;
+    cout << root->toStr(false /* collapse */) << endl;
     return root;
   }
 
@@ -65,17 +72,17 @@ private:
   AST conditionalExpression() {
     vector<AST> c;
     c.push_back(logicalOrExpression());
-    if (isSimple(OP_QMARK)) {
-      qmark(c);
-    } 
-    return get(ASTType::ConditionalExpression, move(c));
+    return finishConditionalExpression(c);
   }
 
-  void qmark(vector<AST>& c) {
-    c.push_back(getAdv());
-    c.push_back(expression());
-    c.push_back(expect(OP_COLON));
-    c.push_back(assignmentExpression());
+  AST finishConditionalExpression(vector<AST>& c) {
+    if (isSimple(OP_QMARK)) {
+      c.push_back(expect(OP_QMARK));
+      c.push_back(expression());
+      c.push_back(expect(OP_COLON));
+      c.push_back(assignmentExpression());
+    }
+    return get(ASTType::ConditionalExpression, move(c));
   }
 
   AST logicalOrExpression() {
@@ -102,33 +109,29 @@ private:
     }
     vector<AST> c;
     c.push_back(logicalAndExpression());
-    if (isSimple(OP_QMARK)) {
-      qmark(c);
-    } else {
-      c.push_back(assignmentOperator());
+    if (isAssignmentOperator()) {
+      c.push_back(getAdv(ASTType::AssignmentOperator));
       c.push_back(initializerClause());
+      return get(ASTType::AssignmentExpression, move(c));
+    } else {
+      return finishConditionalExpression(c);
     }
-    return get(ASTType::AssignmentExpression, move(c));
   }
 
-  AST assignmentOperator() {
-    if (isSimple({
-          OP_ASS,
-          OP_STARASS,
-          OP_DIVASS,
-          OP_MODASS,
-          OP_PLUSASS,
-          OP_MINUSASS,
-          OP_RSHIFTASS,
-          OP_LSHIFTASS,
-          OP_BANDASS,
-          OP_XORASS,
-          OP_BORASS
-        })) {
-      return getAdv(ASTType::AssignmentOperator); 
-    }
-    complainExpect("assignment op");
-    return nullptr;
+  bool isAssignmentOperator() const {
+    return isSimple({
+              OP_ASS,
+              OP_STARASS,
+              OP_DIVASS,
+              OP_MODASS,
+              OP_PLUSASS,
+              OP_MINUSASS,
+              OP_RSHIFTASS,
+              OP_LSHIFTASS,
+              OP_BANDASS,
+              OP_XORASS,
+              OP_BORASS
+           });
   }
 
   AST inclusiveOrExpression() {
@@ -273,7 +276,7 @@ private:
         return deleteExpression(move(colon2));
       } else {
         // TODO: these kinds of messages expose internal implementations
-        complainExpect("KW_NEW or KW_DELETE");
+        BAD_EXPECT("KW_NEW or KW_DELETE");
         return nullptr;
       }
     } else if (isSimple(KW_NEW)) {
@@ -369,21 +372,22 @@ private:
   }
   void adv() { ++index_; }
 
-  void complainExpect(string&& expected) const {
-    Throw("expect {}; got: {}", 
+  void complainExpect(string&& expected, const char* func) const {
+    Throw("[{}] expect {}; got: {}", 
+          func,
           move(expected),
           cur().toStr());
   }
 
-  AST expect(ETokenType type) {
+  AST expectFromFunc(ETokenType type, const char* func) {
     if (!isSimple(type)) {
-      complainExpect(getSimpleTokenTypeName(type));
+      complainExpect(getSimpleTokenTypeName(type), func);
     }
     return getAdv();
   }
   AST expectIdentifier() {
     if (!isIdentifier()) {
-      complainExpect("identifier");
+      BAD_EXPECT("identifier");
     }
     return getAdv(ASTType::Identifier);
   }

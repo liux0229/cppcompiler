@@ -509,7 +509,10 @@ const std::map<ETokenType, std::string> TokenTypeToStringMap =
 	{OP_DEC, "OP_DEC"},
 	{OP_COMMA, "OP_COMMA"},
 	{OP_ARROWSTAR, "OP_ARROWSTAR"},
-	{OP_ARROW, "OP_ARROW"}
+	{OP_ARROW, "OP_ARROW"},
+
+  {OP_RSHIFT_1, "OP_RSHIFT_1"},
+  {OP_RSHIFT_2, "OP_RSHIFT_2"}
 };
 
 std::string getSimpleTokenTypeName(ETokenType type) {

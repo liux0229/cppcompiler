@@ -47,6 +47,7 @@ struct PostToken
   // utility functions
   bool isSimple() const { return getType() == PostTokenType::Simple; }
   bool isIdentifier() const { return getType() == PostTokenType::Identifier; }
+  bool isNewLine() const { return getType() == PostTokenType::NewLine; }
 
   std::string source;
 };

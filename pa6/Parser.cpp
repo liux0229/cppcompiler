@@ -6,7 +6,7 @@
 //    1) we could report the failure happens when try to parse a certain NT
 //    2) Display the line and the relevant position
 //       ERROR: expect OP_RPAREN; got: simple sizeof KW_SIZEOF
-// PLAN: fix remaining bugs
+// 5. Build the tracing functionality (infra support)
 #include "Parser.h"
 #include <memory>
 #include <vector>
@@ -56,7 +56,9 @@ public:
     : tokens_(tokens) { }
   AST process() {
     AST root = constantExpression();
-    cout << root->toStr(false /* collapse */) << endl;
+    cout << root->toStr(true /* collapse */) << endl;
+    // root = constantExpression();
+    // cout << root->toStr(false /* collapse */) << endl;
     return root;
   }
 
@@ -86,7 +88,7 @@ private:
   }
 
   AST logicalOrExpression() {
-    return conditionalRepeat(ASTType::LogicalAndExpression, 
+    return conditionalRepeat(ASTType::LogicalOrExpression, 
                              &ParserImp::logicalAndExpression, 
                              OP_LOR);
   }
@@ -108,12 +110,13 @@ private:
       return throwExpression();
     }
     vector<AST> c;
-    c.push_back(logicalAndExpression());
+    c.push_back(logicalOrExpression());
     if (isAssignmentOperator()) {
       c.push_back(getAdv(ASTType::AssignmentOperator));
       c.push_back(initializerClause());
       return get(ASTType::AssignmentExpression, move(c));
     } else {
+      // the assignmentExpression is swallowed, which is fine
       return finishConditionalExpression(c);
     }
   }
@@ -339,7 +342,8 @@ private:
    * ====================
    */
   AST initializerClause() {
-    return nullptr;
+    // TODO: this is not complete, and move this before
+    return assignmentExpression();
   }
 
   /* ==================

@@ -41,12 +41,15 @@ bool DoRecog(BuildEnv env, const string& source)
   try {
     vector<UToken> tokens;
     Preprocessor processor(env, source, [&tokens](const PostToken& token) {
+      // TODO: consider moving this transformation stage to Parser
       if (token.isSimple()) {
         if (static_cast<const PostTokenSimple&>(token).type == OP_RSHIFT) {
           tokens.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_1));
           tokens.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_2));
           return;
         }
+      } else if (token.isNewLine()) {
+        return;
       }
       tokens.push_back(token.copy());
     });

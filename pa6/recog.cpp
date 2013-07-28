@@ -36,7 +36,7 @@ bool PA6_IsNamespaceName(const string& identifier)
 	return identifier.find('N') != string::npos;
 }
 
-bool DoRecog(BuildEnv env, const string& source)
+bool DoRecog(BuildEnv env, const string& source, bool isTrace)
 {
   try {
     vector<UToken> tokens;
@@ -55,7 +55,7 @@ bool DoRecog(BuildEnv env, const string& source)
     });
     processor.process();
 
-    Parser(tokens).process();
+    Parser(tokens, isTrace).process();
     return true;
   } catch (const exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
@@ -73,6 +73,13 @@ int main(int argc, char** argv)
 		for (int i = 1; i < argc; i++)
 			args.emplace_back(argv[i]);
 
+    auto itTrace = find(args.begin(), args.end(), "--trace");
+    bool isTrace = false;
+    if (itTrace != args.end()) {
+      isTrace = true;
+      args.erase(itTrace);
+    }
+
 		if (args.size() < 3 || args[0] != "-o")
 			throw logic_error("invalid usage");
 
@@ -86,7 +93,7 @@ int main(int argc, char** argv)
 		for (size_t i = 0; i < nsrcfiles; i++)
 		{
 			string srcFile = args[i+2];
-      bool success = DoRecog(env, srcFile);
+      bool success = DoRecog(env, srcFile, isTrace);
       out << format("{} {}\n", srcFile, (success ? "OK" : "BAD"));
 		}
 	}

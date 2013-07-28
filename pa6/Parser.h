@@ -42,11 +42,13 @@ struct ASTNode
 class Parser
 {
 public:
-  Parser(const std::vector<UToken>& tokens)
-    : tokens_(tokens) { }
+  Parser(const std::vector<UToken>& tokens, bool isTrace)
+    : tokens_(tokens),
+      isTrace_(isTrace) { }
   AST process();
 private:
   const std::vector<UToken>& tokens_;
+  const bool isTrace_;
 };
 
 }

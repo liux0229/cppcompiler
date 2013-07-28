@@ -17,7 +17,7 @@ namespace compiler {
                          }\
                        } while (false)
 
-#define MEM_FUNC(obj, ptr) ((obj).*ptr)
+#define CALL_MEM_FUNC(obj, ptr) ((obj).*ptr)
 
 namespace {
 

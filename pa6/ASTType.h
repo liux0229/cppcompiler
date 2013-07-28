@@ -47,6 +47,9 @@ enum class ASTType
   DeleteEXpression,
 
   InitializerClause,
+  BracedInitList,
+  InitializerList,
+  InitializerClauseDots,
 
   ThrowExpression,
 };
@@ -90,6 +93,9 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(DeleteEXpression, delete-eXpression),
 
   Z(InitializerClause, initializer-clause),
+  Z(BracedInitList, braced-init-list),
+  Z(InitializerList, initializer-list),
+  Z(InitializerClauseDots, initializer-clause-dots),
 
   Z(ThrowExpression, throw-expression),
 };

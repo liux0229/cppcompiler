@@ -6,7 +6,7 @@
 //    1) we could report the failure happens when try to parse a certain NT
 //    2) Display the line and the relevant position
 //       ERROR: expect OP_RPAREN; got: simple sizeof KW_SIZEOF
-// 5. Build the tracing functionality (infra support)
+// 5. complete id-expression
 #include "Parser.h"
 #include <memory>
 #include <vector>
@@ -227,12 +227,16 @@ private:
   AST castExpression() {
     if (isSimple(OP_LPAREN)) {
       VAST c;
-      c.push_back(TR(castOperator));
-      c.push_back(TR(castExpression));
-      return get(ASTType::CastExpression, move(c));
-    } else {
-      return TR(unaryExpression);
+      AST castOp = TR(castOperator);
+      if (castOp) {
+        c.push_back(move(castOp));
+        c.push_back(TR(castExpression));
+        return get(ASTType::CastExpression, move(c));
+      } // else failed to parse castOperator
+        // try to parse unaryExpression instead
     }
+
+    return TR(unaryExpression);
   }
 
   AST typeIdInParen(ASTType type) {
@@ -244,7 +248,14 @@ private:
   }
 
   AST castOperator() {
-    return typeIdInParen(ASTType::CastOperator);
+    size_t pos = curPos();
+    try {
+      return typeIdInParen(ASTType::CastOperator);
+    } catch (const CompilerException&) {
+      // TODO: consider possible ways to optimize this
+      reset(pos);
+      return nullptr;
+    }
   }
 
   AST unaryExpression() {
@@ -301,7 +312,39 @@ private:
   }
 
   AST postfixExpression() {
-    return nullptr;
+    VAST c;
+    c.push_back(TR(postfixRoot));
+    return get(ASTType::PostfixExpression, move(c));
+  }
+
+  AST postfixRoot() {
+    VAST c;
+    c.push_back(TR(primaryExpression));
+    return get(ASTType::PostfixRoot, move(c));
+  }
+
+  AST primaryExpression() {
+    VAST c;
+    if (isSimple(KW_TRUE)) {
+      c.push_back(getAdv());
+    } else if (isSimple(KW_FALSE)) {
+      c.push_back(getAdv());
+    } else if (isSimple(KW_NULLPTR)) {
+      c.push_back(getAdv());
+    } else if (isSimple(KW_THIS)) {
+      c.push_back(getAdv());
+    } else if (isLiteral()) {
+      c.push_back(getAdv());
+    } else if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      c.push_back(TR(expression));
+      c.push_back(expect(OP_RPAREN));
+    } else if (isSimple(OP_LSQUARE)) {
+      c.push_back(TR(lambdaExpression));
+    } else {
+      c.push_back(TR(idExpression));
+    }
+    return get(ASTType::PrimaryExpression, move(c));
   }
 
   AST noExceptExpression() {
@@ -331,6 +374,22 @@ private:
    * =============
    */
   AST typeId() {
+    throw CompilerException("typeId not implemented");
+  }
+
+  /* ===============
+   *  id expression
+   * ===============
+   */
+  AST idExpression() {
+    return nullptr;
+  }
+
+  /* ===================
+   *  lambda expression
+   * ===================
+   */
+  AST lambdaExpression() {
     return nullptr;
   }
 
@@ -431,6 +490,11 @@ private:
   const PostToken& cur() const {
     return *tokens_[index_];
   }
+  size_t curPos() const {
+    return index_;
+  }
+  void reset(size_t pos) { index_ = pos; }
+
   // We rarely need to look ahead 2 chars
   // but in certain cases we do
   const PostToken& next() const {
@@ -469,6 +533,9 @@ private:
 
   bool isIdentifier() const {
     return cur().isIdentifier();
+  }
+  bool isLiteral() const {
+    return cur().isLiteral();
   }
   bool isSimple(ETokenType type) const {
     if (!cur().isSimple()) {

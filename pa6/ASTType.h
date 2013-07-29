@@ -39,7 +39,9 @@ enum class ASTType
   TypeIdInParen, // helper non-terminal
   UnaryOperator,
   PostfixExpression,
+  PostfixRoot,
   NoExceptExpression,
+  PrimaryExpression,
 
   TypeId,
 
@@ -85,7 +87,9 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(TypeIdInParen, type-id-in-paren),
   Z(UnaryOperator, unary-operator),
   Z(PostfixExpression, postfix-expression),
+  Z(PostfixRoot, postfix-root),
   Z(NoExceptExpression, no-except-expression),
+  Z(PrimaryExpression, primary-expression),
 
   Z(TypeId, type-id),
 

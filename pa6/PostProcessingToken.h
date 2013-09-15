@@ -49,6 +49,11 @@ struct PostToken
   bool isIdentifier() const { return getType() == PostTokenType::Identifier; }
   bool isNewLine() const { return getType() == PostTokenType::NewLine; }
   bool isLiteral() const { return getType() == PostTokenType::Literal; }
+  bool isEmptyStr() const {
+    // isLiteral check should be redundant, but for clarity
+    return isLiteral() && 
+           source == "\"\"";
+  }
 
   std::string source;
 };

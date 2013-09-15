@@ -59,8 +59,36 @@ enum class ASTType
   UnqualifiedId,
   QualifiedId,
   DecltypeSpecifier,
+  CloseAngleBracket,
+  TemplateArgumentList,
+  TemplateArgumentDots,
+  TemplateArgument,
+  OperatorFunctionId,
+  LiteralOperatorId,
+  ConversionFunctionId,
+  ConversionTypeId,
 
+  TypeSpecifierSeq,
+  TypeSpecifier,
+  EnumSpecifier,
+  EnumHead,
+  EnumBase,
+  EnumKey,
+  EnumeratorList,
+  EnumeratorDefinition,
+  NestedNameSpecifier,
+  NestedNameSpecifierRoot,
+  NestedNameSpecifierSuffix,
+
+  TypeName,
   ClassName,
+  EnumName,
+  TypedefName,
+  SimpleTemplateId,
+  NamespaceName,
+
+  /* ===
+     === */
 };
 
 #define Z(lhs, rhs) { ASTType::lhs, #rhs }
@@ -114,8 +142,33 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(UnqualifiedId, unqualified-id),
   Z(QualifiedId, qualified-id),
   Z(DecltypeSpecifier, decltype-specifier),
+  Z(CloseAngleBracket, close-angle-bracket),
+  Z(TemplateArgumentList, template-argument-list),
+  Z(TemplateArgumentDots, template-argument-dots),
+  Z(TemplateArgument, template-argument),
+  Z(OperatorFunctionId, operator-function-id),
+  Z(LiteralOperatorId, literal-operator-id),
+  Z(ConversionFunctionId, conversion-function-id),
+  Z(ConversionTypeId, conversion-type-id),
 
+  Z(TypeSpecifierSeq, type-specifier-seq),
+  Z(TypeSpecifier, type-specifier),
+  Z(EnumSpecifier, enum-specifier),
+  Z(EnumHead, enum-head),
+  Z(EnumBase, enum-base),
+  Z(EnumKey, enum-key),
+  Z(EnumeratorList, enumerator-list),
+  Z(EnumeratorDefinition, enumerator-definition),
+  Z(NestedNameSpecifier, nestedName-specifier),
+  Z(NestedNameSpecifierRoot, nested-name-specifier-root),
+  Z(NestedNameSpecifierSuffix, nested-name-specifier-suffix),
+
+  Z(TypeName, type-name),
   Z(ClassName, class-name),
+  Z(EnumName, enum-name),
+  Z(TypedefName, typedef-name),
+  Z(SimpleTemplateId, simple-template-id),
+  Z(NamespaceName, namespace-name),
 };
 #undef Z
 

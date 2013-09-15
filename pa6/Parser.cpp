@@ -13,6 +13,7 @@
 #include <vector>
 #include <functional>
 #include <sstream>
+#include <map>
 
 #define LOG() cout << format("[{}] index={} [{}]\n", \
                              __FUNCTION__, index_, cur().toStr());
@@ -24,6 +25,8 @@
 #define TR(func) tracedCall(&ParserImp::func, #func)
 #define TRF(func) ([this]() -> AST \
                    { return tracedCall(&ParserImp::func, #func); })
+// backtracked call - can be later optimized away by using FIRST and FOLLOW
+#define BT(func) backtrack(&ParserImp::func, #func)
 
 namespace compiler {
 
@@ -228,7 +231,10 @@ private:
   AST castExpression() {
     if (isSimple(OP_LPAREN)) {
       VAST c;
-      AST castOp = TR(castOperator);
+      // TODO: consider possible ways to optimize this
+      // the reason we use backtrack here is for the cases how
+      // (Class * Class) is handled
+      AST castOp = BT(castOperator);
       if (castOp) {
         c.push_back(move(castOp));
         c.push_back(TR(castExpression));
@@ -249,16 +255,7 @@ private:
   }
 
   AST castOperator() {
-    size_t pos = curPos();
-    try {
-      return typeIdInParen(ASTType::CastOperator);
-    } catch (const CompilerException&) {
-      // TODO: consider possible ways to optimize this
-      // the reason we use backtrack here is for the cases how
-      // (Class * Class) is handled
-      reset(pos);
-      return nullptr;
-    }
+    return typeIdInParen(ASTType::CastOperator);
   }
 
   AST unaryExpression() {
@@ -281,8 +278,11 @@ private:
       c.push_back(typeIdInParen(ASTType::TypeIdInParen));
       return get(ASTType::UnaryExpression, move(c));
     } else if (isUnaryOperator()) {
+      // TODO: seems to be ambiguous with regard to 
+      // id-expression (~class_name)
+      // need to resolve this
       c.push_back(getAdv(ASTType::UnaryOperator));
-      c.push_back(TR(unaryExpression));
+      c.push_back(TR(castExpression));
       return get(ASTType::UnaryExpression, move(c));
     } else if (isSimple(KW_NOEXCEPT)) {
       return TR(noExceptExpression);
@@ -387,11 +387,11 @@ private:
   AST idExpression() {
     // TODO: make the parsing more effective
     VAST c;
-    try {
-      c.push_back(TR(qualifiedId));
-    } catch (const CompilerException&) {
-      c.push_back(TR(unqualifiedId));
+    auto node = BT(qualifiedId);
+    if (!node) {
+      node = TR(unqualifiedId);
     }
+    c.push_back(move(node));
     return get(ASTType::IdExpression, move(c));
   }
 
@@ -399,6 +399,13 @@ private:
     VAST c;
     if (isIdentifier()) {
       c.push_back(getAdv(ASTType::Identifier));
+    } else if (isSimple(KW_OPERATOR)) {
+      // almost as efficient as checking FIRST, except for the exception catch
+      AST node;
+      (node = BT(literalOperatorId)) ||
+      (node = BT(operatorFunctionId)) ||
+      (node = TR(conversionFunctionId));
+      c.push_back(move(node));
     } else if (isSimple(OP_COMPL)) {
       c.push_back(getAdv());
       if (isSimple(KW_DECLTYPE)) {
@@ -408,6 +415,263 @@ private:
       }
     }
     return get(ASTType::UnqualifiedId, move(c));
+  }
+
+  AST operatorFunctionId() {
+    VAST c;
+    c.push_back(expect(KW_OPERATOR));
+
+    auto parseDouble = [this, &c](const vector<ETokenType>& m) -> bool {
+      if (isSimple(m[0])) {
+        c.push_back(getAdv());
+        c.push_back(expect(m[1]));
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    // need to parse non-singles first to disambiguate
+    if (isSimple({ KW_NEW, KW_DELETE })) {
+      c.push_back(getAdv());
+      parseDouble({ OP_LSQUARE, OP_RSQUARE });
+    } else {
+      bool ok = parseDouble({ OP_RSHIFT_1, OP_RSHIFT_2 }) ||
+                parseDouble({ OP_LSQUARE, OP_RSQUARE }) ||
+                parseDouble({ OP_LPAREN, OP_RPAREN });
+      if (!ok) {
+        static vector<ETokenType> singles { 
+          OP_PLUS,
+          OP_MINUS,
+          OP_STAR,
+          OP_DIV,
+          OP_MOD,
+          OP_XOR,
+          OP_AMP,
+          OP_BOR,
+          OP_COMPL,
+          OP_LNOT,
+          OP_ASS,
+          OP_LT,
+          OP_GT,
+          OP_PLUSASS,
+          OP_MINUSASS,
+          OP_STARASS,
+          OP_DIVASS,
+          OP_MODASS,
+          OP_XORASS,
+          OP_BANDASS,
+          OP_BORASS,
+          OP_LSHIFT,
+          OP_RSHIFTASS ,
+          OP_LSHIFTASS,
+          OP_EQ,
+          OP_NE,
+          OP_LE,
+          OP_GE,
+          OP_LAND,
+          OP_LOR,
+          OP_INC,
+          OP_DEC,
+          OP_COMMA,
+          OP_ARROWSTAR,
+          OP_ARROW
+        };
+        if (isSimple(singles)) {
+          c.push_back(getAdv());
+        } else {
+          BAD_EXPECT("operator");
+        }
+      }
+    }
+
+    return get(ASTType::OperatorFunctionId, move(c));
+  }
+
+  AST literalOperatorId() {
+    VAST c;
+    c.push_back(expect(KW_OPERATOR));
+    if (!isEmptyStr()) {
+      BAD_EXPECT("empty str");
+    }
+    c.push_back(getAdv());
+    c.push_back(expectIdentifier());
+    return get(ASTType::LiteralOperatorId, move(c));
+  }
+
+  AST conversionFunctionId() {
+    VAST c;
+    c.push_back(expect(KW_OPERATOR));
+    c.push_back(TR(conversionTypeId));
+    return get(ASTType::ConversionFunctionId, move(c));
+  }
+
+  AST conversionTypeId() {
+    VAST c;
+    c.push_back(TR(typeSpecifierSeq));
+    AST node;
+    while (node = BT(ptrOperator)) {
+      c.push_back(move(node));
+    }
+    return get(ASTType::ConversionTypeId, move(c));
+  }
+
+  AST typeSpecifierSeq() {
+    VAST c;
+    c.push_back(TR(typeSpecifier));
+    AST node;
+    while (node = BT(typeSpecifier)) {
+      c.push_back(move(node));
+    }
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    return get(ASTType::TypeSpecifierSeq, move(c));
+  }
+
+  AST typeSpecifier() {
+    AST node;
+    (node = BT(enumSpecifier)) ||
+    (node = BT(classSpecifier)) ||
+    (node = TR(trailingTypeSpecifier));
+    VAST c;
+    c.push_back(move(node));
+    return get(ASTType::TypeSpecifier, move(c));
+  }
+
+  AST enumSpecifier() {
+    VAST c;
+    c.push_back(TR(enumHead));
+    c.push_back(expect(OP_LBRACE));
+    if (!isSimple(OP_RBRACE)) {
+      // reduce non-empty enumerator-list
+      c.push_back(TR(enumeratorList));
+      // optionally reduce an OP_COMMA
+      if (isSimple(OP_COMMA)) {
+        c.push_back(getAdv());
+      }
+    }
+    c.push_back(expect(OP_RBRACE));
+    return get(ASTType::EnumSpecifier, move(c));
+  }
+
+  AST enumHead() {
+    VAST c;
+    c.push_back(TR(enumKey));
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    // try to reduce a nested-name-specifier
+    if (node = BT(nestedNameSpecifier)) {
+      c.push_back(move(node));
+      // must reduce an identifier
+      c.push_back(expectIdentifier());
+    } else {
+      if (isIdentifier()) {
+        c.push_back(getAdv(ASTType::Identifier));
+      }
+    }
+    if (isSimple(OP_COLON)) {
+      c.push_back(TR(enumBase));
+    }
+    return get(ASTType::EnumHead, move(c));
+  }
+
+  AST enumBase() {
+    VAST c;
+    c.push_back(expect(OP_COLON));
+    c.push_back(TR(typeSpecifierSeq));
+    return get(ASTType::EnumBase, move(c));
+  }
+
+  AST enumKey() {
+    VAST c;
+    c.push_back(expect(KW_ENUM));
+    if (isSimple({ KW_CLASS, KW_STRUCT })) {
+      c.push_back(getAdv());
+    }
+    return get(ASTType::EnumKey, move(c));
+  }
+
+  AST enumeratorList() {
+    return conditionalRepeat(ASTType::EnumeratorList,
+                             TRF(enumeratorDefinition),
+                             OP_COMMA);
+  }
+
+  AST enumeratorDefinition() {
+    VAST c;
+    c.push_back(expectIdentifier());
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(constantExpression));
+    }
+    return get(ASTType::EnumeratorDefinition, move(c));
+  }
+
+  AST nestedNameSpecifier() {
+    VAST c;
+    c.push_back(TR(nestedNameSpecifierRoot));
+    // We can do an optimization to check
+    // isSimple(KW_TEMPLATE) || isIdentifier()
+    // Since nestedNameSpecifier's FOLLOW also contains the two tokens
+    // we need to be prepared to backtrack
+    // So strive for simplicity for now
+    AST node;
+    while (node = BT(nestedNameSpecifierSuffix)) {
+      c.push_back(move(node));
+    }
+    return get(ASTType::NestedNameSpecifier, move(c));
+  }
+
+  AST nestedNameSpecifierRoot() {
+    VAST c;
+    if (isSimple(KW_DECLTYPE)) {
+      c.push_back(TR(decltypeSpecifier));
+    } else {
+      if (isSimple(OP_COLON2)) {
+        c.push_back(getAdv());
+        if (isNamespaceName()) {
+          c.push_back(TR(namespaceName));
+        } else {
+          c.push_back(TR(typeName));
+        }
+      }
+    }
+    c.push_back(expect(OP_COLON2));
+    return get(ASTType::NestedNameSpecifierRoot, move(c));
+  }
+
+  AST nestedNameSpecifierSuffix() {
+    VAST c;
+    if (isIdentifier() && nextIsSimple(OP_COLON2)) {
+      c.push_back(getAdv());
+      c.push_back(getAdv());
+    } else {
+      if (isSimple(KW_TEMPLATE)) {
+        c.push_back(getAdv());
+      }
+      c.push_back(TR(simpleTemplateId));
+      c.push_back(expect(OP_COLON2));
+    }
+    return get(ASTType::NestedNameSpecifierSuffix, move(c));
+  }
+
+  AST classSpecifier() {
+    return nullptr;
+  }
+
+  AST trailingTypeSpecifier() {
+    return nullptr;
+  }
+
+  AST attributeSpecifier() {
+    return nullptr;
+  }
+
+  AST ptrOperator() {
+    return nullptr;
   }
 
   AST className() {
@@ -423,12 +687,98 @@ private:
     return get(ASTType::ClassName, move(c));
   }
 
+  AST typeName() {
+    // An important NT - give it a level
+    VAST c;
+    AST node;
+    (node = BT(className)) ||
+    (node = BT(enumName)) ||
+    (node = BT(typedefName)) ||
+    (node = TR(simpleTemplateId));
+    c.push_back(move(node));
+    return get(ASTType::TypeName, move(c));
+  }
+
+  AST namespaceName() {
+    if (!isNamespaceName()) {
+      BAD_EXPECT("namespace name");
+    }
+    // should be fine to not use the Identifier type
+    return getAdv(ASTType::NamespaceName);
+  }
+
+  AST enumName() {
+    if (!isEnumName()) {
+      BAD_EXPECT("enum name");
+    }
+    return getAdv(ASTType::EnumName);
+  }
+
+  AST typedefName() {
+    if (!isTypedefName()) {
+      BAD_EXPECT("typedef name");
+    }
+    return getAdv(ASTType::TypedefName);
+  }
+
   AST simpleTemplateId() {
     VAST c;
     c.push_back(expectTemplateName());
     c.push_back(expect(OP_LT));
-    // template argument list and close-angle-bracket are a bit involving
-    return nullptr;
+    auto node = BT(templateArgumentList);
+    if (node) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(closeAngleBracket));
+    return get(ASTType::SimpleTemplateId, move(c));
+  }
+
+  AST templateArgumentList() {
+    return conditionalRepeat(ASTType::TemplateArgumentList,
+                             TRF(templateArgumentDots),
+                             OP_COMMA);
+  }
+
+  AST templateArgumentDots() {
+    VAST c;
+    c.push_back(templateArgument());
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return get(ASTType::TemplateArgumentDots, move(c));
+  }
+
+  AST templateArgument() {
+    VAST c;
+    if (isSimple(KW_DECLTYPE) || isSimple(KW_OPERATOR) || isSimple(OP_COLON2) ||
+        isSimple(OP_COMPL) || isIdentifier()) {
+      c.push_back(TR(idExpression));
+    } else {
+      // Implement FIRST here
+      auto node = BT(constantExpression);
+      if (!node) {
+        node = BT(typeId);
+      }
+      c.push_back(move(node));
+    }
+    return get(ASTType::TemplateArgument, move(c));
+  }
+
+  AST closeAngleBracket() {
+    // note that this is handled in a special manner and we should never call
+    // isSimple() from within this
+    bool ok = !treatRAngleBracketAsOperator() && cur().isSimple();
+    if (ok) {
+      auto type = getSimpleTokenType(cur());
+      ok = type == OP_GT || type == OP_RSHIFT_1 || type == OP_RSHIFT_2;
+    }
+    if (!ok) {
+      BAD_EXPECT("right angle bracket");
+    }
+    VAST c;
+    c.push_back(getAdv());
+    // TODO: why cannot I use { getAdv() } as the 2nd argument
+    return get(ASTType::CloseAngleBracket, move(c));
   }
 
   AST qualifiedId() {
@@ -571,7 +921,47 @@ private:
       }
       cout << format("=== MATCH [{}]\n", cur().toStr());
     }
+
+    handleBrackets();
+
     ++index_; 
+  }
+
+  /* ==================
+   *  handle brackets
+   * ==================
+   */
+  // TODO: consider making this a separate class
+  // Maintain nested levels of brackets
+  void handleBrackets() {
+    static map<ETokenType, ETokenType> mapping {
+      { OP_RSQUARE, OP_LSQUARE },
+      { OP_RPAREN, OP_LPAREN },
+      { OP_RBRACE, OP_LBRACE }
+    };
+    if (isSimple({OP_LSQUARE, OP_LPAREN, OP_LBRACE, OP_LT})) {
+      // starting a new nested level - always allowed
+      brackets_.push_back(index_);
+    } else if (isSimple({OP_RSQUARE, OP_RPAREN, OP_RBRACE})) {
+      auto lhs = mapping[getSimpleTokenType(cur())];
+      // our parsing shouldn't allow this to happen
+      CHECK(!brackets_.empty() && 
+            lhs == getSimpleTokenType(*tokens_[brackets_.back()]));
+      brackets_.pop_back();
+    } else if (isSimple({OP_GT, OP_RSHIFT_1, OP_RSHIFT_2})) {
+      if (!brackets_.empty() && 
+          getSimpleTokenType(*tokens_[brackets_.back()]) == OP_LT) {
+        // this terminal has been treated as a closing bracket in the parsing
+        // so 'close' the beginning bracket
+        brackets_.pop_back();
+      }
+      // else this terminal was treated as an operator in the parsing
+      // so ignore it for bracketing purposes
+    }
+  }
+  bool treatRAngleBracketAsOperator() const {
+    return brackets_.empty() || 
+           getSimpleTokenType(*tokens_[brackets_.back()]) != OP_LT;
   }
 
   void complainExpect(string&& expected, const char* func) const {
@@ -590,6 +980,9 @@ private:
 
   bool isIdentifier() const {
     return cur().isIdentifier();
+  }
+  bool isEmptyStr() const {
+    return cur().isEmptyStr();
   }
   AST expectIdentifier() {
     if (!isIdentifier()) {
@@ -620,11 +1013,30 @@ private:
   bool isLiteral() const {
     return cur().isLiteral();
   }
+  // TODO: move this to util
+  ETokenType getSimpleTokenType(const PostToken& token) const {
+    // can consider removing this check
+    CHECK(token.isSimple());
+    return static_cast<const PostTokenSimple&>(token).type;
+  }
   bool isSimple(ETokenType type) const {
     if (!cur().isSimple()) {
       return false;
     }
-    return static_cast<const PostTokenSimple&>(cur()).type == type;
+  
+    // here we assume the caller is expecting an operator
+    // closing-angle-bracket is handled in a special manner
+    // this is to avoid passing in an extra parameter
+    if (type == OP_GT || type == OP_RSHIFT_1 || type == OP_RSHIFT_2) {
+      // TODO: OP_RSHIFT_2 should not be necessary
+      if (!treatRAngleBracketAsOperator()) {
+        // if this check fails, never treat the current token as an operator
+        // even if it's a r-bracket
+        return false;
+      }
+    }
+    
+    return getSimpleTokenType(cur()) == type;
   }
   bool isSimple(const vector<ETokenType>& types) const {
     for (ETokenType type : types) {
@@ -639,7 +1051,7 @@ private:
     if (!next().isSimple()) {
       return false;
     }
-    return static_cast<const PostTokenSimple&>(next()).type == type;
+    return getSimpleTokenType(next()) == type;
   }
 
   // Note: it is possible to use the follow set when FIRST does not match to
@@ -737,11 +1149,23 @@ private:
     return root;
   }
 
+  AST backtrack(SubParser parser, const char *name) {
+    size_t curIndex = index_;
+    try {
+      return tracedCall(parser, name);
+    } catch (const CompilerException&) {
+      reset(curIndex);
+      return nullptr;
+    }
+  }
+
   const vector<UToken>& tokens_;
   size_t index_ { 0 };
 
   bool isTrace_;
-  int traceDepth_ { 0 }; 
+  int traceDepth_ { 0 };
+
+  vector<size_t> brackets_;
 };
 
 AST Parser::process()

@@ -11,31 +11,6 @@
 using namespace std;
 using namespace compiler;
 
-bool PA6_IsClassName(const string& identifier)
-{
-	return identifier.find('C') != string::npos;
-}
-
-bool PA6_IsTemplateName(const string& identifier)
-{
-	return identifier.find('T') != string::npos;
-}
-
-bool PA6_IsTypedefName(const string& identifier)
-{
-	return identifier.find('Y') != string::npos;
-}
-
-bool PA6_IsEnumName(const string& identifier)
-{
-	return identifier.find('E') != string::npos;
-}
-
-bool PA6_IsNamespaceName(const string& identifier)
-{
-	return identifier.find('N') != string::npos;
-}
-
 bool DoRecog(BuildEnv env, const string& source, bool isTrace)
 {
   try {

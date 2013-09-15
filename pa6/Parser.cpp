@@ -8,6 +8,7 @@
 //       ERROR: expect OP_RPAREN; got: simple sizeof KW_SIZEOF
 // 5. complete id-expression
 #include "Parser.h"
+#include "NameUtility.h"
 #include <memory>
 #include <vector>
 #include <functional>
@@ -253,6 +254,8 @@ private:
       return typeIdInParen(ASTType::CastOperator);
     } catch (const CompilerException&) {
       // TODO: consider possible ways to optimize this
+      // the reason we use backtrack here is for the cases how
+      // (Class * Class) is handled
       reset(pos);
       return nullptr;
     }
@@ -382,7 +385,67 @@ private:
    * ===============
    */
   AST idExpression() {
+    // TODO: make the parsing more effective
+    VAST c;
+    try {
+      c.push_back(TR(qualifiedId));
+    } catch (const CompilerException&) {
+      c.push_back(TR(unqualifiedId));
+    }
+    return get(ASTType::IdExpression, move(c));
+  }
+
+  AST unqualifiedId() {
+    VAST c;
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    } else if (isSimple(OP_COMPL)) {
+      c.push_back(getAdv());
+      if (isSimple(KW_DECLTYPE)) {
+        c.push_back(TR(decltypeSpecifier));
+      } else {
+        c.push_back(TR(className));
+      }
+    }
+    return get(ASTType::UnqualifiedId, move(c));
+  }
+
+  AST className() {
+    VAST c;
+    if (!isClassName()) {
+      BAD_EXPECT("class name"); 
+    }
+    if (isTemplateName()) {
+      c.push_back(TR(simpleTemplateId)); 
+    } else {
+      c.push_back(getAdv(ASTType::Identifier));
+    }
+    return get(ASTType::ClassName, move(c));
+  }
+
+  AST simpleTemplateId() {
+    VAST c;
+    c.push_back(expectTemplateName());
+    c.push_back(expect(OP_LT));
+    // template argument list and close-angle-bracket are a bit involving
     return nullptr;
+  }
+
+  AST qualifiedId() {
+    throw CompilerException("not implemented");
+  }
+
+  AST decltypeSpecifier() {
+    VAST c;
+    // TODO: here we follow the convention that a function should not assume
+    // its caller has checked the initial sequence of tokens
+    // This is not the most efficient implementation and is worth considering
+    // consolidating in the future
+    c.push_back(expect(KW_DECLTYPE));
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(expression));
+    c.push_back(expect(OP_RPAREN));
+    return get(ASTType::DecltypeSpecifier, move(c));
   }
 
   /* ===================
@@ -524,6 +587,10 @@ private:
     }
     return getAdv();
   }
+
+  bool isIdentifier() const {
+    return cur().isIdentifier();
+  }
   AST expectIdentifier() {
     if (!isIdentifier()) {
       BAD_EXPECT("identifier");
@@ -531,9 +598,25 @@ private:
     return getAdv(ASTType::Identifier);
   }
 
-  bool isIdentifier() const {
-    return cur().isIdentifier();
+// TODO: this involves a copy
+#define GEN_IS_NAME(func) \
+  bool func() const {\
+    return isIdentifier() && PA6::func(cur().toSimpleStr());\
   }
+  GEN_IS_NAME(isClassName)
+  GEN_IS_NAME(isTemplateName)
+  GEN_IS_NAME(isTypedefName)
+  GEN_IS_NAME(isEnumName)
+  GEN_IS_NAME(isNamespaceName)
+#undef GEN_IS_NAME
+
+  AST expectTemplateName() {
+    if (!isTemplateName()) {
+      BAD_EXPECT("template name");
+    }
+    return getAdv(ASTType::Identifier);
+  }
+
   bool isLiteral() const {
     return cur().isLiteral();
   }

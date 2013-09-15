@@ -54,6 +54,13 @@ enum class ASTType
   InitializerClauseDots,
 
   ThrowExpression,
+
+  IdExpression,
+  UnqualifiedId,
+  QualifiedId,
+  DecltypeSpecifier,
+
+  ClassName,
 };
 
 #define Z(lhs, rhs) { ASTType::lhs, #rhs }
@@ -102,6 +109,13 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(InitializerClauseDots, initializer-clause-dots),
 
   Z(ThrowExpression, throw-expression),
+
+  Z(IdExpression, id-expression),
+  Z(UnqualifiedId, unqualified-id),
+  Z(QualifiedId, qualified-id),
+  Z(DecltypeSpecifier, decltype-specifier),
+
+  Z(ClassName, class-name),
 };
 #undef Z
 

@@ -19,6 +19,10 @@
                              __FUNCTION__, index_, cur().toStr());
 
 #define expect(type) expectFromFunc(type, __FUNCTION__)
+// note the ... and the use of __VAR_ARGS__; this is somewhat peculiar use
+// the macro feature
+#define expectM(type, name, ...) \
+  expectMultipleFromFunc(type, name, __VA_ARGS__, __FUNCTION__)
 #define BAD_EXPECT(msg) complainExpect(msg, __FUNCTION__)
 
 // traced call
@@ -398,6 +402,14 @@ private:
   }
   
   AST exceptionDeclaration() {
+    return nullptr;
+  }
+
+  AST conditionDeclaration() {
+    return nullptr;
+  }
+
+  AST declarationStatement() {
     return nullptr;
   }
 
@@ -856,7 +868,43 @@ private:
   }
 
   AST declSpecifierSeq() {
-    return nullptr;
+    VAST c;
+    c.push_back(TR(declSpecifier));
+    AST node;
+    while (node = BT(declSpecifier)) {
+      c.push_back(move(node));
+    }
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    return get(ASTType::DeclSpecifierSeq, move(c));
+  }
+
+  AST declSpecifier() {
+    VAST c;
+    if (isSimple({KW_FRIEND, KW_TYPEDEF, KW_CONSTEXPR})) {
+      c.push_back(getAdv());
+    } else {
+      AST node;
+      (node = BT(storageClassSpecifier)) ||
+      (node = BT(typeSpecifier)) ||
+      (node = TR(functionSpecifier));
+      c.push_back(move(node));
+    }
+    return get(ASTType::DeclSpecifier, move(c));
+  }
+
+  AST storageClassSpecifier() {
+    return 
+      expectM(ASTType::StorageClassSpecifier,
+              "storage class specifier",
+              {KW_REGISTER, KW_STATIC, KW_THREAD_LOCAL, KW_EXTERN, KW_MUTABLE});
+  }
+
+  AST functionSpecifier() {
+    return expectM(ASTType::FunctionSpecifier,
+                   "function specifier",
+                   {KW_INLINE, KW_VIRTUAL, KW_EXPLICIT});
   }
 
   AST memberDeclaratorList() {
@@ -1130,11 +1178,30 @@ private:
     return get(ASTType::Statement, move(c));
   }
 
+  AST labeledStatement() {
+    VAST c;
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    if (isSimple(KW_CASE)) {
+      c.push_back(getAdv());
+      c.push_back(TR(constantExpression));
+    } else if (isSimple(KW_DEFAULT)) {
+      c.push_back(getAdv());
+    } else {
+      c.push_back(expectIdentifier());
+    }
+    c.push_back(expect(OP_COLON));
+    c.push_back(TR(statement));
+    return get(ASTType::LabeledStatement, move(c));
+  }
+
   AST expressionStatement() {
     VAST c;
     AST node;
     if (node = BT(expression)) {
-      c.push_back(move(c));
+      c.push_back(move(node));
     }
     c.push_back(expect(OP_SEMICOLON));
     return get(ASTType::ExpressionStatement, move(c));
@@ -1192,6 +1259,7 @@ private:
 
       c.push_back(TR(statement));
     }
+    return get(ASTType::IterationStatement, move(c));
   }
 
   AST forTraditionalSpecifier() {
@@ -1281,7 +1349,14 @@ private:
   }
 
   AST condition() {
-    return nullptr;
+    VAST c;
+    AST node;
+    if (node = BT(conditionDeclaration)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(TR(expression));
+    }
+    return get(ASTType::Condition, move(c));
   }
 
   AST className() { 
@@ -1586,6 +1661,16 @@ private:
       complainExpect(getSimpleTokenTypeName(type), func);
     }
     return getAdv();
+  }
+
+  AST expectMultipleFromFunc(ASTType type,
+                             const char* name,
+                             const vector<ETokenType>& tokens, 
+                             const char *func) {
+    if (!isSimple(tokens)) {
+      complainExpect(name, func);
+    }
+    return getAdv(type);
   }
 
   bool isIdentifier() const {

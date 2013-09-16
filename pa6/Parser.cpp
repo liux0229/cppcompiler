@@ -28,6 +28,11 @@
 // backtracked call - can be later optimized away by using FIRST and FOLLOW
 #define BT(func) backtrack(&ParserImp::func, #func)
 
+#if 0
+// shorthand
+#define cpbe(type) c.push_back(expect(type))
+#endif
+
 namespace compiler {
 
 using namespace std;
@@ -380,6 +385,14 @@ private:
     throw CompilerException("typeId not implemented");
   }
 
+  AST declaration() {
+    return nullptr;
+  }
+
+  AST declarator() {
+    return nullptr;
+  }
+
   /* ===============
    *  id expression
    * ===============
@@ -658,10 +671,6 @@ private:
     return get(ASTType::NestedNameSpecifierSuffix, move(c));
   }
 
-  AST classSpecifier() {
-    return nullptr;
-  }
-
   AST trailingTypeSpecifier() {
     return nullptr;
   }
@@ -674,7 +683,374 @@ private:
     return nullptr;
   }
 
-  AST className() {
+  /* =================
+   *  class specifier
+   * =================
+   */
+  AST classSpecifier() {
+    VAST c;
+    c.push_back(TR(classHead));
+    c.push_back(expect(OP_LBRACE));
+    while (!isSimple(OP_RBRACE)) {
+      c.push_back(TR(memberSpecification));
+    }
+    c.push_back(getAdv());
+    return get(ASTType::ClassSpecifier, move(c));
+  }
+
+  AST classHead() {
+    VAST c;
+    c.push_back(TR(classKey));
+    AST node;
+    // TODO: we could have used FIRST as the FIRST set is very small
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    if (node = BT(classHeadName)) {
+      c.push_back(move(node));
+      // class-virt-specifier?
+      if (isStFinal()) {
+        c.push_back(getAdv(ASTType::StFinal));
+      }
+    }
+    if (isSimple(OP_COLON)) {
+      c.push_back(TR(baseClause));
+    }
+    return get(ASTType::ClassHead, move(c));
+  }
+
+  AST classKey() {
+    if (!isSimple({KW_CLASS, KW_STRUCT, KW_UNION})) {
+      BAD_EXPECT("class key");
+    }
+    return getAdv(ASTType::ClassKey);
+  }
+
+  AST classHeadName() {
+    return nullptr;
+  }
+
+  AST baseClause() {
+    VAST c;
+    c.push_back(expect(OP_COLON));
+    c.push_back(TR(baseSpecifierList));
+    return get(ASTType::BaseClause, move(c));
+  }
+
+  AST baseSpecifierList() {
+    return conditionalRepeat(ASTType::BaseSpecifierList,
+                             TRF(baseSpecifierDots),
+                             OP_COMMA);
+  }
+
+  AST baseSpecifierDots() {
+    VAST c;
+    c.push_back(TR(baseSpecifer));
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return get(ASTType::BaseSpecifierDots, move(c));
+  }
+
+  AST baseSpecifer() {
+    VAST c;
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    if (isSimple(KW_VIRTUAL)) {
+      c.push_back(getAdv());
+      if (node = BT(accessSpecifier)) {
+        c.push_back(move(node));
+      }
+    } else if (node = BT(accessSpecifier)) {
+      c.push_back(move(node));
+      if (isSimple(KW_VIRTUAL)) {
+        c.push_back(getAdv());
+      }
+    }
+    c.push_back(TR(baseTypeSpecifier));
+    return get(ASTType::BaseSpecifer, move(c));
+  }
+
+  AST baseTypeSpecifier() {
+    VAST c;
+    c.push_back(TR(classOrDecltype));
+    return get(ASTType::BaseTypeSpecifier, move(c));
+  }
+
+  AST classOrDecltype() {
+    VAST c;
+    AST node;
+    if (node = BT(decltypeSpecifier)) {
+      c.push_back(move(node));
+    } else {
+      if (node = BT(nestedNameSpecifier)) {
+        c.push_back(move(node));
+      }
+      c.push_back(TR(className));
+    }
+    return get(ASTType::ClassOrDecltype, move(c));
+  }
+
+  AST accessSpecifier() {
+    if (!isSimple({KW_PRIVATE, KW_PROTECTED, KW_PUBLIC})) {
+      BAD_EXPECT("access specifier");
+    }
+    return getAdv(ASTType::AccessSpecifier);
+  }
+
+  AST memberSpecification() {
+    VAST c;
+    AST node;
+    if (node = BT(accessSpecifier)) {
+      c.push_back(move(node));
+      c.push_back(expect(OP_COLON));
+    } else {
+      c.push_back(TR(memberDeclaration));
+    }
+    return get(ASTType::MemberSpecification, move(c));
+  }
+
+  AST memberDeclaration() {
+    VAST c;
+    AST node;
+    bool ok = (node = BT(usingDeclaration)) ||
+              (node = BT(staticAssertDeclaration)) ||
+              (node = BT(templateDeclaration)) ||
+              (node = BT(aliasDeclaration));
+    if (ok) {
+      c.push_back(move(node));
+    } else {
+      if (node = BT(functionDefinition)) {
+        c.push_back(move(node));
+        if (isSimple(OP_SEMICOLON)) {
+          c.push_back(getAdv());
+        }
+      } else {
+        while (node = BT(attributeSpecifier)) {
+          c.push_back(move(node));
+        } 
+        c.push_back(TR(declSpecifierSeq));
+        if (node = BT(memberDeclaratorList)) {
+          c.push_back(move(node));
+        }
+        c.push_back(expect(OP_SEMICOLON));
+      } 
+    }
+    return get(ASTType::MemberDeclaration, move(c));
+  }
+
+  AST declSpecifierSeq() {
+    return nullptr;
+  }
+
+  AST memberDeclaratorList() {
+    return conditionalRepeat(ASTType::MemberDeclaratorList,
+                             TRF(memberDeclarator),
+                             OP_COMMA);
+  }
+
+  AST memberDeclarator() {
+    VAST c;
+    AST node;
+    if (node = BT(declarator)) {
+      c.push_back(move(node));
+      // TODO: use FOLLOW set to prune the search
+      if (node = BT(braceOrEqualInitializer)) {
+        c.push_back(move(node));
+      } else {
+        while (node = BT(virtSpecifier)) {
+          c.push_back(move(node));
+        }
+        if (node = BT(pureSpecifier)) {
+          c.push_back(move(node));
+        }
+      }
+    } else {
+      if (isIdentifier()) {
+        c.push_back(getAdv(ASTType::Identifier));
+      }
+      while (node = attributeSpecifier()) {
+        c.push_back(move(node));
+      }
+      c.push_back(expect(OP_COLON));
+      c.push_back(TR(constantExpression));
+    }
+    return get(ASTType::MemberDeclarator, move(c));
+  }
+
+  AST braceOrEqualInitializer() {
+    VAST c;
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(initializerClause));
+    } else {
+      c.push_back(TR(bracedInitList));
+    }
+    return get(ASTType::BraceOrEqualInitializer, move(c));
+  }
+
+  AST pureSpecifier() {
+    VAST c;
+    c.push_back(expect(OP_ASS));
+    c.push_back(expectZero());
+    return get(ASTType::PureSpecifier, move(c));
+  }
+
+  AST functionDefinition() {
+    VAST c;
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(declSpecifierSeq));
+    c.push_back(TR(declarator));
+    if (node = BT(virtSpecifier)) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(functionBody));
+    return get(ASTType::FunctionDefinition, move(c));
+  }
+
+  AST functionBody() {
+    VAST c;
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      if (!isSimple({KW_DEFAULT, KW_DELETE})) {
+        BAD_EXPECT("default / delete");
+      }
+      c.push_back(expect(OP_SEMICOLON));
+    } else if (isSimple(KW_TRY)) {
+      c.push_back(TR(functionTryBlock));
+    } else {
+      if (isSimple(OP_COLON)) {
+        c.push_back(TR(ctorInitializer));
+      }
+      c.push_back(TR(compoundStatement));
+    }
+    return get(ASTType::FunctionBody, move(c));
+  }
+
+  AST ctorInitializer() {
+    VAST c;
+    c.push_back(expect(OP_COLON));
+    c.push_back(TR(memInitialierList));
+    return get(ASTType::CtorInitializer, move(c));
+  }
+
+  // TODO: the same pattern appears more than once
+  AST memInitialierList() {
+    return conditionalRepeat(ASTType::MemInitialierList,
+                             TRF(memInitialierDots),
+                             OP_COMMA);
+  }
+
+  AST memInitialierDots() {
+    VAST c;
+    c.push_back(TR(memInitialier));
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return get(ASTType::MemInitialierDots, move(c));
+  }
+
+  AST memInitialier() {
+    VAST c;
+    c.push_back(TR(memInitialierId));
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      AST node;
+      if (node = BT(expressionList)) {
+        c.push_back(move(node));
+      }
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      c.push_back(TR(bracedInitList));
+    }
+    return get(ASTType::MemInitialier, move(c));
+  }
+
+  AST memInitialierId() {
+    return nullptr;
+  }
+
+  AST expressionList() {
+    return TR(initializerList);
+  }
+
+  AST compoundStatement() {
+    return nullptr;
+  }
+
+  AST functionTryBlock() {
+    return nullptr;
+  }
+
+  AST virtSpecifier() {
+    if (!(isStFinal() || isStOverride())) {
+      BAD_EXPECT("virt specifier");  
+    }
+    return getAdv(ASTType::VirtSpecifier);
+  }
+
+  AST usingDeclaration() {
+    VAST c;
+    c.push_back(expect(KW_USING));
+    if (isSimple(OP_COLON2)) {
+      c.push_back(getAdv());
+    } else {
+      if (isSimple(KW_TYPENAME)) {
+        c.push_back(getAdv());
+      }
+      c.push_back(TR(nestedNameSpecifier));
+    }
+    c.push_back(TR(unqualifiedId));
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::UsingDeclaration, move(c));
+  }
+
+  AST staticAssertDeclaration() {
+    VAST c;
+    c.push_back(expect(KW_STATIC_ASSERT));
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(constantExpression));
+    c.push_back(expect(OP_COMMA));
+    c.push_back(expectLiteral());
+    c.push_back(expect(OP_RPAREN));
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::StaticAssertDeclaration, move(c));
+  }
+
+  AST templateDeclaration() {
+    VAST c;
+    c.push_back(expect(KW_TEMPLATE));
+    c.push_back(expect(OP_LT));
+    c.push_back(TR(templateParameterList));
+    c.push_back(TR(closeAngleBracket));
+    c.push_back(TR(declaration));
+    return get(ASTType::TemplateDeclaration, move(c));
+  }
+
+  AST templateParameterList() {
+    return nullptr;
+  }
+
+  AST aliasDeclaration() {
+    VAST c;
+    c.push_back(expect(KW_USING));
+    c.push_back(expectIdentifier());
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    c.push_back(expect(OP_ASS));
+    c.push_back(TR(typeId));
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::AliasDeclaration, move(c));
+  } 
+
+  AST className() { 
     VAST c;
     if (!isClassName()) {
       BAD_EXPECT("class name"); 
@@ -1013,6 +1389,12 @@ private:
   bool isLiteral() const {
     return cur().isLiteral();
   }
+  AST expectLiteral() {
+    if (!isLiteral()) {
+      BAD_EXPECT("literal");
+    }
+    return getAdv();
+  }
   // TODO: move this to util
   ETokenType getSimpleTokenType(const PostToken& token) const {
     // can consider removing this check
@@ -1052,6 +1434,24 @@ private:
       return false;
     }
     return getSimpleTokenType(next()) == type;
+  }
+
+  AST expectZero() {
+    if (!cur().isZero()) {
+      BAD_EXPECT("0");
+    }
+    return getAdv(ASTType::StZero);
+  }
+
+  /* ====================
+   * Contextual keywords
+   * ====================
+   */
+  bool isStFinal() const {
+    return isIdentifier() && cur().toSimpleStr() == "final";
+  }
+  bool isStOverride() const {
+    return isIdentifier() && cur().toSimpleStr() == "override";
   }
 
   // Note: it is possible to use the follow set when FIRST does not match to

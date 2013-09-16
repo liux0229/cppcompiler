@@ -49,10 +49,15 @@ struct PostToken
   bool isIdentifier() const { return getType() == PostTokenType::Identifier; }
   bool isNewLine() const { return getType() == PostTokenType::NewLine; }
   bool isLiteral() const { return getType() == PostTokenType::Literal; }
+  // TODO: we can argue whether to put this here or in a more specific place
   bool isEmptyStr() const {
     // isLiteral check should be redundant, but for clarity
     return isLiteral() && 
            source == "\"\"";
+  }
+  bool isZero() const {
+    // isLiteral check should be redundant, but for clarity
+    return isLiteral() && source == "0";
   }
 
   std::string source;

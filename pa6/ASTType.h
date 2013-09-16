@@ -119,6 +119,20 @@ enum class ASTType
   PureSpecifier,
   BraceOrEqualInitializer,
   /* ===
+ClassHeadName,
+MemInitialierId,
+CompoundStatement,
+FunctionTryBlock,
+Handler,
+Statement,
+ExpressionStatement,
+SelectionStatement,
+ForTraditionalSpecifier,
+ForRangeBasedSpecifier,
+ForInitStatement,
+ForRangeDeclaration,
+JumpStatement,
+TryBlock,
      === */
 };
 

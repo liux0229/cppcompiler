@@ -389,7 +389,15 @@ private:
     return nullptr;
   }
 
+  AST simpleDeclaration() {
+    return nullptr;
+  }
+
   AST declarator() {
+    return nullptr;
+  }
+  
+  AST exceptionDeclaration() {
     return nullptr;
   }
 
@@ -727,7 +735,13 @@ private:
   }
 
   AST classHeadName() {
-    return nullptr;
+    VAST c;
+    AST node;
+    if (node = BT(nestedNameSpecifier)) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(className));
+    return get(ASTType::ClassHeadName, move(c));
   }
 
   AST baseClause() {
@@ -972,7 +986,17 @@ private:
   }
 
   AST memInitialierId() {
-    return nullptr;
+    VAST c;
+    AST node;  
+    // first try parsing class-or-decltype, even though both FIRST contain
+    // identifier
+    // - let's try this scheme for now
+    if (node = BT(classOrDecltype)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(expectIdentifier());
+    }
+    return get(ASTType::MemInitialierId, move(c));
   }
 
   AST expressionList() {
@@ -980,11 +1004,38 @@ private:
   }
 
   AST compoundStatement() {
-    return nullptr;
+    VAST c;
+    c.push_back(expect(OP_LBRACE));
+    if (!isSimple(OP_RBRACE)) {
+      c.push_back(TR(statement));
+    }
+    c.push_back(getAdv());
+    return get(ASTType::CompoundStatement, move(c));
   }
 
   AST functionTryBlock() {
-    return nullptr;
+    VAST c;
+    c.push_back(expect(KW_TRY));
+    AST node;
+    if (node = BT(ctorInitializer)) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(compoundStatement));
+    c.push_back(TR(handler));
+    while (isSimple(KW_CATCH)) {
+      c.push_back(TR(handler));
+    }
+    return get(ASTType::FunctionTryBlock, move(c));
+  }
+
+  AST handler() {
+    VAST c;
+    c.push_back(expect(KW_CATCH));
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(exceptionDeclaration));
+    c.push_back(expect(OP_RPAREN));
+    c.push_back(TR(compoundStatement));
+    return get(ASTType::Handler, move(c));
   }
 
   AST virtSpecifier() {
@@ -1049,6 +1100,189 @@ private:
     c.push_back(expect(OP_SEMICOLON));
     return get(ASTType::AliasDeclaration, move(c));
   } 
+
+  /* =================
+   *  statement
+   * =================
+   */
+  AST statement() {
+    VAST c;
+    AST node;
+    bool ok = (node = BT(labeledStatement)) ||
+              // The disambiguation rule says we should try parsing
+              // declaration-statement first
+              (node = BT(declarationStatement));
+    if (ok) { 
+      c.push_back(move(node));
+    } else {
+      // TODO: this is a common pattern
+      while (node = BT(attributeSpecifier)) {
+        c.push_back(move(node));
+      }
+      (node = BT(expressionStatement)) ||
+      (node = BT(compoundStatement)) ||
+      (node = BT(selectionStatement)) ||
+      (node = BT(iterationStatement)) ||
+      (node = BT(jumpStatement)) ||
+      (node = TR(tryBlock));
+      c.push_back(move(node));
+    }
+    return get(ASTType::Statement, move(c));
+  }
+
+  AST expressionStatement() {
+    VAST c;
+    AST node;
+    if (node = BT(expression)) {
+      c.push_back(move(c));
+    }
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::ExpressionStatement, move(c));
+  }
+
+  AST selectionStatement() {
+    VAST c;
+    if (isSimple(KW_SWITCH)) {
+      c.push_back(getAdv());
+      c.push_back(expect(OP_LPAREN));
+      c.push_back(TR(condition));
+      c.push_back(expect(OP_RPAREN));
+      c.push_back(TR(statement));
+    } else {
+      c.push_back(expect(KW_IF));
+      c.push_back(expect(OP_LPAREN));
+      c.push_back(TR(condition));
+      c.push_back(expect(OP_RPAREN));
+      c.push_back(TR(statement));
+      // disambiguation rule for "dangling else"
+      if (isSimple(KW_ELSE)) {
+        c.push_back(getAdv());
+        c.push_back(TR(statement));
+      }
+    }
+    return get(ASTType::SelectionStatement, move(c));
+  }
+
+  AST iterationStatement() {
+    VAST c;
+    if (isSimple(KW_WHILE)) {
+      c.push_back(getAdv());
+      c.push_back(expect(OP_LPAREN));
+      c.push_back(TR(condition));
+      c.push_back(expect(OP_RPAREN));
+      c.push_back(TR(statement));
+    } else if (isSimple(KW_DO)) {
+      c.push_back(getAdv());
+      c.push_back(TR(statement));
+      c.push_back(expect(KW_WHILE));
+      c.push_back(expect(OP_LPAREN));
+      c.push_back(TR(condition));
+      c.push_back(expect(OP_RPAREN));
+      c.push_back(expect(OP_SEMICOLON));
+    } else {
+      c.push_back(expect(KW_FOR));
+      c.push_back(expect(OP_LPAREN));
+      AST node;
+      if (node = BT(forTraditionalSpecifier)) {
+        c.push_back(move(node));
+      } else {
+        c.push_back(TR(forRangeBasedSpecifier));
+      }
+      c.push_back(expect(OP_RPAREN));
+
+      c.push_back(TR(statement));
+    }
+  }
+
+  AST forTraditionalSpecifier() {
+    VAST c;
+    c.push_back(TR(forInitStatement));
+
+    if (!isSimple(OP_SEMICOLON)) {
+      c.push_back(TR(condition));
+    }
+    c.push_back(expect(OP_SEMICOLON));
+
+    if (!isSimple(OP_RPAREN)) {
+      c.push_back(TR(expression));
+    }
+    return get(ASTType::ForTraditionalSpecifier, move(c));
+  }
+
+  AST forRangeBasedSpecifier() {
+    VAST c;
+    c.push_back(TR(forRangeDeclaration));
+    c.push_back(expect(OP_COLON));
+    c.push_back(TR(forRangeInitializer));
+    return get(ASTType::ForRangeBasedSpecifier, move(c));
+  }
+
+  AST forInitStatement() {
+    VAST c;
+    AST node;
+    if (node = BT(expressionStatement)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(TR(simpleDeclaration));
+    }
+    return get(ASTType::ForInitStatement, move(c));
+  }
+
+  // TODO; this seems redudant to something
+  AST forRangeDeclaration() {
+    VAST c;
+    AST node; 
+    while (node = attributeSpecifier()) {
+      c.push_back(move(node));
+    }
+    c.push_back(TR(declSpecifierSeq));
+    c.push_back(TR(declarator));
+    return get(ASTType::ForRangeDeclaration, move(c));
+  }
+
+  AST forRangeInitializer() {
+    VAST c;
+    if (isSimple(OP_LBRACE)) {
+      c.push_back(TR(bracedInitList));
+    } else {
+      c.push_back(TR(expression));
+    }
+    return get(ASTType::ForRangeInitializer, move(c));
+  }
+
+  AST jumpStatement() {
+    VAST c;
+    if (isSimple({KW_BREAK, KW_CONTINUE})) {
+      c.push_back(getAdv());
+    } else if (isSimple(KW_RETURN)) {
+      if (isSimple(OP_LBRACE)) {
+        c.push_back(TR(bracedInitList));
+      } else if (!isSimple(OP_SEMICOLON)) {
+        c.push_back(TR(expression));
+      }
+    } else {
+      c.push_back(expect(KW_GOTO));
+      c.push_back(expectIdentifier());
+    }
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::JumpStatement, move(c));
+  }
+
+  AST tryBlock() {
+    VAST c;
+    c.push_back(expect(KW_TRY));
+    c.push_back(TR(compoundStatement));
+    // TODO: repeated pattern
+    c.push_back(TR(handler));
+    while (isSimple(KW_CATCH)) {
+      c.push_back(TR(handler));
+    }
+    return get(ASTType::TryBlock, move(c));
+  }
+
+  AST condition() {
+    return nullptr;
+  }
 
   AST className() { 
     VAST c;

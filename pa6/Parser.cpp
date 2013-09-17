@@ -7,6 +7,11 @@
 //    2) Display the line and the relevant position
 //       ERROR: expect OP_RPAREN; got: simple sizeof KW_SIZEOF
 // 5. complete id-expression
+// 6. Since our recursive-decent is not comprehensive, there could be cases
+//    where a NT could be reduced in multiple ways, and one way can lead to a
+//    successful subsequent parse while another could not. This in general
+//    can be resolved by using FOLLOW. But for now let's assume this case does
+//    not exist for the most part.
 #include "Parser.h"
 #include "NameUtility.h"
 #include <memory>
@@ -31,6 +36,8 @@
                    { return tracedCall(&ParserImp::func, #func); })
 // backtracked call - can be later optimized away by using FIRST and FOLLOW
 #define BT(func) backtrack(&ParserImp::func, #func)
+#define BTF(func) ([this]() -> AST \
+                   { return backtrack(&ParserImp::func, #func); })
 
 #if 0
 // shorthand
@@ -692,15 +699,205 @@ private:
   }
 
   AST trailingTypeSpecifier() {
-    return nullptr;
+    AST node;
+    VAST c;
+    (node = BT(simpleTypeSpecifier)) ||
+    (node = BT(elaboratedTypeSpecifier)) ||
+    (node = BT(typenameSpecifier)) ||
+    (node = TR(cvQualifier));
+    c.push_back(move(node));
+    return get(ASTType::TrailingTypeSpecifier, move(c));
+  }
+
+  AST simpleTypeSpecifier() {
+    VAST c;
+    if (isSimple({
+          KW_CHAR, KW_CHAR16_T, KW_CHAR32_T, KW_WCHAR_T, KW_BOOL, KW_SHORT,
+          KW_INT, KW_LONG, KW_SIGNED, KW_UNSIGNED, KW_FLOAT, KW_DOUBLE,
+          KW_VOID, KW_AUTO
+        })) {
+      c.push_back(getAdv());
+    } else {
+      AST node;
+      if (node = BT(decltypeSpecifier)) {
+        c.push_back(move(node));
+      } else {
+        bool ok = false;
+        if (node = BT(nestedNameSpecifier)) {
+          c.push_back(move(node));
+          if (isSimple(KW_TEMPLATE)) {
+            c.push_back(getAdv());
+            c.push_back(TR(simpleTemplateId));
+            ok = true;
+          }
+        }
+        if (!ok) {
+          c.push_back(TR(typeName));
+        }
+      }
+    }
+    return get(ASTType::SimpleTypeSpecifier, move(c));
+  }
+
+  AST elaboratedTypeSpecifier() {
+    VAST c;
+    AST node;
+    if (isSimple(KW_ENUM)) {
+      c.push_back(getAdv());
+      if (node = BT(nestedNameSpecifier)) {
+        c.push_back(move(node));
+      }
+      c.push_back(expectIdentifier());
+    } else {
+      c.push_back(TR(classKey));
+      if (node = BT(elaboratedTypeSpecifierA)) {
+        c.push_back(move(node));
+      } else {
+        c.push_back(TR(elaboratedTypeSpecifierB));
+      }
+    }
+    return get(ASTType::ElaboratedTypeSpecifier, move(c));
+  }
+
+  AST elaboratedTypeSpecifierA() {
+    VAST c;
+    AST node;
+    while (node = BT(attributeSpecifier)) {
+      c.push_back(move(node));
+    }
+    if (node = BT(nestedNameSpecifier)) {
+      c.push_back(move(node));
+    }
+    c.push_back(expectIdentifier());
+    return get(ASTType::ElaboratedTypeSpecifierA, move(c));
+  }
+
+  AST elaboratedTypeSpecifierB() {
+    VAST c;
+    AST node;
+    if (node = BT(nestedNameSpecifier)) {
+      c.push_back(move(node));
+    }
+    if (isSimple(KW_TEMPLATE)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(TR(simpleTemplateId));
+    return get(ASTType::ElaboratedTypeSpecifierB, move(c));
+  }
+
+  AST typenameSpecifier() {
+    VAST c;
+    c.push_back(expect(KW_TYPENAME));
+    c.push_back(TR(nestedNameSpecifier));
+    // TODO: this is ambiguous (and cannot be disambiguated by the first level
+    // FOLLOW). For now take the identifier path but may later
+    // turn out to be necessary to match the second first.
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    } else {
+      if (isSimple(KW_TEMPLATE)) {
+        c.push_back(getAdv());
+      }
+      c.push_back(TR(simpleTemplateId));
+    }
+    return get(ASTType::TypenameSpecifier, move(c));
+  }
+
+  AST cvQualifier() {
+    if (!isSimple({KW_CONST, KW_VOLATILE})) {
+      BAD_EXPECT("cv qualifier");
+    }
+    return getAdv(ASTType::CvQualifier);
   }
 
   AST attributeSpecifier() {
+    VAST c;
+    c.push_back(expect(OP_LSQUARE));
+    c.push_back(expect(OP_LSQUARE));
+    c.push_back(TR(attributeList));
+    c.push_back(expect(OP_RSQUARE));
+    c.push_back(expect(OP_RSQUARE));
+    return get(ASTType::AttributeSpecifier, move(c));
+  }
+
+  AST attributeList() {
+    return conditionalRepeat(ASTType::AttributeList,
+                             TRF(attributePart),
+                             OP_COMMA);
+  }
+
+  AST attributePart() {
+    VAST c;
+    AST node;
+    if (node = BT(attribute)) {
+      c.push_back(move(node));
+      if (isSimple(OP_DOTS)) {
+        // Since attribute-part's FOLLOW does not include OP_DOTS
+        // we are forced to parse OP_DOTS
+        c.push_back(getAdv());
+      }
+    }
+    return get(ASTType::AttributePart, move(c));
+  }
+
+  AST attribute() {
+    VAST c;
+    c.push_back(TR(attributeToken));
+    AST node;
+    if (node = BT(attributeArgumentClause)) {
+      c.push_back(move(node));
+    }
+    return get(ASTType::Attribute, move(c));
+  }
+
+  AST attributeArgumentClause() {
     return nullptr;
   }
 
+  AST attributeToken() {
+    VAST c;
+    // should first take attribute-scoped-token because attribute-token's
+    // FOLLOW does not include OP_COLON2
+    AST node;
+    if (node = BT(attributeScopedToken)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(expectIdentifier());
+    }
+    return get(ASTType::AttributeToken, move(c));
+  }
+
+  AST attributeScopedToken() {
+    VAST c;
+    c.push_back(TR(attributeNamespace));
+    c.push_back(expect(OP_COLON2));
+    c.push_back(expectIdentifier());
+    return get(ASTType::AttributeScopedToken, move(c));
+  }
+
+  AST attributeNamespace() {
+    if (!isIdentifier()) {
+      BAD_EXPECT("attribute namespace");
+    }
+    return getAdv(ASTType::AttributeNamespace);
+  }
+
   AST ptrOperator() {
-    return nullptr;
+    VAST c;
+    if (isSimple({OP_AMP, OP_LAND})) {
+      c.push_back(getAdv()); 
+      zeroOrMore(c, BTF(attributeSpecifier));
+    } else {
+      if (isSimple(OP_STAR)) {
+        c.push_back(getAdv());
+      } else {
+        c.push_back(TR(nestedNameSpecifier));
+        c.push_back(expect(OP_STAR));
+      }
+      zeroOrMore(c, BTF(attributeSpecifier));
+      zeroOrMore(c, BTF(cvQualifier));
+    }
+    return get(ASTType::PtrOperator, move(c));
   }
 
   /* =================
@@ -1811,6 +2008,13 @@ private:
                              subParser, 
                              ASTType::Terminal, 
                              vector<ETokenType>{sep});
+  }
+
+  // TODO: this assumes that subParser is wrapped inside BTF
+  void zeroOrMore(VAST& c, function<AST ()> subParser) {
+    while (AST node = subParser()) {
+      c.push_back(move(node));
+    }
   }
 
   /* ===========================

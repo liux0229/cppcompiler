@@ -142,6 +142,21 @@ enum class ASTType
   DeclSpecifier,
   StorageClassSpecifier,
   FunctionSpecifier,
+  TrailingTypeSpecifier,
+  SimpleTypeSpecifier,
+  ElaboratedTypeSpecifier,
+  ElaboratedTypeSpecifierA,
+  ElaboratedTypeSpecifierB,
+  TypenameSpecifier,
+  CvQualifier,
+  AttributeSpecifier,
+  AttributeList,
+  AttributePart,
+  Attribute,
+  AttributeToken,
+  AttributeScopedToken,
+  AttributeNamespace,
+  PtrOperator,
   /* ===
      === */
 };
@@ -280,6 +295,21 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(DeclSpecifier, decl-specifier),
   Z(StorageClassSpecifier, storage-class-specifier),
   Z(FunctionSpecifier, function-specifier),
+  Z(TrailingTypeSpecifier, trailing-type-specifier),
+  Z(SimpleTypeSpecifier, simple-type-specifier),
+  Z(ElaboratedTypeSpecifier, elaborated-type-specifier),
+  Z(ElaboratedTypeSpecifierA, elaborated-type-specifier-a),
+  Z(ElaboratedTypeSpecifierB, elaborated-type-specifier-b),
+  Z(TypenameSpecifier, typename-specifier),
+  Z(CvQualifier, cv-qualifier),
+  Z(AttributeSpecifier, attribute-specifier),
+  Z(AttributeList, attribute-list),
+  Z(AttributePart, attribute-part),
+  Z(Attribute, attribute),
+  Z(AttributeToken, attribute-token),
+  Z(AttributeScopedToken, attribute-scoped-token),
+  Z(AttributeNamespace, attribute-namespace),
+  Z(PtrOperator, ptr-operator),
 };
 #undef Z
 

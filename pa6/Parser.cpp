@@ -12,6 +12,9 @@
 //    successful subsequent parse while another could not. This in general
 //    can be resolved by using FOLLOW. But for now let's assume this case does
 //    not exist for the most part.
+// 7. Following 6 - most of the cases explicit disambiguation is not needed
+//    the text will be parsed correctly by the implementation. By there can be
+//    cases where explicit disambiguation is needed.
 #include "Parser.h"
 #include "NameUtility.h"
 #include <memory>
@@ -464,43 +467,119 @@ private:
   }
 
   AST asmDefinition() {
-    return 0;
+    VAST c;
+    c.push_back(expect(KW_ASM));
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(expectLiteral());
+    c.push_back(expect(OP_RPAREN));
+    c.push_back(expect(OP_SEMICOLON));
+    return getAST(AsmDefinition);
   }
 
   AST namespaceAliasDefinition() {
-    return 0;
+    VAST c;
+    c.push_back(expect(KW_NAMESPACE));
+    c.push_back(expectIdentifier());
+    c.push_back(expect(OP_ASS));
+    c.push_back(TR(qualifiedNamespaceSpecifier));
+    c.push_back(expect(OP_SEMICOLON));
+    return getAST(NamespaceAliasDefinition);
+  }
+
+  AST qualifiedNamespaceSpecifier() {
+    VAST c;
+    zeroOrOne(nestedNameSpecifier);
+    c.push_back(TR(namespaceName));
+    return getAST(QualifiedNamespaceSpecifier);
   }
 
   AST usingDirective() {
-    return 0;
+    VAST c;
+    zeroOrMore(attributeSpecifier);
+    c.push_back(expect(KW_USING));
+    c.push_back(expect(KW_NAMESPACE));
+    zeroOrOne(nestedNameSpecifier);
+    c.push_back(expectIdentifier());
+    c.push_back(expect(OP_SEMICOLON));
+    return getAST(UsingDirective);
   }
 
   AST opaqueEnumDeclaration() {
-    return 0;
+    VAST c;
+    c.push_back(TR(enumKey));
+    zeroOrMore(attributeSpecifier);
+    c.push_back(expectIdentifier());
+    zeroOrOne(enumBase);
+    c.push_back(expect(OP_SEMICOLON));
+    return getAST(OpaqueEnumDeclaration);
   }
 
   AST explicitInstantiation() {
-    return 0;
+    VAST c;
+    if (isSimple(KW_EXTERN)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(expect(KW_TEMPLATE));
+    c.push_back(TR(declaration));
+    return getAST(ExplicitInstantiation);
   }
 
   AST explicitSpecialization() {
-    return 0;
+    VAST c;
+    c.push_back(expect(KW_TEMPLATE));
+    c.push_back(expect(OP_LT));
+    c.push_back(TR(closeAngleBracket));
+    c.push_back(TR(declaration));
+    return getAST(ExplicitSpecialization);
   }
 
   AST linkageSpecification() {
-    return 0;
+    VAST c;
+    c.push_back(expect(KW_EXTERN));
+    c.push_back(expectLiteral());
+    if (isSimple(OP_LBRACE)) {
+      c.push_back(getAdv());
+      zeroOrMore(declaration);
+      c.push_back(expect(OP_RBRACE));
+    } else {
+      c.push_back(TR(declaration));
+    }
+    return getAST(LinkageSpecification);
   }
 
   AST namespaceDefinition() {
-    return 0;
+    VAST c;
+    if (isSimple(KW_INLINE)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(expect(KW_NAMESPACE));
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    }
+    c.push_back(expect(OP_LBRACE));
+    c.push_back(TR(namespaceBody));
+    c.push_back(expect(OP_RBRACE));
+    return getAST(NamespaceDefinition);
+  }
+
+  AST namespaceBody() {
+    VAST c;
+    zeroOrMore(declaration);
+    return getAST(NamespaceBody);
   }
 
   AST emptyDeclaration() {
-    return 0;
+    // give it a separate layer
+    return expectM(ASTType::EmptyDeclaration, 
+                   "empty declaration", 
+                   {OP_SEMICOLON});
   }
 
   AST attributeDeclaration() {
-    return 0;
+    VAST c;
+    oneOrMore(attributeSpecifier);
+    c.push_back(expect(OP_SEMICOLON));
+    return getAST(AttributeDeclaration);
   }
 
   AST declarator() {
@@ -577,7 +656,71 @@ private:
   }
 
   AST parameterDeclarationClause() {
-    return 0;
+    AST node;
+    // prefer to reduce the non-(potentially)-empty version first
+    (node = BT(parameterDeclarationClauseA)) ||
+    (node = BT(parameterDeclarationClauseB));
+    return node;
+  }
+
+  AST parameterDeclarationClauseA() {
+    VAST c;
+    c.push_back(TR(parameterDeclarationList));
+    c.push_back(expect(OP_COMMA));
+    c.push_back(expect(OP_DOTS));
+    return getAST(ParameterDeclarationClause);
+  }
+
+  AST parameterDeclarationClauseB() {
+    VAST c;
+    zeroOrOne(parameterDeclarationList);
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return getAST(ParameterDeclarationClause);
+  }
+
+  AST parameterDeclarationList() {
+    return conditionalRepeat(ASTType::ParameterDeclarationList,
+                             TRF(parameterDeclaration),
+                             OP_COMMA);
+  }
+
+  AST parameterDeclaration() {
+    VAST c;
+    zeroOrMore(attributeSpecifier);
+    c.push_back(TR(declSpecifierSeq));
+    AST node;
+    // TODO: do we need to disambuiguate here?
+    (node = BT(parameterDeclarationSuffixA)) ||
+    (node = BT(parameterDeclarationSuffixB));
+    c.push_back(move(node));
+    return getAST(ParameterDeclaration);
+  }
+
+  AST parameterDeclarationSuffixA() {
+    VAST c;
+    c.push_back(TR(declarator));
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(initializerClause));
+    }
+    return getAST(ParameterDeclarationSuffix);
+  }
+
+  AST parameterDeclarationSuffixB() {
+    VAST c;
+    // TODO: if there is one we always take it; examine whether there are
+    // cases we miss because of this
+    // NOTE: in the entire implementation we'd assume this would not happen
+    // (some can be obvious, others we didn't check)
+    // Need more rigor around this
+    zeroOrOne(abstractDeclarator);
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(initializerClause));
+    }
+    return getAST(ParameterDeclarationSuffix);
   }
 
   AST refQualifier() {
@@ -705,15 +848,43 @@ private:
   }
   
   AST exceptionDeclaration() {
-    return nullptr;
+    VAST c;
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    } else {
+      zeroOrMore(attributeSpecifier);
+      oneOrMore(typeSpecifier);
+      zeroOrMore(attributeSpecifier);
+      // TODO: check whether this greedy treatment is sufficient
+      AST node;
+      if (node = BT(declarator)) {
+        c.push_back(move(node));
+      } else {
+        zeroOrOne(abstractDeclarator);
+      }
+    }
+    return getAST(ExceptionDeclaration);
   }
 
   AST conditionDeclaration() {
-    return nullptr;
+    VAST c;
+    zeroOrMore(attributeSpecifier);
+    c.push_back(TR(declSpecifierSeq));
+    c.push_back(TR(declarator));
+    if (isSimple(OP_ASS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(initializerClause));
+    } else {
+      c.push_back(TR(bracedInitList));
+    }
+    return getAST(ConditionDeclaration);
   }
 
   AST declarationStatement() {
-    return nullptr;
+    AST node = blockDeclaration();
+    VAST c;
+    c.push_back(move(node));
+    return getAST(DeclarationStatement);
   }
 
   /* ===============
@@ -1147,7 +1318,36 @@ private:
   }
 
   AST attributeArgumentClause() {
-    return nullptr;
+    VAST c;
+    c.push_back(expect(OP_LPAREN));
+    zeroOrMore(balancedToken);
+    c.push_back(expect(OP_RPAREN));
+    return getAST(AttributeArgumentClause);
+  }
+
+  // TODO: this can be made more efficient
+  AST balancedToken() {
+    VAST c;
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      c.push_back(TR(balancedToken));
+      c.push_back(expect(OP_RPAREN));
+    } else if (isSimple(OP_LSQUARE)) {
+      c.push_back(getAdv());
+      c.push_back(TR(balancedToken));
+      c.push_back(expect(OP_RSQUARE));
+    } else if (isSimple(OP_LBRACE)) {
+      c.push_back(getAdv());
+      c.push_back(TR(balancedToken));
+      c.push_back(expect(OP_RBRACE));
+    } else {
+      if (isSimple({OP_RPAREN, OP_RSQUARE, OP_RBRACE}) ||
+          isEof()) {
+        BAD_EXPECT("ST_NONPAREN"); 
+      }
+      c.push_back(getAdv());
+    }
+    return getAST(BalancedToken);
   }
 
   AST attributeToken() {
@@ -1625,7 +1825,70 @@ private:
   }
 
   AST templateParameterList() {
-    return nullptr;
+    return conditionalRepeat(ASTType::TemplateParameterList,
+                             TRF(templateParameter),
+                             OP_COMMA);
+  }
+
+  AST templateParameter() {
+    VAST c;
+    AST node;
+    (node = BT(typeParameter)) ||
+    (node = TR(parameterDeclaration));
+    return getAST(TemplateParameter);
+  }
+
+  AST typeParameter() {
+    VAST c;
+    if (isSimple({KW_CLASS, KW_TYPENAME})) {
+      c.push_back(getAdv());
+      AST node;
+      (node = BT(typeParameterSuffixA)) ||
+      (node = TR(typeParameterSuffixB));
+      c.push_back(move(node));
+    } else {
+      c.push_back(expect(KW_TEMPLATE));
+      c.push_back(expect(OP_LT));
+      c.push_back(TR(templateParameterList));
+      c.push_back(closeAngleBracket());
+      c.push_back(expect(KW_CLASS));
+      AST node;
+      (node = BT(typeParameterSuffixA)) ||
+      (node = TR(typeParameterSuffixC));
+      c.push_back(move(node));
+    }
+    return getAST(TypeParameter);
+  }
+
+  AST typeParameterSuffixA() {
+    VAST c;
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    }
+    return getAST(TypeParameterSuffix);
+  }
+
+  AST typeParameterSuffixB() {
+    VAST c;
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    }
+    c.push_back(expect(OP_ASS));
+    c.push_back(TR(typeId));
+    return getAST(TypeParameterSuffix);
+  }
+
+  AST typeParameterSuffixC() {
+    VAST c;
+    if (isIdentifier()) {
+      c.push_back(getAdv(ASTType::Identifier));
+    }
+    c.push_back(expect(OP_ASS));
+    c.push_back(TR(idExpression));
+    return getAST(TypeParameterSuffix);
   }
 
   AST aliasDeclaration() {
@@ -1960,7 +2223,48 @@ private:
   }
 
   AST qualifiedId() {
-    return nullptr;
+    AST node;
+    if (node = BT(qualifiedIdA)) {
+      return node;
+    } else {
+      VAST c;
+      c.push_back(expect(OP_COLON2));
+      if (isIdentifier()) {
+        return getAdv(ASTType::Identifier);
+      } else {
+        (node = BT(operatorFunctionId)) ||
+        (node = BT(literalOperatorId)) ||
+        (node = TR(templateId));
+        c.push_back(move(node));
+      }
+      return getAST(QualifiedId);
+    }
+  }
+
+  AST templateId() {
+    VAST c;
+    AST node;
+    if (node = BT(simpleTemplateId)) {
+      c.push_back(move(node));
+    } else {
+      (node = BT(operatorFunctionId)) ||
+      (node = TR(literalOperatorId));
+      c.push_back(move(node));
+      c.push_back(expect(OP_LT));
+      zeroOrOne(templateArgumentList);
+      c.push_back(TR(closeAngleBracket));
+    }
+    return getAST(TemplateId);
+  }
+
+  AST qualifiedIdA() {
+    VAST c;
+    c.push_back(TR(nestedNameSpecifier));
+    if (isSimple(KW_TEMPLATE)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(TR(unqualifiedId));
+    return getAST(QualifiedId);
   }
 
   AST decltypeSpecifier() {
@@ -2253,6 +2557,10 @@ private:
       BAD_EXPECT("0");
     }
     return getAdv(ASTType::StZero);
+  }
+
+  bool isEof() const {
+    return cur().isEof();
   }
 
   /* ====================

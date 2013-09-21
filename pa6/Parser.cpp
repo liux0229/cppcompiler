@@ -39,6 +39,12 @@
 #define BTF(func) ([this]() -> AST \
                    { return backtrack(&ParserImp::func, #func); })
 
+#define zeroOrMore(func) zeroOrMoreInternal(c, BTF(func));
+#define zeroOrOne(func) zeroOrOneInternal(c, BTF(func));
+#define oneOrMore(func) oneOrMoreInternal(c, TRF(func), BTF(func));
+
+#define getAST(type) get(ASTType::type, move(c))
+
 #if 0
 // shorthand
 #define cpbe(type) c.push_back(expect(type))
@@ -392,20 +398,310 @@ private:
    *  declarators
    * =============
    */
-  AST typeId() {
-    throw CompilerException("typeId not implemented");
+  AST declaration() {
+    VAST c;
+    AST node;
+    (node = BT(blockDeclaration)) || 
+    (node = BT(functionDefinition)) ||
+    (node = BT(templateDeclaration)) ||
+    (node = BT(explicitInstantiation)) ||
+    (node = BT(explicitSpecialization)) ||
+    (node = BT(linkageSpecification)) ||
+    (node = BT(namespaceDefinition)) ||
+    (node = BT(emptyDeclaration)) ||
+    (node = TR(attributeDeclaration));
+    c.push_back(move(node));
+    return get(ASTType::Declaration, move(c));
   }
 
-  AST declaration() {
-    return nullptr;
+  AST blockDeclaration() {
+    VAST c;
+    AST node;
+    (node = BT(simpleDeclaration)) ||
+    (node = BT(asmDefinition)) ||
+    (node = BT(namespaceAliasDefinition)) ||
+    (node = BT(usingDeclaration)) ||
+    (node = BT(usingDirective)) ||
+    (node = BT(staticAssertDeclaration)) ||
+    (node = BT(aliasDeclaration)) ||
+    (node = TR(opaqueEnumDeclaration));
+    c.push_back(move(node));
+    return get(ASTType::BlockDeclaration, move(c));
   }
 
   AST simpleDeclaration() {
-    return nullptr;
+    VAST c;
+    zeroOrMore(attributeSpecifier);
+    c.push_back(TR(declSpecifierSeq));
+    zeroOrOne(initDeclaratorList);
+    c.push_back(expect(OP_SEMICOLON));
+    return get(ASTType::SimpleDeclaration, move(c));
+  }
+
+  AST initDeclaratorList() {
+    return conditionalRepeat(ASTType::InitDeclaratorList,
+                             TRF(initDeclarator),
+                             OP_COMMA);
+  }
+
+  AST initDeclarator() {
+    VAST c;
+    c.push_back(TR(declarator));
+    zeroOrOne(initializer);
+    return get(ASTType::InitDeclarator, move(c));
+  }
+
+  AST initializer() {
+    VAST c;
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      c.push_back(TR(expressionList));
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      c.push_back(TR(braceOrEqualInitializer));
+    }
+    return get(ASTType::Initializer, move(c));
+  }
+
+  AST asmDefinition() {
+    return 0;
+  }
+
+  AST namespaceAliasDefinition() {
+    return 0;
+  }
+
+  AST usingDirective() {
+    return 0;
+  }
+
+  AST opaqueEnumDeclaration() {
+    return 0;
+  }
+
+  AST explicitInstantiation() {
+    return 0;
+  }
+
+  AST explicitSpecialization() {
+    return 0;
+  }
+
+  AST linkageSpecification() {
+    return 0;
+  }
+
+  AST namespaceDefinition() {
+    return 0;
+  }
+
+  AST emptyDeclaration() {
+    return 0;
+  }
+
+  AST attributeDeclaration() {
+    return 0;
   }
 
   AST declarator() {
-    return nullptr;
+    VAST c;
+    AST node;
+    if (node = BT(ptrDeclarator)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(TR(noptrDeclarator));
+      c.push_back(TR(trailingReturnType));
+    }
+    return get(ASTType::Declarator, move(c));
+  }
+
+  AST ptrDeclarator() {
+    VAST c;
+    zeroOrMore(ptrOperator);
+    c.push_back(TR(noptrDeclarator));
+    return get(ASTType::PtrDeclarator, move(c));
+  }
+
+  AST noptrDeclarator() {
+    VAST c;
+    c.push_back(TR(noptrDeclaratorRoot));
+    zeroOrMore(noptrDeclaratorSuffix);
+    return get(ASTType::NoptrDeclarator, move(c));
+  }
+
+  AST noptrDeclaratorRoot() {
+    VAST c;
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      c.push_back(TR(ptrDeclarator));
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      c.push_back(TR(declaratorId));
+      zeroOrMore(attributeSpecifier);
+    }
+    return get(ASTType::NoptrDeclaratorRoot, move(c));
+  }
+
+  AST declaratorId() {
+    VAST c;
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(TR(idExpression));
+    return getAST(DeclaratorId);
+  }
+
+  AST noptrDeclaratorSuffix() {
+    VAST c;
+    if (isSimple(OP_LSQUARE)) {
+      c.push_back(getAdv());
+      zeroOrOne(constantExpression);
+      c.push_back(expect(OP_RSQUARE));
+      zeroOrMore(attributeSpecifier);
+    } else {
+      c.push_back(TR(parametersAndQualifiers));
+    }
+    return get(ASTType::NoptrDeclaratorSuffix, move(c));
+  }
+
+  AST parametersAndQualifiers() {
+    VAST c;
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(parameterDeclarationClause));
+    c.push_back(expect(OP_RPAREN));
+    zeroOrMore(cvQualifier);
+    zeroOrOne(refQualifier);
+    zeroOrOne(exceptionSpecification);
+    zeroOrMore(attributeSpecifier);
+    return get(ASTType::ParametersAndQualifiers, move(c));
+  }
+
+  AST parameterDeclarationClause() {
+    return 0;
+  }
+
+  AST refQualifier() {
+    return expectM(ASTType::RefQualifier, "ref qualifier", {OP_AMP, OP_LAND});
+  }
+
+  AST exceptionSpecification() {
+    VAST c;
+    AST node;
+    (node = BT(dynamicExceptionSpecification)) ||
+    (node = TR(noexceptSpecification));
+    c.push_back(move(node));
+    return get(ASTType::ExceptionSpecification, move(c));
+  }
+
+  AST dynamicExceptionSpecification() {
+    VAST c;
+    c.push_back(expect(KW_THROW));
+    c.push_back(expect(OP_LPAREN));
+    zeroOrOne(typeIdList);
+    c.push_back(expect(OP_RPAREN));
+    return get(ASTType::DynamicExceptionSpecification, move(c));
+  }
+
+  AST typeIdList() {
+    return conditionalRepeat(ASTType::TypeIdList,
+                             TRF(typeIdDots),
+                             OP_COMMA);
+  }
+
+  AST typeIdDots() {
+    VAST c;
+    c.push_back(TR(typeId));
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return get(ASTType::TypeIdDots, move(c));
+  }
+
+  AST typeId() {
+    VAST c;
+    c.push_back(TR(typeSpecifierSeq));
+    zeroOrMore(abstractDeclarator);
+    return get(ASTType::TypeId, move(c));
+  }
+
+  AST abstractDeclarator() {
+    VAST c;
+    AST node;
+    bool ok = (node = BT(ptrAbstractDeclarator)) ||
+              (node = BT(abstractPackDeclarator));
+    if (ok) {
+      c.push_back(move(node));
+    } else {
+      zeroOrOne(noptrAbstractDeclarator);
+      c.push_back(TR(trailingReturnType));
+    }
+    return get(ASTType::AbstractDeclarator, move(c));
+  }
+
+  AST ptrAbstractDeclarator() {
+    // we do not seem to be able to determine which path to take by using
+    // FIRST / FOLLOW alone. So do generic BT
+    AST node;
+    (node = ptrAbstractDeclaratorA()) ||
+    (node = ptrAbstractDeclaratorB());
+    return node;
+  }
+
+  AST ptrAbstractDeclaratorA() {
+    VAST c;
+    zeroOrMore(ptrOperator);
+    c.push_back(TR(noptrAbstractDeclarator));
+    return get(ASTType::PtrAbstractDeclarator, move(c));
+  }
+
+  AST ptrAbstractDeclaratorB() {
+    VAST c;
+    oneOrMore(ptrOperator);
+    return get(ASTType::PtrAbstractDeclarator, move(c));
+  }
+
+  AST abstractPackDeclarator() {
+    VAST c;
+    zeroOrMore(ptrOperator);
+    c.push_back(TR(noptrAbstractDeclarator));
+    return get(ASTType::AbstractPackDeclarator, move(c));
+  }
+
+  AST noptrAbstractDeclarator() {
+    VAST c;
+    c.push_back(expect(OP_DOTS));
+    zeroOrMore(noptrDeclaratorSuffix);
+    return get(ASTType::NoptrAbstractDeclarator, move(c));
+  }
+
+  AST trailingReturnType() {
+    VAST c;
+    c.push_back(expect(OP_ARROW));
+    c.push_back(TR(trailingTypeSpecifierSeq));
+    zeroOrOne(abstractDeclarator);
+    return get(ASTType::TrailingReturnType, move(c));
+  }
+
+  AST trailingTypeSpecifierSeq() {
+    VAST c;
+    oneOrMore(trailingTypeSpecifier);
+    zeroOrMore(attributeSpecifier);
+    return getAST(TrailingTypeSpecifierSeq);
+  }
+
+  AST noexceptSpecification() {
+    VAST c;
+    c.push_back(expect(KW_NOEXCEPT));
+    zeroOrOne(noexceptSpecificationSuffix);
+    return getAST(NoexceptSpecification);
+  }
+
+  AST noexceptSpecificationSuffix() {
+    VAST c;
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(constantExpression));
+    c.push_back(expect(OP_RPAREN));
+    return getAST(NoexceptSpecificationSuffix);
   }
   
   AST exceptionDeclaration() {
@@ -886,7 +1182,7 @@ private:
     VAST c;
     if (isSimple({OP_AMP, OP_LAND})) {
       c.push_back(getAdv()); 
-      zeroOrMore(c, BTF(attributeSpecifier));
+      zeroOrMore(attributeSpecifier);
     } else {
       if (isSimple(OP_STAR)) {
         c.push_back(getAdv());
@@ -894,8 +1190,8 @@ private:
         c.push_back(TR(nestedNameSpecifier));
         c.push_back(expect(OP_STAR));
       }
-      zeroOrMore(c, BTF(attributeSpecifier));
-      zeroOrMore(c, BTF(cvQualifier));
+      zeroOrMore(attributeSpecifier);
+      zeroOrMore(cvQualifier);
     }
     return get(ASTType::PtrOperator, move(c));
   }
@@ -1664,7 +1960,7 @@ private:
   }
 
   AST qualifiedId() {
-    throw CompilerException("not implemented");
+    return nullptr;
   }
 
   AST decltypeSpecifier() {
@@ -2011,8 +2307,23 @@ private:
   }
 
   // TODO: this assumes that subParser is wrapped inside BTF
-  void zeroOrMore(VAST& c, function<AST ()> subParser) {
+  void zeroOrMoreInternal(VAST& c, function<AST ()> subParser) {
     while (AST node = subParser()) {
+      c.push_back(move(node));
+    }
+  }
+
+  void zeroOrOneInternal(VAST& c, function<AST ()> subParser) {
+    if (AST node = subParser()) {
+      c.push_back(move(node));
+    }
+  }
+
+  void oneOrMoreInternal(VAST& c, 
+                         function<AST ()> first, 
+                         function<AST ()> rest) {
+    c.push_back(first());
+    while (AST node = rest()) {
       c.push_back(move(node));
     }
   }

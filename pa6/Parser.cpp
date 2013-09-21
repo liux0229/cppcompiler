@@ -311,38 +311,73 @@ private:
       return get(ASTType::UnaryExpression, move(c));
     } else if (isSimple(KW_NOEXCEPT)) {
       return TR(noExceptExpression);
-    } else if (AST e = TR(newOrDeleteExpression)) {
-      return e;
     } else {
-      return TR(postfixExpression);
-    }
-  }
-
-  AST newOrDeleteExpression() {
-    if (isSimple(OP_COLON2)) {
-      AST colon2 = getAdv();
-      if (isSimple(KW_NEW)) {
-        return newExpression(move(colon2));
-      } else if (isSimple(KW_DELETE)) {
-        return deleteExpression(move(colon2));
-      } else {
-        // TODO: these kinds of messages expose internal implementations
-        BAD_EXPECT("KW_NEW or KW_DELETE");
-        return nullptr;
-      }
-    } else if (isSimple(KW_NEW)) {
-      return newExpression(nullptr);
-    } else if (isSimple(KW_DELETE)) {
-      return deleteExpression(nullptr);
-    } else {
-      return nullptr;
+      AST node;
+      (node = BT(newExpression)) ||
+      (node = BT(deleteExpression)) ||
+      (node = TR(postfixExpression));
+      return node;
     }
   }
 
   AST postfixExpression() {
     VAST c;
     c.push_back(TR(postfixRoot));
+    zeroOrMore(postfixSuffix);
     return get(ASTType::PostfixExpression, move(c));
+  }
+
+  AST postfixSuffix() {
+    VAST c;
+    if (isSimple({OP_INC, OP_DEC})) {
+      c.push_back(getAdv());
+    } else if (isSimple(OP_LSQUARE)) {
+      c.push_back(getAdv());
+      if (isSimple(OP_LBRACE)) {
+        c.push_back(TR(bracedInitList));
+      } else {
+        c.push_back(TR(expression));
+      }
+    } else if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      zeroOrOne(expressionList);
+      c.push_back(expect(OP_RPAREN));
+    } else if (isSimple({OP_DOT, OP_ARROW})) {
+      c.push_back(getAdv());
+      AST node;
+      if (node = BT(pseudoDestructorName)) {
+        c.push_back(move(node));
+      } else {
+        if (isSimple(KW_TEMPLATE)) {
+          c.push_back(getAdv());
+        }
+        c.push_back(TR(idExpression));
+      }
+    } else {
+      BAD_EXPECT("postfix suffix");
+    }
+  }
+
+  AST pseudoDestructorName() {
+    AST node;
+    (node = BT(pseudoDestructorNameA)) ||
+    (node = TR(pseudoDestructorNameB));
+    return node;
+  }
+
+  AST pseudoDestructorNameA() {
+    VAST c;
+    zeroOrOne(nestedNameSpecifier);
+    c.push_back(expect(OP_COMPL));
+    c.push_back(TR(typeName));
+    return getAST(PseudoDestructorName);
+  }
+
+  AST pseudoDestructorNameB() {
+    VAST c;
+    c.push_back(expect(OP_COMPL));
+    c.push_back(TR(decltypeSpecifier));
+    return getAST(PseudoDestructorName);
   }
 
   AST postfixRoot() {
@@ -1279,12 +1314,31 @@ private:
 
   AST attributeSpecifier() {
     VAST c;
-    c.push_back(expect(OP_LSQUARE));
-    c.push_back(expect(OP_LSQUARE));
-    c.push_back(TR(attributeList));
-    c.push_back(expect(OP_RSQUARE));
-    c.push_back(expect(OP_RSQUARE));
+    if (isSimple(OP_LSQUARE)) {
+      c.push_back(expect(OP_LSQUARE));
+      c.push_back(expect(OP_LSQUARE));
+      c.push_back(TR(attributeList));
+      c.push_back(expect(OP_RSQUARE));
+      c.push_back(expect(OP_RSQUARE));
+    } else {
+      c.push_back(TR(alignmentSpecifier));
+    }
     return get(ASTType::AttributeSpecifier, move(c));
+  }
+
+  AST alignmentSpecifier() {
+    VAST c;
+    c.push_back(expect(KW_ALIGNAS));
+    c.push_back(expect(OP_LPAREN));
+    AST node;
+    (node = BT(typeId)) ||
+    (node = TR(assignmentExpression));
+    c.push_back(move(node));
+    if (isSimple(OP_DOTS)) {
+      c.push_back(expect(OP_DOTS));
+    }
+    c.push_back(expect(OP_RPAREN));
+    return getAST(AlignmentSpecifier);
   }
 
   AST attributeList() {
@@ -2285,19 +2339,186 @@ private:
    * ===================
    */
   AST lambdaExpression() {
-    return nullptr;
+    VAST c;
+    c.push_back(TR(lambdaIntroducer));
+    zeroOrOne(lambdaDeclarator);
+    c.push_back(TR(compoundStatement));
+    return getAST(LambdaExpression);
+  }
+
+  AST lambdaIntroducer() {
+    VAST c;
+    c.push_back(expect(OP_LSQUARE));
+    zeroOrOne(lambdaCapture);
+    c.push_back(expect(OP_RSQUARE));
+    return getAST(LambdaIntroducer);
+  }
+
+  AST lambdaDeclarator() {
+    VAST c;
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(parameterDeclarationClause));
+    c.push_back(expect(OP_RPAREN));
+    if (isSimple(KW_MUTABLE)) {
+      c.push_back(getAdv());
+    }
+    zeroOrOne(exceptionSpecification);
+    zeroOrMore(attributeSpecifier);
+    zeroOrOne(trailingReturnType);
+    return getAST(LambdaDeclarator);
+  }
+
+  AST lambdaCapture() {
+    VAST c;
+    AST node;
+    if (node = BT(captureDefault)) {
+      c.push_back(move(node));
+      if (isSimple(OP_COMMA)) {
+        c.push_back(TR(captureList));
+      }
+    } else {
+      c.push_back(TR(captureList));
+    }
+    return getAST(LambdaCapture);
+  }
+
+  AST captureDefault() {
+    return expectM(ASTType::CaptureDefault, 
+                   "capture default", 
+                   {OP_AMP, OP_ASS});
+  }
+
+  AST captureList() {
+    return conditionalRepeat(ASTType::CaptureList,
+                             TRF(captureListAtom),
+                             OP_COMMA);
+  }
+
+  AST captureListAtom() {
+    VAST c;
+    c.push_back(TR(capture));
+    if (isSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+    }
+    return getAST(CaptureListAtom);
+  }
+
+  AST capture() {
+    VAST c;
+    if (isSimple(KW_THIS)) {
+      c.push_back(getAdv());
+    } else {
+      if (isSimple(OP_AMP)) {
+        c.push_back(getAdv());
+      }
+      c.push_back(expectIdentifier());
+    }
+    return getAST(Capture);
   }
 
   /* ===============
    *  new or delete
    * ===============
    */
-  AST newExpression(AST colon2) {
-    return nullptr;
+  AST newExpression() {
+    VAST c;
+    if (isSimple(OP_COLON2)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(expect(KW_NEW));
+    zeroOrOne(newPlacement);
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(getAdv());
+      c.push_back(TR(typeId));
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      c.push_back(TR(newTypeId));
+    }
+    zeroOrOne(newInitializer);
+    return getAST(NewExpression);
   }
 
-  AST deleteExpression(AST colon2) {
-    return nullptr;
+  AST newInitializer() {
+    VAST c;
+    if (isSimple(OP_LPAREN)) {
+      c.push_back(expect(OP_LPAREN));
+      zeroOrOne(expressionList);
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      c.push_back(TR(bracedInitList));
+    }
+    return getAST(NewInitializer);
+  }
+
+  AST newPlacement() {
+    VAST c;
+    c.push_back(expect(OP_LPAREN));
+    c.push_back(TR(expressionList));
+    c.push_back(expect(OP_RPAREN));
+    return getAST(NewPlacement);
+  }
+
+  AST newTypeId() {
+    VAST c;
+    c.push_back(TR(typeSpecifierSeq));
+    zeroOrOne(newDeclarator);
+    return getAST(NewTypeId);
+  }
+
+  AST newDeclarator() {
+    AST node;
+    (node = BT(newDeclaratorA)) ||
+    (node = TR(newDeclaratorB));
+    return node;
+  }
+
+  AST newDeclaratorA() {
+    VAST c;
+    zeroOrMore(ptrOperator);
+    c.push_back(TR(noptrNewDeclarator));
+    return getAST(NewDeclarator);
+  }
+
+  AST newDeclaratorB() {
+    VAST c;
+    oneOrMore(ptrOperator);
+    return getAST(NewDeclarator);
+  }
+
+  AST noptrNewDeclarator() {
+    VAST c;
+    c.push_back(expect(OP_LSQUARE));
+    c.push_back(TR(expression));
+    c.push_back(expect(OP_RSQUARE));
+    zeroOrMore(attributeSpecifier);
+    zeroOrMore(noptrNewDeclaratorSuffix);
+    return getAST(NoptrNewDeclarator);
+  }
+
+  AST noptrNewDeclaratorSuffix() {
+    VAST c;
+    c.push_back(expect(OP_LSQUARE));
+    c.push_back(TR(constantExpression));
+    c.push_back(expect(OP_RSQUARE));
+    zeroOrMore(attributeSpecifier);
+    return getAST(NoptrNewDeclaratorSuffix);
+  }
+
+  AST deleteExpression() {
+    VAST c;
+    if (isSimple(OP_COLON2)) {
+      c.push_back(getAdv());
+    }
+    c.push_back(expect(KW_DELETE));
+    AST node;
+    if (node = BT(castExpression)) {
+      c.push_back(move(node));
+    } else {
+      c.push_back(expect(OP_LSQUARE));
+      c.push_back(expect(OP_RSQUARE));
+      c.push_back(TR(castExpression));
+    }
+    return getAST(DeleteExpression);
   }
 
   /* ====================
@@ -2362,7 +2583,10 @@ private:
    * ==================
    */
   AST throwExpression() {
-    return nullptr;
+    VAST c;
+    c.push_back(expect(KW_THROW));
+    zeroOrOne(assignmentExpression);
+    return getAST(ThrowExpression);
   }
 
   /* ===================

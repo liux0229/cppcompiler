@@ -209,6 +209,24 @@ enum class ASTType
   TypeParameterSuffix,
   TypeParameter,
   TemplateId,
+
+  LambdaExpression,
+  LambdaIntroducer,
+  LambdaCapture,
+  CaptureListAtom,
+  CaptureList,
+  Capture,
+  LambdaDeclarator,
+  NewPlacement,
+  NewTypeId,
+  NewDeclarator,
+  NoptrNewDeclarator,
+  NoptrNewDeclaratorSuffix,
+  DeleteExpression,
+  CaptureDefault,
+  NewInitializer,
+  AlignmentSpecifier,
+  PseudoDestructorName,
   /* ===
      === */
 };
@@ -414,6 +432,23 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(TypeParameterSuffix, type-parameter-suffix),
   Z(TypeParameter, type-parameter),
   Z(TemplateId, template-id),
+  Z(LambdaExpression, lambda-expression),
+  Z(LambdaIntroducer, lambda-introducer),
+  Z(LambdaCapture, lambda-capture),
+  Z(CaptureListAtom, capture-list-atom),
+  Z(CaptureList, capture-list),
+  Z(Capture, capture),
+  Z(LambdaDeclarator, lambda-declarator),
+  Z(NewPlacement, new-placement),
+  Z(NewTypeId, new-type-id),
+  Z(NewDeclarator, new-declarator),
+  Z(NoptrNewDeclarator, noptr-new-declarator),
+  Z(NoptrNewDeclaratorSuffix, noptr-new-declarator-suffix),
+  Z(DeleteExpression, delete-expression),
+  Z(CaptureDefault, capture-default),
+  Z(NewInitializer, new-initializer),
+  Z(AlignmentSpecifier, alignment-specifier),
+  Z(PseudoDestructorName, pseudo-destructor-name),
 };
 #undef Z
 

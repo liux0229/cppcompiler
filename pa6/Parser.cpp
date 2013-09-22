@@ -403,7 +403,7 @@ private:
                   KW_REINTERPET_CAST, 
                   KW_CONST_CAST})) {
       c.push_back(getAdv());
-      c.push_back(expect(OP_LT));
+      c.push_back(expect(OP_LT_TEMPLATE));
       c.push_back(TR(typeId));
       c.push_back(TR(closeAngleBracket));
       c.push_back(expect(OP_LPAREN));
@@ -611,7 +611,7 @@ private:
   AST explicitSpecialization() {
     VAST c;
     c.push_back(expect(KW_TEMPLATE));
-    c.push_back(expect(OP_LT));
+    c.push_back(expect(OP_LT_TEMPLATE));
     c.push_back(TR(closeAngleBracket));
     c.push_back(TR(declaration));
     return getAST(ExplicitSpecialization);
@@ -1551,10 +1551,7 @@ private:
 
   AST classHeadName() {
     VAST c;
-    AST node;
-    if (node = BT(nestedNameSpecifier)) {
-      c.push_back(move(node));
-    }
+    zeroOrOne(nestedNameSpecifier);
     c.push_back(TR(className));
     return get(ASTType::ClassHeadName, move(c));
   }
@@ -1927,7 +1924,7 @@ private:
   AST templateDeclaration() {
     VAST c;
     c.push_back(expect(KW_TEMPLATE));
-    c.push_back(expect(OP_LT));
+    c.push_back(expect(OP_LT_TEMPLATE));
     c.push_back(TR(templateParameterList));
     c.push_back(TR(closeAngleBracket));
     c.push_back(TR(declaration));
@@ -1945,6 +1942,7 @@ private:
     AST node;
     (node = BT(typeParameter)) ||
     (node = TR(parameterDeclaration));
+    c.push_back(move(node));
     return getAST(TemplateParameter);
   }
 
@@ -1958,7 +1956,7 @@ private:
       c.push_back(move(node));
     } else {
       c.push_back(expect(KW_TEMPLATE));
-      c.push_back(expect(OP_LT));
+      c.push_back(expect(OP_LT_TEMPLATE));
       c.push_back(TR(templateParameterList));
       c.push_back(closeAngleBracket());
       c.push_back(expect(KW_CLASS));
@@ -2228,8 +2226,9 @@ private:
     if (!isClassName()) {
       BAD_EXPECT("class name"); 
     }
-    if (isTemplateName()) {
-      c.push_back(TR(simpleTemplateId)); 
+    AST node;
+    if (node = BT(simpleTemplateId)) {
+      c.push_back(move(node)); 
     } else {
       c.push_back(getAdv(ASTType::Identifier));
     }
@@ -2273,7 +2272,7 @@ private:
   AST simpleTemplateId() {
     VAST c;
     c.push_back(expectTemplateName());
-    c.push_back(expect(OP_LT));
+    c.push_back(expect(OP_LT_TEMPLATE));
     zeroOrOne(templateArgumentList);
     c.push_back(TR(closeAngleBracket));
     return get(ASTType::SimpleTemplateId, move(c));
@@ -2354,7 +2353,7 @@ private:
       (node = BT(operatorFunctionId)) ||
       (node = TR(literalOperatorId));
       c.push_back(move(node));
-      c.push_back(expect(OP_LT));
+      c.push_back(expect(OP_LT_TEMPLATE));
       zeroOrOne(templateArgumentList);
       c.push_back(TR(closeAngleBracket));
     }
@@ -2655,9 +2654,10 @@ private:
   AST get(ASTType type = ASTType::Terminal) const {
     return make_unique<ASTNode>(type, &cur());
   }
-  AST getAdv(ASTType type = ASTType::Terminal) {
+  AST getAdv(ASTType type = ASTType::Terminal, 
+             bool treatLtAsTemplateDelimiter = false) {
     auto r = get(type);
-    adv();
+    adv(treatLtAsTemplateDelimiter);
     return r;
   }
   AST get(ASTType type, VAST&& c) const {
@@ -2681,7 +2681,7 @@ private:
     CHECK(index_ + 1 < tokens_.size());
     return *tokens_[index_ + 1];
   }
-  void adv() { 
+  void adv(bool treatLtAsTemplateDelimiter) { 
     if (isTrace_) {
       for (int i = 0; i < traceDepth_; ++i) {
         cout << Trace::padding();
@@ -2689,7 +2689,7 @@ private:
       cout << format("=== MATCH [{}]\n", cur().toStr());
     }
 
-    handleBrackets();
+    handleBrackets(treatLtAsTemplateDelimiter);
 
     ++index_; 
   }
@@ -2700,13 +2700,14 @@ private:
    */
   // TODO: consider making this a separate class
   // Maintain nested levels of brackets
-  void handleBrackets() {
+  void handleBrackets(bool treatLtAsTemplateDelimiter) {
     static map<ETokenType, ETokenType> mapping {
       { OP_RSQUARE, OP_LSQUARE },
       { OP_RPAREN, OP_LPAREN },
       { OP_RBRACE, OP_LBRACE }
     };
-    if (isSimple({OP_LSQUARE, OP_LPAREN, OP_LBRACE, OP_LT})) {
+    if (isSimple({OP_LSQUARE, OP_LPAREN, OP_LBRACE}) ||
+        (treatLtAsTemplateDelimiter && isSimple(OP_LT))) {
       // starting a new nested level - always allowed
       brackets_.push_back(index_);
       // traceBrackets();
@@ -2772,11 +2773,12 @@ private:
   }
 
   AST expectFromFunc(ETokenType type, const char* func) {
-    bool recordLAngle = false;
-    if (!isSimple(type)) {
-      complainExpect(getSimpleTokenTypeName(type), func);
+    // Note: this treatmeant requires OP_LT_TEMPLATE be sent through expect()
+    auto expectedType = type == OP_LT_TEMPLATE ? OP_LT : type;
+    if (!isSimple(expectedType)) {
+      complainExpect(getSimpleTokenTypeName(expectedType), func);
     }
-    return getAdv(recordLAngle);
+    return getAdv(ASTType::Terminal, type == OP_LT_TEMPLATE);
   }
 
   AST expectMultipleFromFunc(ASTType type,

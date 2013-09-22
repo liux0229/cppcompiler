@@ -238,6 +238,7 @@ enum ETokenType
   // helper tokens for parsing
   OP_RSHIFT_1,
   OP_RSHIFT_2,
+  OP_LT_TEMPLATE,
 };
 
 // StringToETokenTypeMap map of `simple` `preprocessing-tokens` to ETokenType
@@ -512,7 +513,8 @@ const std::map<ETokenType, std::string> TokenTypeToStringMap =
 	{OP_ARROW, "OP_ARROW"},
 
   {OP_RSHIFT_1, "OP_RSHIFT_1"},
-  {OP_RSHIFT_2, "OP_RSHIFT_2"}
+  {OP_RSHIFT_2, "OP_RSHIFT_2"},
+  {OP_LT_TEMPLATE, "OP_LT_TEMPLATE"}, // string value not used
 };
 
 std::string getSimpleTokenTypeName(ETokenType type) {

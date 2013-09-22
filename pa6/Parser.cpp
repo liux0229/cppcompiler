@@ -295,15 +295,19 @@ private:
     VAST c;
     if (isSimple(KW_SIZEOF)) {
       c.push_back(getAdv());
-      if (isSimple(OP_LPAREN)) {
-        c.push_back(typeIdInParen(ASTType::TypeIdInParen));
-      } else if (isSimple(OP_DOTS)) {
-        c.push_back(getAdv());
-        c.push_back(expect(OP_LPAREN));
-        c.push_back(expectIdentifier());
-        c.push_back(expect(OP_RPAREN));
+      AST node;
+      // FIRST(unaryExpression) contains OP_LPAREN
+      if (node = BT(unaryExpression)) {
+        c.push_back(move(node));
       } else {
-        c.push_back(TR(unaryExpression));
+        if (isSimple(OP_LPAREN)) {
+          c.push_back(typeIdInParen(ASTType::TypeIdInParen));
+        } else {
+          c.push_back(expect(OP_DOTS));
+          c.push_back(expect(OP_LPAREN));
+          c.push_back(expectIdentifier());
+          c.push_back(expect(OP_RPAREN));
+        }
       }
       return get(ASTType::UnaryExpression, move(c));
     } if (isSimple(KW_ALIGNOF)) {
@@ -1436,15 +1440,15 @@ private:
     VAST c;
     if (isSimple(OP_LPAREN)) {
       c.push_back(getAdv());
-      c.push_back(TR(balancedToken));
+      zeroOrMore(balancedToken);
       c.push_back(expect(OP_RPAREN));
     } else if (isSimple(OP_LSQUARE)) {
       c.push_back(getAdv());
-      c.push_back(TR(balancedToken));
+      zeroOrMore(balancedToken);
       c.push_back(expect(OP_RSQUARE));
     } else if (isSimple(OP_LBRACE)) {
       c.push_back(getAdv());
-      c.push_back(TR(balancedToken));
+      zeroOrMore(balancedToken);
       c.push_back(expect(OP_RBRACE));
     } else {
       if (isSimple({OP_RPAREN, OP_RSQUARE, OP_RBRACE}) ||
@@ -2161,10 +2165,7 @@ private:
   // TODO; this seems redudant to something
   AST forRangeDeclaration() {
     VAST c;
-    AST node; 
-    while (node = attributeSpecifier()) {
-      c.push_back(move(node));
-    }
+    zeroOrMore(attributeSpecifier);
     c.push_back(TR(declSpecifierSeq));
     c.push_back(TR(declarator));
     return get(ASTType::ForRangeDeclaration, move(c));
@@ -2185,6 +2186,7 @@ private:
     if (isSimple({KW_BREAK, KW_CONTINUE})) {
       c.push_back(getAdv());
     } else if (isSimple(KW_RETURN)) {
+      c.push_back(getAdv());
       if (isSimple(OP_LBRACE)) {
         c.push_back(TR(bracedInitList));
       } else if (!isSimple(OP_SEMICOLON)) {
@@ -2272,10 +2274,7 @@ private:
     VAST c;
     c.push_back(expectTemplateName());
     c.push_back(expect(OP_LT));
-    auto node = BT(templateArgumentList);
-    if (node) {
-      c.push_back(move(node));
-    }
+    zeroOrOne(templateArgumentList);
     c.push_back(TR(closeAngleBracket));
     return get(ASTType::SimpleTemplateId, move(c));
   }
@@ -2713,12 +2712,15 @@ private:
       // traceBrackets();
     } else if (isSimple({OP_RSQUARE, OP_RPAREN, OP_RBRACE})) {
       auto lhs = mapping[getSimpleTokenType(cur())];
-      // our parsing shouldn't allow this to happen
 
       traceBrackets();
-
-      CHECK(!brackets_.empty() && 
-            lhs == getSimpleTokenType(*tokens_[brackets_.back()]));
+      
+      // swallow any '>' in between
+      while (!brackets_.empty() && bracketsBack() == OP_LT) {
+        brackets_.pop_back();
+      }
+      // our parsing shouldn't allow this to happen
+      CHECK(!brackets_.empty() && lhs == bracketsBack());
       brackets_.pop_back();
     } else if (cur().isSimple()) { 
       // note that we avoid calling isSimple because it treats
@@ -2728,7 +2730,7 @@ private:
         traceBrackets();
 
         if (!brackets_.empty() && 
-            getSimpleTokenType(*tokens_[brackets_.back()]) == OP_LT) {
+            bracketsBack() == OP_LT) {
           // this terminal has been treated as a closing bracket in the parsing
           // so 'close' the beginning bracket
           brackets_.pop_back();
@@ -2738,9 +2740,13 @@ private:
       }
     }
   }
+  ETokenType bracketsBack() const {
+    CHECK(!brackets_.empty());
+    return getSimpleTokenType(*tokens_[brackets_.back()]);
+  }
   bool treatRAngleBracketAsOperator() const {
     return brackets_.empty() || 
-           getSimpleTokenType(*tokens_[brackets_.back()]) != OP_LT;
+           bracketsBack() != OP_LT;
   }
 
   // debugging facility
@@ -2766,10 +2772,11 @@ private:
   }
 
   AST expectFromFunc(ETokenType type, const char* func) {
+    bool recordLAngle = false;
     if (!isSimple(type)) {
       complainExpect(getSimpleTokenTypeName(type), func);
     }
-    return getAdv();
+    return getAdv(recordLAngle);
   }
 
   AST expectMultipleFromFunc(ASTType type,

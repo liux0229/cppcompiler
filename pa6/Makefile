@@ -71,7 +71,7 @@ test3: clean ctrlexpr
 	scripts/compare_results.pl ref my tests-pa3
 
 # test posttoken application
-test2: clean pptoken
+test2: clean posttoken
 	scripts/run_all_tests.pl posttoken my tests-pa2
 	scripts/compare_results.pl ref my tests-pa2
 

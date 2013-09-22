@@ -90,15 +90,23 @@ public:
     : tokens_(tokens),
       isTrace_(isTrace) { }
   AST process() {
-    AST root = TR(constantExpression);
+    AST root = TR(translationUnit);
     cout << root->toStr(true /* collapse */) << endl;
-    // root = constantExpression();
-    // cout << root->toStr(false /* collapse */) << endl;
     return root;
   }
 
 private:
   typedef vector<AST> VAST;
+
+  AST translationUnit() {
+    VAST c;
+    zeroOrMore(declaration);
+    if (!isEof()) {
+      BAD_EXPECT("<eof>");
+    }
+    // don't reduce EOF to allow the tracing facility to continue read it
+    return getAST(TranslationUnit);
+  }
 
   /* =====================
    *  constant expression
@@ -338,6 +346,7 @@ private:
       } else {
         c.push_back(TR(expression));
       }
+      c.push_back(expect(OP_RSQUARE));
     } else if (isSimple(OP_LPAREN)) {
       c.push_back(getAdv());
       zeroOrOne(expressionList);
@@ -356,6 +365,7 @@ private:
     } else {
       BAD_EXPECT("postfix suffix");
     }
+    return getAST(PostfixSuffix);
   }
 
   AST pseudoDestructorName() {
@@ -382,7 +392,42 @@ private:
 
   AST postfixRoot() {
     VAST c;
-    c.push_back(TR(primaryExpression));
+    AST node;
+    if (isSimple({KW_DYNAMIC_CAST, 
+                  KW_STATIC_CAST, 
+                  // TODO: typo
+                  KW_REINTERPET_CAST, 
+                  KW_CONST_CAST})) {
+      c.push_back(getAdv());
+      c.push_back(expect(OP_LT));
+      c.push_back(TR(typeId));
+      c.push_back(TR(closeAngleBracket));
+      c.push_back(expect(OP_LPAREN));
+      c.push_back(TR(expression));
+      c.push_back(expect(OP_RPAREN));
+    } else if (isSimple(KW_TYPEID)) {
+      c.push_back(getAdv());
+      c.push_back(expect(OP_LPAREN));
+      (node = BT(expression)) ||
+      (node = TR(typeId));
+      c.push_back(move(node));
+      c.push_back(expect(OP_RPAREN));
+    } else {
+      if (node = BT(primaryExpression)) {
+        c.push_back(move(node));
+      } else {
+        (node = BT(simpleTypeSpecifier)) ||
+        (node = TR(typenameSpecifier));
+        c.push_back(move(node));
+        if (isSimple(OP_LPAREN)) {
+          c.push_back(getAdv());
+          zeroOrOne(expressionList);
+          c.push_back(expect(OP_RPAREN));
+        } else {
+          c.push_back(TR(bracedInitList));
+        }
+      }
+    }
     return get(ASTType::PostfixRoot, move(c));
   }
 
@@ -716,9 +761,15 @@ private:
   }
 
   AST parameterDeclarationList() {
-    return conditionalRepeat(ASTType::ParameterDeclarationList,
-                             TRF(parameterDeclaration),
-                             OP_COMMA);
+    // parameter-declaration-list's FOLLOW contains OP_COMMA
+    // so need special handling
+    VAST c;
+    c.push_back(TR(parameterDeclaration));
+    while (isSimple(OP_COMMA) && !nextIsSimple(OP_DOTS)) {
+      c.push_back(getAdv());
+      c.push_back(TR(parameterDeclaration));
+    }
+    return getAST(ParameterDeclarationList);
   }
 
   AST parameterDeclaration() {
@@ -798,7 +849,7 @@ private:
   AST typeId() {
     VAST c;
     c.push_back(TR(typeSpecifierSeq));
-    zeroOrMore(abstractDeclarator);
+    zeroOrOne(abstractDeclarator);
     return get(ASTType::TypeId, move(c));
   }
 
@@ -820,8 +871,8 @@ private:
     // we do not seem to be able to determine which path to take by using
     // FIRST / FOLLOW alone. So do generic BT
     AST node;
-    (node = ptrAbstractDeclaratorA()) ||
-    (node = ptrAbstractDeclaratorB());
+    (node = BT(ptrAbstractDeclaratorA)) ||
+    (node = TR(ptrAbstractDeclaratorB));
     return node;
   }
 
@@ -939,9 +990,7 @@ private:
 
   AST unqualifiedId() {
     VAST c;
-    if (isIdentifier()) {
-      c.push_back(getAdv(ASTType::Identifier));
-    } else if (isSimple(KW_OPERATOR)) {
+    if (isSimple(KW_OPERATOR)) {
       // almost as efficient as checking FIRST, except for the exception catch
       AST node;
       (node = BT(literalOperatorId)) ||
@@ -955,6 +1004,14 @@ private:
       } else {
         c.push_back(TR(className));
       }
+    } else {
+      // TODO: it's unclear to me how to disambiguate between
+      // identifier and template-id (since FOLLOW(unqualified-id) contains <)
+      // for now, always try to reduce template-id first
+      AST node;
+      (node = BT(templateId)) ||
+      (node = expectIdentifier());
+      c.push_back(move(node));
     }
     return get(ASTType::UnqualifiedId, move(c));
   }
@@ -1060,14 +1117,8 @@ private:
 
   AST typeSpecifierSeq() {
     VAST c;
-    c.push_back(TR(typeSpecifier));
-    AST node;
-    while (node = BT(typeSpecifier)) {
-      c.push_back(move(node));
-    }
-    while (node = BT(attributeSpecifier)) {
-      c.push_back(move(node));
-    }
+    oneOrMore(typeSpecifier);
+    zeroOrMore(attributeSpecifier);
     return get(ASTType::TypeSpecifierSeq, move(c));
   }
 
@@ -1174,11 +1225,11 @@ private:
     } else {
       if (isSimple(OP_COLON2)) {
         c.push_back(getAdv());
-        if (isNamespaceName()) {
-          c.push_back(TR(namespaceName));
-        } else {
-          c.push_back(TR(typeName));
-        }
+      }
+      if (isNamespaceName()) {
+        c.push_back(TR(namespaceName));
+      } else {
+        c.push_back(TR(typeName));
       }
     }
     c.push_back(expect(OP_COLON2));
@@ -1225,6 +1276,7 @@ private:
         c.push_back(move(node));
       } else {
         bool ok = false;
+        // Note: this should be correct but a little tricky
         if (node = BT(nestedNameSpecifier)) {
           c.push_back(move(node));
           if (isSimple(KW_TEMPLATE)) {
@@ -1801,7 +1853,7 @@ private:
   AST compoundStatement() {
     VAST c;
     c.push_back(expect(OP_LBRACE));
-    if (!isSimple(OP_RBRACE)) {
+    while (!isSimple(OP_RBRACE)) {
       c.push_back(TR(statement));
     }
     c.push_back(getAdv());
@@ -2250,10 +2302,9 @@ private:
       c.push_back(TR(idExpression));
     } else {
       // Implement FIRST here
-      auto node = BT(constantExpression);
-      if (!node) {
-        node = BT(typeId);
-      }
+      AST node;
+      (node = BT(constantExpression)) ||
+      (node = TR(typeId));
       c.push_back(move(node));
     }
     return get(ASTType::TemplateArgument, move(c));
@@ -2374,6 +2425,7 @@ private:
     if (node = BT(captureDefault)) {
       c.push_back(move(node));
       if (isSimple(OP_COMMA)) {
+        c.push_back(getAdv());
         c.push_back(TR(captureList));
       }
     } else {
@@ -2593,6 +2645,13 @@ private:
    *  utility functions
    * ===================
    */
+  struct ParserState {
+    ParserState(size_t i, const vector<size_t>& b)
+      : index(i), brackets(b) { }
+    size_t index;
+    vector<size_t> brackets;
+  };
+
   typedef AST (ParserImp::*SubParser)();
   AST get(ASTType type = ASTType::Terminal) const {
     return make_unique<ASTNode>(type, &cur());
@@ -2612,7 +2671,10 @@ private:
   size_t curPos() const {
     return index_;
   }
-  void reset(size_t pos) { index_ = pos; }
+  void reset(ParserState&& state) { 
+    index_ = state.index;
+    brackets_ = move(state.brackets);
+  }
 
   // We rarely need to look ahead 2 chars
   // but in certain cases we do
@@ -2648,26 +2710,52 @@ private:
     if (isSimple({OP_LSQUARE, OP_LPAREN, OP_LBRACE, OP_LT})) {
       // starting a new nested level - always allowed
       brackets_.push_back(index_);
+      // traceBrackets();
     } else if (isSimple({OP_RSQUARE, OP_RPAREN, OP_RBRACE})) {
       auto lhs = mapping[getSimpleTokenType(cur())];
       // our parsing shouldn't allow this to happen
+
+      traceBrackets();
+
       CHECK(!brackets_.empty() && 
             lhs == getSimpleTokenType(*tokens_[brackets_.back()]));
       brackets_.pop_back();
-    } else if (isSimple({OP_GT, OP_RSHIFT_1, OP_RSHIFT_2})) {
-      if (!brackets_.empty() && 
-          getSimpleTokenType(*tokens_[brackets_.back()]) == OP_LT) {
-        // this terminal has been treated as a closing bracket in the parsing
-        // so 'close' the beginning bracket
-        brackets_.pop_back();
+    } else if (cur().isSimple()) { 
+      // note that we avoid calling isSimple because it treats
+      // the following three tokens in a special way
+      auto type = getSimpleTokenType(cur());
+      if (type == OP_GT || type == OP_RSHIFT_1 || type == OP_RSHIFT_2) {
+        traceBrackets();
+
+        if (!brackets_.empty() && 
+            getSimpleTokenType(*tokens_[brackets_.back()]) == OP_LT) {
+          // this terminal has been treated as a closing bracket in the parsing
+          // so 'close' the beginning bracket
+          brackets_.pop_back();
+        }
+        // else this terminal was treated as an operator in the parsing
+        // so ignore it for bracketing purposes
       }
-      // else this terminal was treated as an operator in the parsing
-      // so ignore it for bracketing purposes
     }
   }
   bool treatRAngleBracketAsOperator() const {
     return brackets_.empty() || 
            getSimpleTokenType(*tokens_[brackets_.back()]) != OP_LT;
+  }
+
+  // debugging facility
+  void traceBrackets() const {
+    static map<ETokenType, char> m { 
+      { OP_LSQUARE, '[' },
+      { OP_LPAREN,  '(' },
+      { OP_LBRACE,  '{' },
+      { OP_LT,      '<' }
+    };
+    cout << "Brackets: ";
+    for (auto b : brackets_) {
+      cout << m[getSimpleTokenType(*tokens_[b])];
+    }
+    cout << endl;
   }
 
   void complainExpect(string&& expected, const char* func) const {
@@ -2916,11 +3004,11 @@ private:
   }
 
   AST backtrack(SubParser parser, const char *name) {
-    size_t curIndex = index_;
+    ParserState state { index_, brackets_ };
     try {
       return tracedCall(parser, name);
     } catch (const CompilerException&) {
-      reset(curIndex);
+      reset(move(state));
       return nullptr;
     }
   }

@@ -227,6 +227,8 @@ enum class ASTType
   NewInitializer,
   AlignmentSpecifier,
   PseudoDestructorName,
+  PostfixSuffix,
+  TranslationUnit,
   /* ===
      === */
 };
@@ -449,6 +451,8 @@ const std::map<ASTType, std::string> astTypeToString = {
   Z(NewInitializer, new-initializer),
   Z(AlignmentSpecifier, alignment-specifier),
   Z(PseudoDestructorName, pseudo-destructor-name),
+  Z(PostfixSuffix, postfix-suffix),
+  Z(TranslationUnit, translation-unit),
 };
 #undef Z
 

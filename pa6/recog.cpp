@@ -11,7 +11,7 @@
 using namespace std;
 using namespace compiler;
 
-bool DoRecog(BuildEnv env, const string& source, bool isTrace)
+bool DoRecog(BuildEnv env, const string& source, const Parser::Option& option)
 {
   try {
     vector<UToken> tokens;
@@ -30,13 +30,24 @@ bool DoRecog(BuildEnv env, const string& source, bool isTrace)
     });
     processor.process();
 
-    Parser(tokens, isTrace).process();
+    Parser(tokens, option).process();
     return true;
   } catch (const exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
     return false;
   }
 };
+
+bool hasSwitch(vector<string>& args, const char* name)
+{
+  auto it = find(args.begin(), args.end(), name);
+  bool ret = false;
+  if (it != args.end()) {
+    ret = true;
+    args.erase(it);
+  }
+  return ret;
+}
 
 int main(int argc, char** argv)
 {
@@ -48,11 +59,12 @@ int main(int argc, char** argv)
 		for (int i = 1; i < argc; i++)
 			args.emplace_back(argv[i]);
 
-    auto itTrace = find(args.begin(), args.end(), "--trace");
-    bool isTrace = false;
-    if (itTrace != args.end()) {
-      isTrace = true;
-      args.erase(itTrace);
+    Parser::Option option;
+    if (hasSwitch(args, "--trace")) {
+      option.isTrace = true;
+    }
+    if (hasSwitch(args, "--expand")) {
+      option.isCollapse = false;
     }
 
 		if (args.size() < 3 || args[0] != "-o")
@@ -68,7 +80,7 @@ int main(int argc, char** argv)
 		for (size_t i = 0; i < nsrcfiles; i++)
 		{
 			string srcFile = args[i+2];
-      bool success = DoRecog(env, srcFile, isTrace);
+      bool success = DoRecog(env, srcFile, option);
       out << format("{} {}\n", srcFile, (success ? "OK" : "BAD"));
 		}
 	}

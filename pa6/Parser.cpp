@@ -86,12 +86,12 @@ string ASTNode::toStr(string indent, bool collapse) const {
 class ParserImp
 {
 public:
-  ParserImp(const vector<UToken>& tokens, bool isTrace)
+  ParserImp(const vector<UToken>& tokens, const Parser::Option& option)
     : tokens_(tokens),
-      isTrace_(isTrace) { }
+      option_(option) { }
   AST process() {
     AST root = TR(translationUnit);
-    cout << root->toStr(true /* collapse */) << endl;
+    cout << root->toStr(option_.isCollapse) << endl;
     return root;
   }
 
@@ -520,6 +520,8 @@ private:
     VAST c;
     zeroOrMore(attributeSpecifier);
     c.push_back(TR(declSpecifierSeq));
+    // TODO: initDeclaratorList can only be omitted when declaring a class
+    // or enumeration
     zeroOrOne(initDeclaratorList);
     c.push_back(expect(OP_SEMICOLON));
     return get(ASTType::SimpleDeclaration, move(c));
@@ -2682,7 +2684,7 @@ private:
     return *tokens_[index_ + 1];
   }
   void adv(bool treatLtAsTemplateDelimiter) { 
-    if (isTrace_) {
+    if (option_.isTrace) {
       for (int i = 0; i < traceDepth_; ++i) {
         cout << Trace::padding();
       }
@@ -2714,7 +2716,7 @@ private:
     } else if (isSimple({OP_RSQUARE, OP_RPAREN, OP_RBRACE})) {
       auto lhs = mapping[getSimpleTokenType(cur())];
 
-      traceBrackets();
+      // traceBrackets();
       
       // swallow any '>' in between
       while (!brackets_.empty() && bracketsBack() == OP_LT) {
@@ -2728,7 +2730,8 @@ private:
       // the following three tokens in a special way
       auto type = getSimpleTokenType(cur());
       if (type == OP_GT || type == OP_RSHIFT_1 || type == OP_RSHIFT_2) {
-        traceBrackets();
+
+        // traceBrackets();
 
         if (!brackets_.empty() && 
             bracketsBack() == OP_LT) {
@@ -3006,7 +3009,7 @@ private:
   };
   
   AST tracedCall(SubParser parser, const char* name) {
-    Trace trace(isTrace_, name, bind(&ParserImp::cur, this), traceDepth_);
+    Trace trace(option_.isTrace, name, bind(&ParserImp::cur, this), traceDepth_);
     AST root = CALL_MEM_FUNC(*this, parser)();
     trace.success();
     return root;
@@ -3025,7 +3028,7 @@ private:
   const vector<UToken>& tokens_;
   size_t index_ { 0 };
 
-  bool isTrace_;
+  Parser::Option option_;
   int traceDepth_ { 0 };
 
   vector<size_t> brackets_;
@@ -3033,7 +3036,7 @@ private:
 
 AST Parser::process()
 {
-  return ParserImp(tokens_, isTrace_).process();
+  return ParserImp(tokens_, option_).process();
 }
 
 }

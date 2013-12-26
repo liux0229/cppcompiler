@@ -24,9 +24,6 @@ int main(int argc, char** argv)
     if (ParserOption::hasSwitch(args, "--trace")) {
       option.isTrace = true;
     }
-    if (ParserOption::hasSwitch(args, "--expand")) {
-      option.isCollapse = false;
-    }
 
 		if (args.size() < 3 || args[0] != "-o")
 			throw logic_error("invalid usage");

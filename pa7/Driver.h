@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "ParserCommon.h"
 #include "BuildEnv.h"
 #include "Preprocessor.h"
 #include "Namespace.h"

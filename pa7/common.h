@@ -10,6 +10,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <utility>
 
 namespace compiler {
 
@@ -22,6 +23,25 @@ namespace compiler {
                        } while (false)
 
 #define CALL_MEM_FUNC(obj, ptr) ((obj).*ptr)
+
+template<typename Obj, typename R, typename ...Args>
+class Delegate {
+ public:
+  using Func = R (Obj::*)(Args...);
+  Delegate(Obj* obj, Func func) : obj_(obj), func_(func) { }
+  R operator()(Args... args) {
+    return (obj_->*func_)(std::forward<Args>(args)...);
+  }
+ private:
+  Obj* obj_; 
+  Func func_;
+};
+
+template<typename Obj, typename R, typename ...Args>
+auto make_delegate(R (Obj::*func)(Args...), Obj* obj) -> 
+     Delegate<Obj, R, Args...> {
+  return Delegate<Obj, R, Args...>(obj, func);
+}
 
 namespace {
 
@@ -41,23 +61,6 @@ void Throw(const char* fmt, Args&&... args)
 }
 
 } // anoymous
-
-struct ParserOption
-{
-  static bool hasSwitch(std::vector<std::string>& args, const char* name)
-  {
-    auto it = std::find(args.begin(), args.end(), name);
-    bool ret = false;
-    if (it != args.end()) {
-      ret = true;
-      args.erase(it);
-    }
-    return ret;
-  }
-
-  bool isTrace { false };
-  bool isCollapse { true };
-};
 
 } // compiler
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "ParserCommon.h"
 #include "PostProcessingToken.h"
 #include "ASTType.h"
 #include <vector>

@@ -1,5 +1,5 @@
 #include "Driver.h"
-#include "Parser.h"
+#include "SemanticParser.h"
 
 #include <exception>
 
@@ -24,7 +24,7 @@ void Driver::postTokenProcessor(const PostToken& token) {
 void Driver::process() {
   try {
     preprocessor_.process();
-    Parser(tokens_, parserOption_).process();
+    SemanticParser(tokens_, parserOption_).process();
   } catch (const exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
   }

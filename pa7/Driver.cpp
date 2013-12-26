@@ -1,5 +1,5 @@
 #include "Driver.h"
-#include "SemanticParser.h"
+#include "parsers/SemanticParser.h"
 
 #include <exception>
 

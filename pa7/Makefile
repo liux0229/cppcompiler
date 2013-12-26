@@ -1,5 +1,5 @@
 CFLAGS=-g -Wall
-CPPFLAGS=-g -Wall -std=gnu++11
+CPPFLAGS=-g -Wall -std=gnu++11 -I.
 CC=ccache gcc
 CXX=ccache g++
 
@@ -23,34 +23,34 @@ PreProcOBJs=preproc.o $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 ParserLib=Parser.o
 RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-NsDeclLib=Driver.o SemanticParser.o Namespace.o Type.o DeclSpecifiers.o
+NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o
 NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
 all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl
 
 pptoken: $(PPTokenOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o pptoken $(PPTokenOBJs)
+	$(CXX) $(CPPFLAGS) -o pptoken $(PPTokenOBJs)
 
 posttoken: $(PostTokenOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o posttoken $(PostTokenOBJs)
+	$(CXX) $(CPPFLAGS) -o posttoken $(PostTokenOBJs)
 
 ctrlexpr: $(CtrlExprOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o ctrlexpr $(CtrlExprOBJs)
+	$(CXX) $(CPPFLAGS) -o ctrlexpr $(CtrlExprOBJs)
 
 macro: $(MacroOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o macro $(MacroOBJs)
+	$(CXX) $(CPPFLAGS) -o macro $(MacroOBJs)
 
 preproc: $(PreProcOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o preproc $(PreProcOBJs)
+	$(CXX) $(CPPFLAGS) -o preproc $(PreProcOBJs)
 
 recog: $(RecogOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o recog $(RecogOBJs)
+	$(CXX) $(CPPFLAGS) -o recog $(RecogOBJs)
 
 nsdecl: $(NsDeclOBJs)
-	$(CXX) -g -std=gnu++11 -Wall -o nsdecl $(NsDeclOBJs)
+	$(CXX) $(CPPFLAGS) -o nsdecl $(NsDeclOBJs)
 
 clean:
-	rm -f *.o pptoken posttoken ctrlexpr macro preproc recog nsdecl
+	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl
 
 # test nsdecl application
 test: clean nsdecl

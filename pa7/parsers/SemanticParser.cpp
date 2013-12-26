@@ -12,9 +12,9 @@
 
 #define EXB(func) #func, make_delegate(&Base::func, static_cast<Base*>(this))
 
-#include "SemanticParserBase-inc.cpp"
-#include "SemanticParserSimpleDeclaration-inc.cpp"
-#include "SemanticParserConstantExpression-inc.cpp"
+#include "parsers/Base-inl.cpp"
+#include "parsers/SimpleDeclaration-inl.cpp"
+#include "parsers/ConstantExpression-inl.cpp"
 
 #define EX(func) #func, make_delegate(&ParserImp::func, this)
 
@@ -22,13 +22,15 @@ namespace compiler {
 
 using namespace std;
 
+namespace SemanticParserImp {
+
 class ParserImp : 
-        SemanticParserImp::SimpleDeclaration,
-        SemanticParserImp::ConstantExpression
+        SimpleDeclaration,
+        ConstantExpression
 {
 public:
   ParserImp(const vector<UToken>& tokens, const ParserOption& option)
-    : SemanticParserImp::Base(tokens, option) {
+    : Base(tokens, option) {
   }
   void process() {
     TR(EX(translationUnit));
@@ -46,9 +48,11 @@ private:
 
 };
 
+}
+
 void SemanticParser::process()
 {
-  ParserImp(tokens_, option_).process();
+  SemanticParserImp::ParserImp(tokens_, option_).process();
 }
 
 }

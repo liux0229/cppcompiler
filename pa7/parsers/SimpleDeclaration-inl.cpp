@@ -121,21 +121,6 @@ struct SimpleDeclaration : virtual Base {
     return TR(EX(ptrDeclarator));
   }
 
-  UPtrOperator ptrOperator() {
-    if (tryAdvSimple(OP_AMP)) {
-      return make_unique<PtrOperator>(PtrOperator::LValueRef);
-    } else if (tryAdvSimple(OP_LAND)) {
-      return make_unique<PtrOperator>(PtrOperator::RValueRef);
-    } else {
-      expect(OP_STAR);
-      CvQualifier cvQualifiers;
-      while (auto cv = BT(EX(cvQualifier))) {
-        cvQualifiers |= *cv;
-      }
-      return make_unique<PtrOperator>(PtrOperator::Pointer, cvQualifiers);
-    }
-  }
-
   // TODO: a purely recursive parse may not be very efficient
   UDeclarator ptrDeclarator() {
     UPtrOperator op = BT(EX(ptrOperator));
@@ -144,6 +129,13 @@ struct SimpleDeclaration : virtual Base {
     }
 
     UDeclarator declarator = TR(EX(ptrDeclarator));
+    applyPtrOperator(declarator, op);
+    return declarator;
+  }
+
+  // TODO: consider moving this to Declarator
+  void applyPtrOperator(const UDeclarator& declarator, 
+                        const UPtrOperator& op) const {
     SType type;
     switch (op->type) {
       case PtrOperator::LValueRef:
@@ -159,7 +151,21 @@ struct SimpleDeclaration : virtual Base {
     }
 
     declarator->typeList.append(type);
-    return declarator;
+  }
+
+  UPtrOperator ptrOperator() {
+    if (tryAdvSimple(OP_AMP)) {
+      return make_unique<PtrOperator>(PtrOperator::LValueRef);
+    } else if (tryAdvSimple(OP_LAND)) {
+      return make_unique<PtrOperator>(PtrOperator::RValueRef);
+    } else {
+      expect(OP_STAR);
+      CvQualifier cvQualifiers;
+      while (auto cv = BT(EX(cvQualifier))) {
+        cvQualifiers |= *cv;
+      }
+      return make_unique<PtrOperator>(PtrOperator::Pointer, cvQualifiers);
+    }
   }
 
   UDeclarator noptrDeclarator() {
@@ -202,7 +208,99 @@ struct SimpleDeclaration : virtual Base {
   }
 
   void noptrDeclaratorSuffixFunction(const UDeclarator& declarator) {
-    throw CompilerException("not implemented");
+    auto funcType = TR(EX(parametersAndQualifiers));
+    declarator->typeList.append(funcType);
+  }
+
+  SType parametersAndQualifiers() {
+    expect(OP_LPAREN);
+    auto ret = TR(EX(parameterDeclarationClause));
+    expect(OP_RPAREN);
+    return ret;
+  }
+
+  SType parameterDeclarationClause() {
+    SType ret;
+    vector<SType> parameters;
+    bool hasVarArgs = false;
+    if (!isSimple(OP_RPAREN)) {
+      if (tryAdvSimple(OP_DOTS)) {
+        hasVarArgs = true;
+      } else {
+        parameters = TR(EX(parameterDeclarationList));
+        if (tryAdvSimple(OP_COMMA)) {
+          expect(OP_DOTS);
+          hasVarArgs = true;
+        } else if (tryAdvSimple(OP_DOTS)) {
+          hasVarArgs = true;
+        }
+      }
+    } // else: empty parameter list: '()'
+
+    return make_shared<FunctionType>(move(parameters), hasVarArgs);
+  }
+
+  vector<SType> parameterDeclarationList() {
+    vector<SType> params;
+    params.push_back(TR(EX(parameterDeclaration)));
+    while (isSimple(OP_COMMA) && !nextIsSimple(OP_DOTS)) {
+      adv();
+      params.push_back(TR(EX(parameterDeclaration)));
+    }
+    return params;
+  }
+
+  SType parameterDeclaration() {
+    DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
+    // TODO: disallow typedef and storage class
+    UDeclarator declarator;
+    (declarator = BT(EX(declarator))) ||
+    (declarator = BT(EX(abstractDeclarator))) ||
+    (declarator = make_unique<Declarator>());
+    declarator->typeList.append(declSpecifiers.type);
+    return declarator->typeList.root;
+  }
+
+  UDeclarator abstractDeclarator() {
+    return TR(EX(ptrAbstractDeclarator));
+  }
+
+  UDeclarator ptrAbstractDeclarator() {
+    vector<UPtrOperator> ops;
+    while (auto op = BT(EX(ptrOperator))) {
+      ops.push_back(move(op));
+    }
+    auto declarator = BT(EX(noptrAbstractDeclarator));
+    if (!declarator) {
+      if (ops.empty()) {
+        BAD_EXPECT("noptrAbstractDeclarator");
+      }
+      declarator = make_unique<Declarator>();
+    }
+    for (int i = ops.size() - 1; i >= 0; --i) {
+      applyPtrOperator(declarator, ops[i]);
+    }
+    return declarator;
+  }
+
+  UDeclarator noptrAbstractDeclarator() {
+    auto declarator = BT(EX(noptrAbstractDeclaratorRoot));
+    if (!declarator) {
+      declarator = make_unique<Declarator>();
+      TR(EX(noptrDeclaratorSuffix), declarator);
+    }
+
+    while (BT(EX(noptrDeclaratorSuffix), declarator)) {
+    }
+
+    return declarator;
+  }
+
+  UDeclarator noptrAbstractDeclaratorRoot() {
+    expect(OP_LPAREN);
+    auto declarator = TR(EX(ptrAbstractDeclarator));
+    expect(OP_RPAREN);
+    return declarator;
   }
 
 #if 0
@@ -261,144 +359,6 @@ struct SimpleDeclaration : virtual Base {
                    {OP_SEMICOLON});
   }
 
-  AST parametersAndQualifiers() {
-    VAST c;
-    c.push_back(expect(OP_LPAREN));
-    c.push_back(TR(parameterDeclarationClause));
-    c.push_back(expect(OP_RPAREN));
-    // TODO:
-    // zeroOrMore(cvQualifier);
-    // zeroOrOne(refQualifier);
-    // zeroOrOne(exceptionSpecification);
-    // zeroOrMore(attributeSpecifier);
-    return get(ASTType::ParametersAndQualifiers, move(c));
-  }
-
-  AST parameterDeclarationClause() {
-    AST node;
-    // prefer to reduce the non-(potentially)-empty version first
-    (node = BT(parameterDeclarationClauseA)) ||
-    (node = BT(parameterDeclarationClauseB));
-    return node;
-  }
-
-  AST parameterDeclarationClauseA() {
-    VAST c;
-    c.push_back(TR(parameterDeclarationList));
-    c.push_back(expect(OP_COMMA));
-    c.push_back(expect(OP_DOTS));
-    return getAST(ParameterDeclarationClause);
-  }
-
-  AST parameterDeclarationClauseB() {
-    VAST c;
-    zeroOrOne(parameterDeclarationList);
-    if (isSimple(OP_DOTS)) {
-      c.push_back(getAdv());
-    }
-    return getAST(ParameterDeclarationClause);
-  }
-
-  AST parameterDeclarationList() {
-    // parameter-declaration-list's FOLLOW contains OP_COMMA
-    // so need special handling
-    // TODO: we need a generic way of ensuring that these cases are handled
-    // correctly
-    // We can probably directly do a backtracking here instead
-    VAST c;
-    c.push_back(TR(parameterDeclaration));
-    while (isSimple(OP_COMMA) && !nextIsSimple(OP_DOTS)) {
-      c.push_back(getAdv());
-      c.push_back(TR(parameterDeclaration));
-    }
-    return getAST(ParameterDeclarationList);
-  }
-
-  AST parameterDeclaration() {
-    VAST c;
-    c.push_back(TR(declSpecifierSeq));
-    AST node;
-    // TODO: do we need to disambuiguate here?
-    // TODO: how to make this efficient (e.g. how do we know there is no
-    // declarator - or we can discover that while we are parsing)?
-    (node = BT(parameterDeclarationSuffixA)) ||
-    (node = BT(parameterDeclarationSuffixB));
-    c.push_back(move(node));
-    return getAST(ParameterDeclaration);
-  }
-
-  AST parameterDeclarationSuffixA() {
-    VAST c;
-    c.push_back(TR(declarator));
-    return getAST(ParameterDeclarationSuffix);
-  }
-
-  AST parameterDeclarationSuffixB() {
-    VAST c;
-    // TODO: if there is one we always take it; examine whether there are
-    // cases we miss because of this
-    // NOTE: in the entire implementation we'd assume this would not happen
-    // (some can be obvious, others we didn't check)
-    // Need more rigor around this
-    zeroOrOne(abstractDeclarator);
-    return getAST(ParameterDeclarationSuffix);
-  }
-
-  AST typeId() {
-    VAST c;
-    c.push_back(TR(typeSpecifierSeq));
-    zeroOrOne(abstractDeclarator);
-    return get(ASTType::TypeId, move(c));
-  }
-
-  AST abstractDeclarator() {
-    VAST c;
-    c.push_back(TR(ptrAbstractDeclarator));
-    // TODO: trailing-return-type && abstract-pack-declarator
-    return get(ASTType::AbstractDeclarator, move(c));
-  }
-
-  AST ptrAbstractDeclarator() {
-    // TODO: we do not seem to be able to determine which path to take by using
-    // FIRST / FOLLOW alone. So do generic BT
-    // TODO: I think we might be able to simplify this
-    AST node;
-    (node = BT(ptrAbstractDeclaratorA)) ||
-    (node = TR(ptrAbstractDeclaratorB));
-    return node;
-  }
-
-  AST ptrAbstractDeclaratorA() {
-    VAST c;
-    zeroOrMore(ptrOperator);
-    c.push_back(TR(noptrAbstractDeclarator));
-    return get(ASTType::PtrAbstractDeclarator, move(c));
-  }
-
-  AST ptrAbstractDeclaratorB() {
-    VAST c;
-    oneOrMore(ptrOperator);
-    return get(ASTType::PtrAbstractDeclarator, move(c));
-  }
-
-  AST noptrAbstractDeclarator() {
-    VAST c;
-    if (AST node = BT(noptrAbstractDeclaratorRoot)) {
-      c.push_back(move(node));
-      zeroOrMore(noptrDeclaratorSuffix);
-    } else {
-      oneOrMore(noptrDeclaratorSuffix);
-    }
-    return get(ASTType::NoptrAbstractDeclarator, move(c));
-  }
-
-  AST noptrAbstractDeclaratorRoot() {
-    VAST c;
-    c.push_back(expect(OP_LPAREN));
-    c.push_back(TR(ptrAbstractDeclarator));
-    c.push_back(expect(OP_RPAREN));
-    return getAST(NoptrAbstractDeclaratorRoot);
-  }
 #endif
 
   /* ===============

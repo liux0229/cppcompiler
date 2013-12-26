@@ -26,9 +26,15 @@ using DeclaratorId = std::string;
 MakeUnique(DeclaratorId);
 
 struct Declarator {
-  Declarator(const DeclaratorId& i) : id(i) { }
-  DerivedTypeList typeList;
+  Declarator() : abstract(true) { }
+  explicit Declarator(const DeclaratorId& i) 
+             : abstract(false),
+               id(i) { 
+  }
+
+  bool abstract;
   DeclaratorId id;  
+  DerivedTypeList typeList;
 };
 MakeUnique(Declarator);
 

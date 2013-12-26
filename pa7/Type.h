@@ -5,8 +5,6 @@
 
 namespace compiler {
 
-#define MakeUnique(type) using U ## type = std::unique_ptr<type>
-
 struct CvQualifier {
   enum Value {
     None = 0x0,
@@ -48,7 +46,7 @@ MakeUnique(CvQualifier);
 std::ostream& operator<<(std::ostream& out, const CvQualifier& cvQualifier);
 
 class Type;
-typedef std::shared_ptr<Type> SType;
+MakeShared(Type);
 
 class Type {
  public:
@@ -59,9 +57,16 @@ class Type {
   virtual void setCvQualifier(CvQualifier cvQualifier) {
     cvQualifier_ = cvQualifier;
   }
-  // TODO: make this pure
-  virtual void output(std::ostream& out) const { }
+
+  virtual void output(std::ostream& out) const = 0;
   virtual SType clone() const = 0;
+
+  // type traits
+  virtual bool isVoid() const { return false; }
+  virtual bool isPointer() const { return false; }
+  virtual bool isReference() const { return false; }
+  virtual bool isArray() const { return false; }
+  virtual bool isFunction() const { return false; }
 
   void outputCvQualifier(std::ostream& out) const {
     out << cvQualifier_;
@@ -95,11 +100,18 @@ class FundalmentalType : public Type {
   FundalmentalType(ETokenType type) : FundalmentalType(TypeSpecifiers{type}) {
   }
   FundalmentalType(const TypeSpecifiers& typeSpecifier);
+
+  EFundamentalType getType() const { return type_; }
+
   SType combine(const Type& other) const override;
   void output(std::ostream& out) const override;
   SType clone() const override {
     return std::make_shared<FundalmentalType>(*this);
   }
+  bool isVoid() const override {
+    return type_ == FT_VOID;
+  }
+
  private:
   struct Compare {
     bool operator()(const TypeSpecifiers& a, const TypeSpecifiers& b);
@@ -118,7 +130,7 @@ class DependentType : public Type {
     depended_ = depended;
   }
  protected:
-  virtual void checkDepended(SType depended) = 0;
+  virtual void checkDepended(SType depended) const = 0;
   void outputDepended(std::ostream& out) const;
   SType depended_;
 };
@@ -128,10 +140,14 @@ class PointerType : public DependentType {
   SType clone() const override {
     return std::make_shared<PointerType>(*this);
   }
+
   void output(std::ostream& out) const override;
+  bool isPointer() const override { return true; }
+
  protected:
-  void checkDepended(SType depended) override { }
+  void checkDepended(SType depended) const override;
 };
+MakeShared(PointerType);
 
 class ReferenceType : public DependentType {
  public:
@@ -140,6 +156,7 @@ class ReferenceType : public DependentType {
     RValueRef
   };
   ReferenceType(Kind kind) : kind_(kind) { }
+
   SType clone() const override {
     return std::make_shared<ReferenceType>(*this);
   }
@@ -147,11 +164,10 @@ class ReferenceType : public DependentType {
     // cv-qualifiers applied to a reference type is ignored
   }
   void output(std::ostream& out) const override;
+  bool isReference() const override { return true; }
 
  protected:
-  void checkDepended(SType depended) override {
-    // TODO: apply restrictions
-  }
+  void checkDepended(SType depended) const override;
 
  private:
   Kind kind_;
@@ -160,14 +176,18 @@ class ReferenceType : public DependentType {
 class ArrayType : public DependentType {
  public:
   ArrayType(size_t size) : size_(size) { }
+
   SType clone() const override {
     return std::make_shared<ArrayType>(*this);
   }
   void setCvQualifier(CvQualifier cvQualifier) override;
   void output(std::ostream& out) const override;
+  bool isArray() const override { return true; }
+
+  SPointerType toPointer() const; 
 
  protected:
-  void checkDepended(SType depended) override;
+  void checkDepended(SType depended) const override;
 
  private:
   size_t size_;
@@ -175,17 +195,20 @@ class ArrayType : public DependentType {
 
 class FunctionType : public DependentType {
  public:
+  FunctionType(std::vector<SType>&& params, bool hasVarArgs);
+
   SType clone() const override {
     return std::make_shared<FunctionType>(*this);
   }
+  bool isFunction() const override { return true; }
 
  protected:
-  void checkDepended(SType depended) override { 
-    // TODO
-  }
+  void checkDepended(SType depended) const override;
+  void output(std::ostream& out) const override;
 
  private:
   std::vector<SType> parameters_;
+  bool hasVarArgs_;
 };
 
 }

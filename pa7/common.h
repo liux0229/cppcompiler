@@ -12,8 +12,6 @@
 #include <vector>
 #include <utility>
 
-namespace compiler {
-
 #define CHECK(f) assert(f)
 #define MCHECK(f, msg) do {\
                          if (!(f)) {\
@@ -23,6 +21,11 @@ namespace compiler {
                        } while (false)
 
 #define CALL_MEM_FUNC(obj, ptr) ((obj).*ptr)
+
+#define MakeUnique(type) using U ## type = std::unique_ptr<type>
+#define MakeShared(type) using S ## type = std::shared_ptr<type>
+
+namespace compiler {
 
 template<typename Obj, typename R, typename ...Args>
 class Delegate {

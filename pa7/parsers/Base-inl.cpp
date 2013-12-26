@@ -104,6 +104,13 @@ struct Base {
     return *tokens_[index_];
   }
 
+  // We rarely need to look ahead 2 chars
+  // but in certain cases we do
+  const PostToken& next() const {
+    CHECK(index_ + 1 < tokens_.size());
+    return *tokens_[index_ + 1];
+  }
+
   void reset(ParserState&& state) { 
     index_ = state.index;
   }
@@ -129,6 +136,13 @@ struct Base {
       return nullptr;
     }
     return getAdvSimple();
+  }
+
+  bool nextIsSimple(ETokenType type) const {
+    if (!next().isSimple()) {
+      return false;
+    }
+    return getSimpleTokenType(next()) == type;
   }
 
   void complainExpect(string&& expected, const char* func) const {

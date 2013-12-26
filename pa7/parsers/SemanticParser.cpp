@@ -1,6 +1,12 @@
-// TODO: it is possible to use a separate compilation model
+// TODO: 
+// 1. It is possible to use a separate compilation model
 // after we have a clear understanding of the interfaces between
 // the sub-modules
+// 2. Need a better error handling mechanism, i.e. need to be able to
+// differentiate between "parse error because of bad probe" to "parse error
+// because program is ill formed" - some way of expressing "after this point, if
+// we an error, that must be because the program is ill formed". Without this,
+// if the program is ill formed, we will do unncessary parsing.
 
 #include "SemanticParser.h"
 

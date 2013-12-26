@@ -152,10 +152,22 @@ void DependentType::outputDepended(ostream& out) const {
   }
 }
 
+void PointerType::checkDepended(SType depended) const {
+  if (depended->isReference()) {
+    Throw("cannot have a pointer to a reference: {}", *depended);
+  }
+}
+
 void PointerType::output(ostream& out) const {
   outputCvQualifier(out);
   out << "pointer to ";
   outputDepended(out);
+}
+
+void ReferenceType::checkDepended(SType depended) const {
+  if (depended->isVoid()) {
+    Throw("cannot have a reference to void");
+  }
 }
 
 void ReferenceType::output(ostream& out) const {
@@ -168,14 +180,16 @@ void ReferenceType::output(ostream& out) const {
   outputDepended(out);
 }
 
-void ArrayType::checkDepended(SType depended) {
-  if (dynamic_cast<FunctionType*>(&*depended)) {
+void ArrayType::checkDepended(SType depended) const {
+  if (depended->isFunction()) {
     Throw("array element type cannot be a function: {}", *depended);
   }
-  if (dynamic_cast<ReferenceType*>(&*depended)) {
+  if (depended->isReference()) {
     Throw("array element type cannot be a reference: {}", *depended);
   }
-  // TODO: check void
+  if (depended->isVoid()) {
+    Throw("array element type cannot be void");
+  }
 }
 
 void ArrayType::setCvQualifier(CvQualifier cvQualifier) {
@@ -191,6 +205,65 @@ void ArrayType::output(ostream& out) const {
   } else {
     out << "unknown bound of ";
   }
+  outputDepended(out);
+}
+
+SPointerType ArrayType::toPointer() const {
+  auto ret = make_shared<PointerType>();
+  ret->setDepended(depended_);
+  return ret;
+}
+
+FunctionType::FunctionType(std::vector<SType>&& params, bool hasVarArgs)
+  : parameters_(std::move(params)),
+    hasVarArgs_(hasVarArgs) {
+  // validate and normalize
+
+  if (any_of(parameters_.begin(), 
+             parameters_.end(), 
+             [](SType type) { return type->isVoid(); })) {
+    if (parameters_.size() > 1 || hasVarArgs_) {
+      Throw("function parameter types can either be the form (void), "
+            "or do not contain void");
+    }
+    parameters_.clear();
+  }
+
+  for (auto& p : parameters_) {
+    if (p->isArray()) {
+      p = static_cast<ArrayType&>(*p).toPointer();
+    } else if (p->isFunction()) {
+      auto pointer = make_shared<PointerType>();
+      pointer->setDepended(p);
+      p = pointer;
+    }
+    // TODO: need a way to preserve cv-qualifiers for function definition use
+    p->setCvQualifier(CvQualifier::None);
+  }
+}
+
+void FunctionType::checkDepended(SType depended) const {
+  if (depended->isArray()) {
+    Throw("function cannot return an array: {}", *depended);
+  }
+  if (depended->isFunction()) {
+    Throw("function cannot return a function: {}", *depended);
+  }
+}
+
+void FunctionType::output(ostream& out) const {
+  out << "function of (";
+  const char* sep = "";
+  for (auto& p : parameters_) {
+    out << sep << *p;
+    sep = ", ";
+  }
+
+  if (hasVarArgs_) {
+    out << sep << "...";
+  }
+
+  out << ") returning ";
   outputDepended(out);
 }
 

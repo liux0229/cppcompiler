@@ -40,9 +40,9 @@ int main(int argc, char** argv)
       out << "start translation unit " << srcFile << endl;
       Driver driver(env, srcFile, option);
       driver.process();
-      auto& globalNs = driver.getGlobalNs();
-      out << globalNs;
-      out << "end translation unit";
+      auto globalNs = driver.getGlobalNamespace();
+      out << *globalNs;
+      out << "end translation unit" << endl;
 		}
 	}
 	catch (exception& e)

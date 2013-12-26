@@ -23,7 +23,9 @@ struct Base {
 
   Base(const vector<UToken>& tokens, const ParserOption& option)
     : tokens_(tokens),
-      option_(option) { }
+      option_(option) { 
+    frame_ = make_unique<Frame>();
+  }
 
   struct ParserState {
     ParserState(size_t i)
@@ -257,6 +259,8 @@ struct Base {
 
   ParserOption option_;
   int traceDepth_ { 0 };
+
+  UFrame frame_;
 };
 
 vector<UToken> Base::emptyTokens_;

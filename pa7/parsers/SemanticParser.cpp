@@ -38,8 +38,10 @@ public:
   ParserImp(const vector<UToken>& tokens, const ParserOption& option)
     : Base(tokens, option) {
   }
-  void process() {
+
+  UFrame process() {
     TR(EX(translationUnit));
+    return move(frame_);
   }
 
 private:
@@ -56,9 +58,9 @@ private:
 
 }
 
-void SemanticParser::process()
+UFrame SemanticParser::process()
 {
-  SemanticParserImp::ParserImp(tokens_, option_).process();
+  return SemanticParserImp::ParserImp(tokens_, option_).process();
 }
 
 }

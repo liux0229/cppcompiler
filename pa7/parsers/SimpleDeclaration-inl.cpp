@@ -46,8 +46,11 @@ struct SimpleDeclaration : virtual Base {
     expect(OP_SEMICOLON);
 
     for (auto& declarator : declarators) {
-      declarator->typeList.append(declSpecifiers.type);
-      cout << declarator->id << " " << *declarator->typeList.root << endl;
+      declarator->appendType(declSpecifiers.type);
+      frame_->curNamespace()->addMember(
+                                declarator->getId(),
+                                declarator->getType());
+      // cout << declarator->getId() << " " << *declarator->getType() << endl;
     }
   }
 
@@ -150,7 +153,7 @@ struct SimpleDeclaration : virtual Base {
         break;
     }
 
-    declarator->typeList.append(type);
+    declarator->appendType(type);
   }
 
   UPtrOperator ptrOperator() {
@@ -204,12 +207,12 @@ struct SimpleDeclaration : virtual Base {
     }
     expect(OP_RSQUARE);
     auto arrayType = make_shared<ArrayType>(size);
-    declarator->typeList.append(arrayType);
+    declarator->appendType(arrayType);
   }
 
   void noptrDeclaratorSuffixFunction(const UDeclarator& declarator) {
     auto funcType = TR(EX(parametersAndQualifiers));
-    declarator->typeList.append(funcType);
+    declarator->appendType(funcType);
   }
 
   SType parametersAndQualifiers() {
@@ -257,8 +260,8 @@ struct SimpleDeclaration : virtual Base {
     (declarator = BT(EX(declarator))) ||
     (declarator = BT(EX(abstractDeclarator))) ||
     (declarator = make_unique<Declarator>());
-    declarator->typeList.append(declSpecifiers.type);
-    return declarator->typeList.root;
+    declarator->appendType(declSpecifiers.type);
+    return declarator->getType();
   }
 
   UDeclarator abstractDeclarator() {

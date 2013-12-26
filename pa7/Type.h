@@ -210,5 +210,6 @@ class FunctionType : public DependentType {
   std::vector<SType> parameters_;
   bool hasVarArgs_;
 };
+MakeShared(FunctionType);
 
 }

@@ -24,14 +24,14 @@ void Driver::postTokenProcessor(const PostToken& token) {
 void Driver::process() {
   try {
     preprocessor_.process();
-    SemanticParser(tokens_, parserOption_).process();
+    frame_ = SemanticParser(tokens_, parserOption_).process();
   } catch (const exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
   }
 }
 
-const Namespace& Driver::getGlobalNs() const {
-  return globalNs_;
+const Namespace* Driver::getGlobalNamespace() const {
+  return frame_->getGlobalNamespace();
 }
 
 }

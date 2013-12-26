@@ -4,7 +4,7 @@
 #include "parsers/ParserCommon.h"
 #include "BuildEnv.h"
 #include "Preprocessor.h"
-#include "Namespace.h"
+#include "Frame.h"
 
 #include <functional>
 
@@ -23,15 +23,13 @@ class Driver {
       parserOption_(option) {
   }
   void process();
-  const Namespace& getGlobalNs() const;
+  const Namespace* getGlobalNamespace() const;
  private:
   void postTokenProcessor(const PostToken& token);
   std::vector<UToken> tokens_;
   Preprocessor preprocessor_;
   ParserOption parserOption_;
-
-  // dummy
-  Namespace globalNs_;
+  UFrame frame_;
 };
 
 }

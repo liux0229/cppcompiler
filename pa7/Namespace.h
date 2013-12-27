@@ -10,42 +10,79 @@ MakeUnique(Namespace);
 class Namespace {
  public:
   enum class MemberKind {
-    NotDeclared = 0x1,
-    Namespace = 0x2,
-    Variable = 0x4,
-    Function = 0x8,
-    Typedef = 0x10,
+    Namespace = 0x1,
+    Variable = 0x2,
+    Function = 0x4,
+    Typedef = 0x8,
   };
 
-  struct Member {
-    virtual MemberKind getKind() const { return MemberKind::NotDeclared; }
+  class NamespaceMember;
+  class VariableMember;
+  class FunctionMember;
+  class TypedefMember;
+  MakeShared(NamespaceMember);
+  MakeShared(VariableMember);
+  MakeShared(FunctionMember);
+  MakeShared(TypedefMember);
+
+  struct Member : std::enable_shared_from_this<Member> {
+    virtual MemberKind getKind() const = 0;
+
+    bool isVariable() const {
+      return getKind() == MemberKind::Variable;
+    }
+    bool isFunction() const {
+      return getKind() == MemberKind::Function;
+    }
     bool isTypedef() const {
       return getKind() == MemberKind::Typedef;
     }
+    bool isNamespace() const {
+      return getKind() == MemberKind::Namespace;
+    }
+
+    SVariableMember toVariable() {
+      CHECK(isVariable());
+      return std::static_pointer_cast<VariableMember>(shared_from_this());
+    }
+    SFunctionMember toFunction() {
+      CHECK(isFunction());
+      return std::static_pointer_cast<FunctionMember>(shared_from_this());
+    }
+    STypedefMember toTypedef() {
+      CHECK(isTypedef());
+      return std::static_pointer_cast<TypedefMember>(shared_from_this());
+    }
+    SNamespaceMember toNamespace() {
+      CHECK(isNamespace());
+      return std::static_pointer_cast<NamespaceMember>(shared_from_this());
+    }
   };
-  MakeUnique(Member);
-  using VMember = std::vector<UMember>;
+  MakeShared(Member);
+  using VMember = std::vector<SMember>;
 
   struct TypedefMember : Member {
     TypedefMember(SType t) : type(t) { }
     MemberKind getKind() const override { return MemberKind::Typedef; }
     SType type;
   };
-  MakeUnique(TypedefMember);
+
   struct VariableMember : Member {
     VariableMember(SType t) : type(t) { }
     MemberKind getKind() const override { return MemberKind::Variable; }
     SType type;
   };
+
   struct FunctionMember : Member {
     FunctionMember(SType t) : type(t) { }
     MemberKind getKind() const override { return MemberKind::Function; }
     SType type;
   };
+
   struct NamespaceMember : Member {
-    NamespaceMember(const Namespace* n) : ns(n) { }
+    NamespaceMember(Namespace* n) : ns(n) { }
     MemberKind getKind() const override { return MemberKind::Namespace; }
-    const Namespace* ns = nullptr;
+    Namespace* ns;
   };
 
   Namespace(const std::string& name, 
@@ -55,40 +92,37 @@ class Namespace {
 
   const Namespace* parentNamespace() const { return parent_; }
   Namespace* addNamespace(std::string name, bool unnamed, bool isInline);
-  void addMember(const std::string& name, SType type);
+  void addVariableOrFunction(const std::string& name, SType type);
   void addTypedef(const std::string& name, SType type);
 
+  bool isInline() const { return inline_; }
   void output(std::ostream& out) const;
   VMember lookup(const std::string& name) const;
-  UTypedefMember lookupTypedef(const std::string& name) const;
+  STypedefMember lookupTypedef(const std::string& name) const;
 
  private:
   // TODO: use different names for different TUs
   static std::string getUniqueName() { return "<unnamed>"; }
 
   template<typename T>
-  static void checkUndeclared(MemberKind kind, 
-                              const std::string& name, 
-                              const T& entity) {
-    if (kind != MemberKind::NotDeclared) {
-      Throw("{} redeclared to be a {}; was {}", name, entity, kind);
-    }
+  static void reportRedeclaration(const std::string& name, 
+                                  const T& entity,
+                                  MemberKind kind) {
+    Throw("{} redeclared to be a {}; was {}", name, entity, kind);
   }
 
-  UMember lookupMember(const std::string &name) const;
-  void addFunction(const std::string& name, SType type, MemberKind kind);
-  void addVariable(const std::string& name, SType type, MemberKind kind);
+  SMember lookupMember(const std::string &name) const;
+  void addFunction(const std::string& name, SType type);
+  void addVariable(const std::string& name, SType type);
 
   std::string name_;
   bool unnamed_;
   bool inline_;
   const Namespace* parent_;
 
-  // members
-  std::map<std::string, SType> variables_;
-  std::map<std::string, SFunctionType> functions_;
-  std::map<std::string, UNamespace> namespaces_;
-  std::map<std::string, SType> typedefs_;
+  std::map<std::string, SMember> members_;
+  // manage lifetime of namespaces
+  std::vector<UNamespace> namespaces_;
 
   struct {
     std::vector<std::string> var;

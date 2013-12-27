@@ -112,8 +112,8 @@ struct SimpleDeclaration : virtual Base {
       curNamespace()->addTypedef(declarator->getId(), 
                                  declarator->getType());
     } else {
-      curNamespace()->addMember(declarator->getId(),
-                                declarator->getType());
+      curNamespace()->addVariableOrFunction(declarator->getId(),
+                                            declarator->getType());
     }
   }
 

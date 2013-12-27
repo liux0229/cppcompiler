@@ -38,32 +38,13 @@ Namespace::Namespace(const string& name,
   }
 }
 
-Namespace::UMember Namespace::lookupMember(const string& name) const {
-  {
-    auto it = namespaces_.find(name);
-    if (it != namespaces_.end()) {
-      return make_unique<NamespaceMember>(it->second.get());
-    }
+Namespace::SMember Namespace::lookupMember(const string& name) const {
+  auto it = members_.find(name);
+  if (it != members_.end()) {
+    return it->second;
+  } else {
+    return nullptr;
   }
-  {
-    auto it = functions_.find(name);
-    if (it != functions_.end()) {
-      return make_unique<FunctionMember>(it->second);
-    }
-  }
-  {
-    auto it = variables_.find(name);
-    if (it != variables_.end()) {
-      return make_unique<VariableMember>(it->second);
-    }
-  }
-  {
-    auto it = typedefs_.find(name);
-    if (it != typedefs_.end()) {
-      return make_unique<TypedefMember>(it->second);
-    }
-  }
-return make_unique<Member>();
 }
 
 Namespace* Namespace::addNamespace(string name,
@@ -73,74 +54,86 @@ Namespace* Namespace::addNamespace(string name,
     name = getUniqueName();
   }
 
-  auto kind = lookupMember(name)->getKind();
-  if (kind == MemberKind::Namespace) {
-    return namespaces_[name].get();
-  } else {
-    checkUndeclared(kind, name, "namespace");
+  auto member = lookupMember(name);
+  if (member) {
+    if (member->isNamespace()) {
+      auto exist = member->toNamespace();
+      if (isInline && !exist->ns->isInline()) {
+        Throw("extension-namespace-definition is inline "
+              "while the original one was not: {}", name);
+      }
+      return exist->ns;
+    } else {
+      reportRedeclaration(name, "namespace", member->getKind());
+    }
   }
 
-  auto ns = make_unique<Namespace>(name, unnamed, isInline, this);
-  auto ret = namespaces_.insert(make_pair(name, move(ns)));
-  CHECK(ret.second);
+  namespaces_.push_back(
+    make_unique<Namespace>(name, unnamed, isInline, this));
+
+  auto ns = namespaces_.back().get();
+  members_.insert(make_pair(name, make_shared<NamespaceMember>(ns)));
   declarationOrder_.ns.push_back(name);
 
-  return ret.first->second.get();
+  return ns;
 }
 
 void Namespace::addFunction(const string& name, 
-                            SType type, 
-                            MemberKind kind) {
-  if (kind == MemberKind::Function) {
-    // TODO: handle overloads
-    return;
-  } else {
-    checkUndeclared(kind, name, *type);
+                            SType type) {
+  auto member = lookupMember(name);
+  if (member) {
+    if (member->isFunction()) {
+      // TODO: handle overloads
+      return;
+    }
+    reportRedeclaration(name, *type, member->getKind());
   }
 
-  functions_.insert(make_pair(name, 
-                              static_pointer_cast<FunctionType>(type)));
+  members_.insert(make_pair(name, make_shared<FunctionMember>(type)));
   declarationOrder_.func.push_back(name);
 }
 
-void Namespace::addVariable(const string& name, SType type, MemberKind kind) {
-  if (kind == MemberKind::Variable) {
-    auto& exist = variables_[name];
-    if (*exist != *type) {
-      Throw("{} redeclared to be {}; was {}", name, *type, *exist);
+void Namespace::addVariable(const string& name, SType type) {
+  auto member = lookupMember(name);
+  if (member) {
+    if (member->isVariable()) {
+      auto exist = member->toVariable();
+      if (*exist->type != *type) {
+        Throw("{} redeclared to be {}; was {}", name, *type, *exist->type);
+      }
+      return;
     }
-    return;
-  } else {
-    checkUndeclared(kind, name, *type);
+    reportRedeclaration(name, *type, member->getKind());
   }
 
-  variables_.insert(make_pair(name, type));
+  members_.insert(make_pair(name, make_shared<VariableMember>(type)));
   declarationOrder_.var.push_back(name);
 }
 
-void Namespace::addMember(const string& name, SType type) {
-  auto kind = lookupMember(name)->getKind();
+void Namespace::addVariableOrFunction(const string& name, SType type) {
   if (type->isFunction()) {
-    addFunction(name, type, kind);
+    addFunction(name, type);
   } else {
-    addVariable(name, type, kind);
+    addVariable(name, type);
   }
 }
 
 void Namespace::addTypedef(const string& name, SType type) {
-  auto kind = lookupMember(name)->getKind();
-  if (kind == MemberKind::Typedef) {
-    if (*typedefs_[name] != *type) {
-      Throw("{} typedef'd to be a different type {}; was {}", 
-            name, 
-            *type,
-            *typedefs_[name]);
+  auto member = lookupMember(name);
+  if (member) {
+    if (member->isTypedef()) {
+      auto exist = member->toTypedef();
+      if (*exist->type != *type) {
+        Throw("{} typedef'd to be a different type {}; was {}", 
+              name, 
+              *type,
+              *exist->type);
+      }
+    } else {
+      reportRedeclaration(name, *type, member->getKind());
     }
-    return;
-  } else {
-    checkUndeclared(kind, name, *type);
   }
-  typedefs_.insert(make_pair(name, type));
+  members_.insert(make_pair(name, make_shared<TypedefMember>(type)));
 }
 
 void Namespace::output(ostream& out) const {
@@ -154,13 +147,15 @@ void Namespace::output(ostream& out) const {
   }
 
   for (auto& name : declarationOrder_.var) {
-    out << "variable " << name << " " << *variables_.at(name) << endl;
+    out << "variable " << name << " " 
+        << *lookupMember(name)->toVariable()->type << endl;
   }
   for (auto& name : declarationOrder_.func) {
-    out << "function " << name << " " << *functions_.at(name) << endl;
+    out << "function " << name << " "
+        << *lookupMember(name)->toFunction()->type << endl;
   }
   for (auto& name : declarationOrder_.ns) {
-    out << *namespaces_.at(name);
+    out << *lookupMember(name)->toNamespace()->ns;
   }
 
   out << "end namespace" << endl;
@@ -169,7 +164,7 @@ void Namespace::output(ostream& out) const {
 Namespace::VMember
 Namespace::lookup(const string& name) const {
   auto member = lookupMember(name);
-  if (member->getKind() == MemberKind::NotDeclared) {
+  if (!member) {
     if (parent_) {
       return parent_->lookup(name);
     } else {
@@ -177,19 +172,17 @@ Namespace::lookup(const string& name) const {
     }
   }
   VMember ret;
-  ret.push_back(move(member));
+  ret.push_back(member);
   return ret;
 }
 
-Namespace::UTypedefMember
+Namespace::STypedefMember
 Namespace::lookupTypedef(const string& name) const {
   auto members = lookup(name);
   if (members.empty() || !members[0]->isTypedef()) {
     return nullptr;
   }
-  return UTypedefMember(
-           static_cast<Namespace::TypedefMember*>(
-             members[0].release()));
+  return static_pointer_cast<TypedefMember>(members[0]);
 }
 
 

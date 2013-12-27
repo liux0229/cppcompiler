@@ -26,7 +26,10 @@ class Namespace {
   MakeShared(TypedefMember);
 
   struct Member : std::enable_shared_from_this<Member> {
+    Member(Namespace* o, const std::string& n) : owner(o), name(n) { }
+
     virtual MemberKind getKind() const = 0;
+    virtual void output(std::ostream& out) const = 0;
 
     bool isVariable() const {
       return getKind() == MemberKind::Variable;
@@ -57,31 +60,51 @@ class Namespace {
       CHECK(isNamespace());
       return std::static_pointer_cast<NamespaceMember>(shared_from_this());
     }
+
+    bool ownedBy(const Namespace* n) const {
+      return n == owner;
+    }
+
+    Namespace* owner;
+    const std::string name;
   };
   MakeShared(Member);
-  using VMember = std::vector<SMember>;
+  using MemberSet = std::set<SMember>;
 
   struct TypedefMember : Member {
-    TypedefMember(SType t) : type(t) { }
+    TypedefMember(Namespace* owner, const std::string& name, SType t) 
+      : Member(owner, name), type(t) { }
+
     MemberKind getKind() const override { return MemberKind::Typedef; }
+    void output(std::ostream& out) const override;
+
     SType type;
   };
 
   struct VariableMember : Member {
-    VariableMember(SType t) : type(t) { }
+    VariableMember(Namespace* owner, const std::string& name, SType t) 
+      : Member(owner, name), type(t) { }
     MemberKind getKind() const override { return MemberKind::Variable; }
+    void output(std::ostream& out) const override;
+
     SType type;
   };
 
   struct FunctionMember : Member {
-    FunctionMember(SType t) : type(t) { }
+    FunctionMember(Namespace* owner, const std::string& name, SType t) 
+      : Member(owner, name), type(t) { }
     MemberKind getKind() const override { return MemberKind::Function; }
+    void output(std::ostream& out) const override;
+
     SType type;
   };
 
   struct NamespaceMember : Member {
-    NamespaceMember(Namespace* n) : ns(n) { }
+    NamespaceMember(Namespace* owner, const std::string& name, Namespace* n) 
+      : Member(owner, name), ns(n) { }
     MemberKind getKind() const override { return MemberKind::Namespace; }
+    void output(std::ostream& out) const override;
+
     Namespace* ns;
   };
 
@@ -95,14 +118,21 @@ class Namespace {
   void addVariableOrFunction(const std::string& name, SType type);
   void addTypedef(const std::string& name, SType type);
 
+  std::string getName() const;
   bool isInline() const { return inline_; }
   void output(std::ostream& out) const;
-  VMember lookup(const std::string& name) const;
-  STypedefMember lookupTypedef(const std::string& name) const;
+  STypedefMember lookupTypedef(const std::string& name, 
+                               bool unqualified) const;
+  MemberSet unqualifiedLookup(const std::string& name) const;
+  MemberSet qualifiedLookup(const std::string& name) const;
 
  private:
+  using NamespaceSet = std::set<const Namespace*>;
+
   // TODO: use different names for different TUs
   static std::string getUniqueName() { return "<unnamed>"; }
+  static const Namespace* getLCA(const Namespace* a, const Namespace* b);
+  size_t getDepth() const;
 
   template<typename T>
   static void reportRedeclaration(const std::string& name, 
@@ -112,8 +142,22 @@ class Namespace {
   }
 
   SMember lookupMember(const std::string &name) const;
+  void lookupMember(const std::string &name, MemberSet& members) const;
   void addFunction(const std::string& name, SType type);
   void addVariable(const std::string& name, SType type);
+
+  void getUsingDirectiveClosure(NamespaceSet& closure) const;
+  NamespaceSet getUsingDirectiveClosure() const;
+  void getInlineNamespaceClosure(NamespaceSet& closure) const;
+  NamespaceSet getInlineNamespaceClosure() const;
+
+  // Ns A -> [Ns]: namespace A needs to consider [Ns] in its unqualified lookup
+  using UsingDirectiveMap = std::map<const Namespace*, NamespaceSet>;
+  void checkLookupAmbiguity(MemberSet& members) const;
+  MemberSet unqualifiedLookup(const std::string& name, 
+                              UsingDirectiveMap& usingDirectiveMap) const;
+  MemberSet qualifiedLookup(const std::string& name, 
+                            NamespaceSet& visited) const;
 
   std::string name_;
   bool unnamed_;
@@ -123,6 +167,7 @@ class Namespace {
   std::map<std::string, SMember> members_;
   // manage lifetime of namespaces
   std::vector<UNamespace> namespaces_;
+  std::set<Namespace*> usingDirectives_;
 
   struct {
     std::vector<std::string> var;

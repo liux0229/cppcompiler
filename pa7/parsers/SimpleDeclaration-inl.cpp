@@ -90,7 +90,7 @@ struct SimpleDeclaration : virtual Base {
 
   SType typedefName() {
     auto name = expectIdentifier();
-    auto member = curNamespace()->lookupTypedef(name);
+    auto member = curNamespace()->lookupTypedef(name, false);
     if (!member) {
       Throw("typedef name expected; got {}", name);
     }

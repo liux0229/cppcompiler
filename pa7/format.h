@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <set>
 // used for debug output only
 #include <iostream>
 
@@ -18,6 +19,19 @@ namespace {
 
 template<typename T>
 std::ostream& operator<<(std::ostream& oss, const std::vector<T>& v)
+{
+  oss << "[";
+  const char* sep = "";
+  for (const auto& e : v) {
+    oss << sep << e;
+    sep = ",";
+  }
+  oss << "]";
+  return oss;
+}
+
+template<typename T>
+std::ostream& operator<<(std::ostream& oss, const std::set<T>& v)
 {
   oss << "[";
   const char* sep = "";

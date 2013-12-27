@@ -4,7 +4,7 @@ namespace compiler {
 
 using namespace std;
 
-std::ostream& operator<<(std::ostream& out, Namespace::MemberKind kind) {
+ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
   switch (kind) {
     case Namespace::MemberKind::Namespace:
       out << "namespace";
@@ -18,11 +18,37 @@ std::ostream& operator<<(std::ostream& out, Namespace::MemberKind kind) {
     case Namespace::MemberKind::Typedef:
       out << "typedef";
       break;
-    default:
-      out << "<undeclared>";
-      break;
     }
   return out;
+}
+
+ostream& operator<<(ostream& out, Namespace::SMember m) {
+  m->output(out);
+  return out;
+}
+
+void Namespace::Member::output(std::ostream& out) const {
+  out << format("{}::{} => ", owner->getName(), name);
+}
+
+void Namespace::TypedefMember::output(std::ostream& out) const {
+  Member::output(out);
+  out << format("[{} {}]", getKind(), type);
+}
+
+void Namespace::VariableMember::output(std::ostream& out) const {
+  Member::output(out);
+  out << format("[{} {}]", getKind(), type);
+}
+
+void Namespace::FunctionMember::output(std::ostream& out) const {
+  Member::output(out);
+  out << format("[{} {}]", getKind(), type);
+}
+
+void Namespace::NamespaceMember::output(std::ostream& out) const {
+  Member::output(out);
+  out << format("{}", getKind());
 }
 
 Namespace::Namespace(const string& name, 
@@ -38,12 +64,27 @@ Namespace::Namespace(const string& name,
   }
 }
 
+string Namespace::getName() const {
+  if (!parent_) {
+    return ""; 
+  } else {
+    return parent_->getName() + "::" + name_;
+  }
+}
+
 Namespace::SMember Namespace::lookupMember(const string& name) const {
   auto it = members_.find(name);
   if (it != members_.end()) {
     return it->second;
   } else {
     return nullptr;
+  }
+}
+
+void Namespace::lookupMember(const string& name, MemberSet& members) const {
+  auto member = lookupMember(name);
+  if (member) {
+    members.insert(member);
   }
 }
 
@@ -72,7 +113,8 @@ Namespace* Namespace::addNamespace(string name,
     make_unique<Namespace>(name, unnamed, isInline, this));
 
   auto ns = namespaces_.back().get();
-  members_.insert(make_pair(name, make_shared<NamespaceMember>(ns)));
+  members_.insert(make_pair(name,
+                            make_shared<NamespaceMember>(this, name, ns)));
   declarationOrder_.ns.push_back(name);
 
   return ns;
@@ -89,7 +131,8 @@ void Namespace::addFunction(const string& name,
     reportRedeclaration(name, *type, member->getKind());
   }
 
-  members_.insert(make_pair(name, make_shared<FunctionMember>(type)));
+  members_.insert(make_pair(name, 
+                            make_shared<FunctionMember>(this, name, type)));
   declarationOrder_.func.push_back(name);
 }
 
@@ -106,7 +149,8 @@ void Namespace::addVariable(const string& name, SType type) {
     reportRedeclaration(name, *type, member->getKind());
   }
 
-  members_.insert(make_pair(name, make_shared<VariableMember>(type)));
+  members_.insert(make_pair(name, 
+                            make_shared<VariableMember>(this, name, type)));
   declarationOrder_.var.push_back(name);
 }
 
@@ -133,7 +177,8 @@ void Namespace::addTypedef(const string& name, SType type) {
       reportRedeclaration(name, *type, member->getKind());
     }
   }
-  members_.insert(make_pair(name, make_shared<TypedefMember>(type)));
+  members_.insert(make_pair(name, 
+                            make_shared<TypedefMember>(this, name, type)));
 }
 
 void Namespace::output(ostream& out) const {
@@ -161,29 +206,186 @@ void Namespace::output(ostream& out) const {
   out << "end namespace" << endl;
 }
 
-Namespace::VMember
-Namespace::lookup(const string& name) const {
-  auto member = lookupMember(name);
-  if (!member) {
-    if (parent_) {
-      return parent_->lookup(name);
-    } else {
-      return {};
+Namespace::MemberSet
+Namespace::unqualifiedLookup(const string& name, 
+                             UsingDirectiveMap& usingDirectiveMap) const {
+  auto closure = getUsingDirectiveClosure();
+  // for each namespace in the closure, it's as if the members from that
+  // namespace appears in the LCA of this and that namespace
+  for (auto ns : closure) {
+    auto lca = getLCA(this, ns);
+    if (lca != ns) {
+      usingDirectiveMap[lca].insert(ns);
     }
   }
-  VMember ret;
-  ret.push_back(member);
-  return ret;
+
+  MemberSet members;
+  lookupMember(name, members);
+  // for this namespace, also lookup the members of the namespaces in the 
+  // usingDirectiveMap: it's as if those members appear in this namespace
+  for (auto ns : usingDirectiveMap[this]) {
+    ns->lookupMember(name, members); 
+  }
+
+  if (!members.empty()) {
+    return members;
+  }
+
+  if (parent_) {
+    return parent_->unqualifiedLookup(name, usingDirectiveMap);
+  } else {
+    return {};
+  }
+}
+
+void Namespace::checkLookupAmbiguity(MemberSet& members) const {
+  // in the current feature set, members either contain 
+  // 1) 1 of vars, funcs, or ns
+  // 2) multiple typedefs which refer to the same type
+  if (members.size() > 1) {
+    bool ambiguious = false;
+    STypedefMember exist;
+    for (auto& m : members) {
+      if (!m->isTypedef()) {
+        ambiguious = true;
+        break;
+      }
+      auto tm = m->toTypedef();
+      if (exist && exist->type != tm->type) {
+        ambiguious = true;
+      }
+    }
+    if (ambiguious) {
+      Throw("lookup is ambiguious; found: {}", members);
+    }
+    while (members.size() > 1) {
+      members.erase(members.begin());
+    }
+  }
+}
+
+Namespace::MemberSet Namespace::unqualifiedLookup(const string& name) const {
+  UsingDirectiveMap usingDirectiveMap;
+  auto members = unqualifiedLookup(name, usingDirectiveMap);
+  checkLookupAmbiguity(members);
+  return members;
+}
+
+Namespace::MemberSet Namespace::qualifiedLookup(const string& name) const {
+  set<const Namespace*> visited;
+  MemberSet members = qualifiedLookup(name, visited);
+  checkLookupAmbiguity(members);
+  return members;
+}
+
+Namespace::MemberSet
+Namespace::qualifiedLookup(const string& name, NamespaceSet& visited) const {
+  if (visited.find(this) != visited.end()) {
+    return {};
+  }
+  visited.insert(this);
+
+  MemberSet members;
+  lookupMember(name, members);
+  // lookup inline namespaces as well
+  auto closure = getInlineNamespaceClosure();
+  for (auto ns : closure) {
+    ns->lookupMember(name, members);
+  }
+
+  if (!members.empty()) {
+    return members;
+  }
+
+  for (auto ns : usingDirectives_) {
+    auto m = ns->qualifiedLookup(name, visited);
+    members.insert(m.begin(), m.end());
+  }
+
+  return members;
 }
 
 Namespace::STypedefMember
-Namespace::lookupTypedef(const string& name) const {
-  auto members = lookup(name);
-  if (members.empty() || !members[0]->isTypedef()) {
+Namespace::lookupTypedef(const string& name, bool qualified) const {
+  auto members = qualified ? qualifiedLookup(name) : unqualifiedLookup(name);
+  CHECK(members.size() <= 1);
+  if (members.empty() || !(*members.begin())->isTypedef()) {
     return nullptr;
   }
-  return static_pointer_cast<TypedefMember>(members[0]);
+  return static_pointer_cast<TypedefMember>(*members.begin());
 }
 
+auto Namespace::getUsingDirectiveClosure() const -> NamespaceSet {
+  NamespaceSet closure;
+  closure.insert(this);
+  getUsingDirectiveClosure(closure);
+  closure.erase(this);
+  return closure;
+}
+
+void Namespace::getUsingDirectiveClosure(NamespaceSet& closure) const {
+  for (auto ns : usingDirectives_) {
+    if (closure.find(ns) == closure.end()) {
+      closure.insert(ns);
+      ns->getUsingDirectiveClosure(closure);
+    }
+  }
+}
+
+auto Namespace::getInlineNamespaceClosure() const -> NamespaceSet {
+  NamespaceSet closure;
+  getInlineNamespaceClosure(closure);
+  return closure;
+}
+
+void Namespace::getInlineNamespaceClosure(NamespaceSet& closure) const {
+  for (auto& kv : members_) {
+    auto& m = kv.second;
+    if (m->isNamespace() && m->ownedBy(this)) {
+      auto ns = m->toNamespace()->ns;
+      if (ns->isInline()) {
+        closure.insert(ns);
+        ns->getInlineNamespaceClosure(closure);
+      }
+    }
+  }
+}
+
+const Namespace* Namespace::getLCA(const Namespace* a, const Namespace* b) {
+  if (a == b) {
+    return a;
+  }
+
+  auto da = a->getDepth();
+  auto db = b->getDepth();
+  const Namespace** walk;
+  int walkDepth;
+  if (da > db) {
+    walk = &a;
+    walkDepth = da - db;
+  } else {
+    walk = &b;
+    walkDepth = db - da;
+  }
+
+  while (walkDepth--) {
+    *walk = (*walk)->parent_;
+  }
+
+  while (a != b) {
+    a = a->parent_;
+    b = b->parent_;
+  }
+
+  return a;
+}
+
+size_t Namespace::getDepth() const {
+  if (!parent_) {
+    return 0;
+  } else {
+    return 1 + parent_->getDepth();
+  }
+}
 
 }

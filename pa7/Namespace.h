@@ -117,12 +117,15 @@ class Namespace {
   Namespace* addNamespace(std::string name, bool unnamed, bool isInline);
   void addVariableOrFunction(const std::string& name, SType type);
   void addTypedef(const std::string& name, SType type);
+  void addUsingDirective(Namespace* ns);
 
   std::string getName() const;
   bool isInline() const { return inline_; }
   void output(std::ostream& out) const;
   STypedefMember lookupTypedef(const std::string& name, 
-                               bool unqualified) const;
+                               bool qualified) const;
+  Namespace* lookupNamespace(const std::string& name, 
+                             bool qualified) const;
   MemberSet unqualifiedLookup(const std::string& name) const;
   MemberSet qualifiedLookup(const std::string& name) const;
 

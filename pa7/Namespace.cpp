@@ -181,6 +181,13 @@ void Namespace::addTypedef(const string& name, SType type) {
                             make_shared<TypedefMember>(this, name, type)));
 }
 
+void Namespace::addUsingDirective(Namespace* ns) {
+  if (ns == this) {
+    return;
+  }
+  usingDirectives_.insert(ns);
+}
+
 void Namespace::output(ostream& out) const {
   if (!unnamed_) {
     out << "start namespace " << name_ << endl;
@@ -312,7 +319,16 @@ Namespace::lookupTypedef(const string& name, bool qualified) const {
   if (members.empty() || !(*members.begin())->isTypedef()) {
     return nullptr;
   }
-  return static_pointer_cast<TypedefMember>(*members.begin());
+  return (*members.begin())->toTypedef();
+}
+
+Namespace*
+Namespace::lookupNamespace(const string& name, bool qualified) const {
+  auto members = qualified ? qualifiedLookup(name) : unqualifiedLookup(name);
+  if (members.empty() || !(*members.begin())->isNamespace()) {
+    return nullptr;
+  }
+  return (*members.begin())->toNamespace()->ns;
 }
 
 auto Namespace::getUsingDirectiveClosure() const -> NamespaceSet {

@@ -12,7 +12,7 @@ class Frame {
     openNamespace(&*globalNamespace_);
   }
 
-  const Namespace* getGlobalNamespace() const {
+  Namespace* getGlobalNamespace() const {
     return &*globalNamespace_;
   }
 

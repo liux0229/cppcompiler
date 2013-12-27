@@ -8,6 +8,7 @@ struct Declaration : virtual Base {
   void declaration() override {
     BT(EX(emptyDeclaration)) ||
     BT(EX(namespaceDefinition)) ||
+    BT(EX(usingDirective)) ||
     TR(EXB(simpleDeclaration));
   }
 
@@ -38,6 +39,56 @@ struct Declaration : virtual Base {
   void namespaceBody() {
     while (BT(EX(declaration))) {
     }
+  }
+
+  void usingDirective() {
+    expect(KW_USING);
+    expect(KW_NAMESPACE);
+    auto ns = BT(EX(nestedNameSpecifier));
+    auto name = expectIdentifier();
+    Namespace* used;
+    if (ns) {
+      used = ns->lookupNamespace(name, true);
+    } else {
+      used = curNamespace()->lookupNamespace(name, false);
+    }
+    if (!used) {
+      Throw("using-directive ill-formed: {}::{}", ns->getName(), name);
+    }
+    curNamespace()->addUsingDirective(used);
+    expect(OP_SEMICOLON);
+  }
+
+  Namespace* nestedNameSpecifier() {
+    auto ns = TR(EX(nestedNameSpecifierRoot));
+    while (auto n = BT(EX(nestedNameSpecifierSuffix), ns)) {
+      ns = n;
+    }
+    return ns;
+  }
+
+  Namespace* nestedNameSpecifierRoot() {
+    if (tryAdvSimple(OP_COLON2)) {
+      return frame_->getGlobalNamespace();
+    } else {
+      auto name = expectIdentifier();
+      expect(OP_COLON2);
+      auto ns = curNamespace()->lookupNamespace(name, false);
+      if (!ns) {
+        Throw("Expect namespace-name; got {}", name);
+      }
+      return ns;
+    }
+  }
+
+  Namespace* nestedNameSpecifierSuffix(Namespace* root) {
+    auto name = expectIdentifier();
+    expect(OP_COLON2);
+    auto ns = root->lookupNamespace(name, true);
+    if (!ns) {
+      Throw("{}::{} is not a namespace", root->getName(), name);
+    } 
+    return ns;
   }
 
 #if 0

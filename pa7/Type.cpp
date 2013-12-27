@@ -21,17 +21,6 @@ string Type::getName() const {
   return oss.str();
 }
 
-SType Type::combine(const Type& other) const {
-  Throw("{} cannot be combined with {}", *this, other);
-  return nullptr;
-}
-
-SType CvQualifierType::combine(const Type& other) const {
-  auto ret = other.clone();
-  ret->setCvQualifier(getCvQualifier() | ret->getCvQualifier());
-  return ret;
-}
-
 map<FundalmentalType::TypeSpecifiers,
     EFundamentalType, 
     FundalmentalType::Compare>
@@ -104,25 +93,23 @@ bool FundalmentalType::Compare::operator()(const TypeSpecifiers& a,
 }
 
 FundalmentalType::FundalmentalType(const TypeSpecifiers& typeSpecifiers)
-  : specifiers_(typeSpecifiers),
-    type_(validCombinations_.at(specifiers_)) {
+  : specifiers_(typeSpecifiers) {
+  setType();
 }
 
-SType FundalmentalType::combine(const Type& that) const {
-  if (dynamic_cast<const CvQualifierType*>(&that)) {
-    return that.combine(*this);
+void FundalmentalType::setType() {
+  auto it = validCombinations_.find(specifiers_);
+  if (it == validCombinations_.end()) {
+    Throw("Not a valid fundalmental type combination: {}", specifiers_);
   }
+  type_ = it->second;
+}
 
-  auto pOther = dynamic_cast<const FundalmentalType*>(&that);
-  if (!pOther) {
-    // TODO: display individual type specifiers instead
-    Throw("{} cannot be combined with {}", *this, that);
-  }
-  auto& other = *pOther; 
+void FundalmentalType::combine(const FundalmentalType& other) {
   TypeSpecifiers specifiers(specifiers_);
-  specifiers.insert(specifiers.end(), 
-                    other.specifiers_.begin(),
-                    other.specifiers_.end());
+  specifiers_.insert(specifiers_.end(), 
+                     other.specifiers_.begin(),
+                     other.specifiers_.end());
   auto compare = [](ETokenType a, ETokenType b) -> bool {
     int r1 = typeSpecifierRank_[a];
     int r2 = typeSpecifierRank_[b];
@@ -132,11 +119,8 @@ SType FundalmentalType::combine(const Type& that) const {
       return a < b;
     }
   };
-  sort(specifiers.begin(), specifiers.end(), compare);
-  // TODO: throw with a better error message
-  auto ret = make_shared<FundalmentalType>(specifiers);
-  ret->setCvQualifier(getCvQualifier() | that.getCvQualifier());
-  return ret;
+  sort(specifiers_.begin(), specifiers_.end(), compare);
+  setType();
 }
 
 void FundalmentalType::output(ostream& out) const {
@@ -265,6 +249,22 @@ void FunctionType::output(ostream& out) const {
 
   out << ") returning ";
   outputDepended(out);
+}
+
+bool FunctionType::operator==(const Type& rhs) const {
+  if (!this->DependentType::operator==(rhs)) {
+    return false;
+  }
+  auto& other = static_cast<const FunctionType&>(rhs);
+  if (parameters_.size() != other.parameters_.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < parameters_.size(); ++i) {
+    if (*parameters_[i] != *other.parameters_[i]) {
+      return false;
+    }
+  }
+  return hasVarArgs_ == other.hasVarArgs_;
 }
 
 }

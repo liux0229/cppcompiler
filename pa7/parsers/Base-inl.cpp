@@ -173,6 +173,14 @@ struct Base {
     return getAdv()->toSimpleStr();
   }
 
+  bool tryGetIdentifier(string& identifier) {
+    if (!isIdentifier()) {
+      return false;
+    }
+    identifier = getAdv()->toSimpleStr();
+    return true;
+  }
+
   bool isLiteral() const {
     return cur().isLiteral();
   }
@@ -247,10 +255,15 @@ struct Base {
     return BT(false, name, f, forward<Args>(args)...);
   }
 
+  Namespace* curNamespace() const {
+    return frame_->curNamespace();
+  }
+
   /* ================================
    *  Interfaces between sub-modules
    * ================================
    */
+  virtual void declaration() = 0;
   virtual void simpleDeclaration() = 0;
   virtual size_t constantExpression() = 0;
 

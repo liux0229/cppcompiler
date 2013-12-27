@@ -15,20 +15,15 @@ struct CvQualifier {
   CvQualifier() { }
   CvQualifier(Value v) : value(v) { }
 
-  bool operator==(const CvQualifier& other) const {
+  bool operator==(CvQualifier other) const {
     return value == other.value;
   }
 
-  CvQualifier operator|(const CvQualifier& other) const {
-    if (value & other.value) {
+  CvQualifier combine(CvQualifier other, bool checkDuplicate) const {
+    if (checkDuplicate && (value & other.value)) {
       Throw("duplicate cv-qualifier: {x} vs {x}", value, other.value);
     }
     return CvQualifier(static_cast<Value>(value | other.value));
-  }
-
-  CvQualifier& operator|=(const CvQualifier& other) {
-    *this = *this | other;
-    return *this;
   }
 
   bool isConst() const {
@@ -51,17 +46,22 @@ MakeShared(Type);
 class Type {
  public:
   std::string getName() const;
-  virtual bool isReal() const { return true; }
-  virtual SType combine(const Type& other) const;
+
+  // type manipulators to support parsing
   virtual void setDepended(SType depended) { }
   virtual void setCvQualifier(CvQualifier cvQualifier) {
     cvQualifier_ = cvQualifier;
   }
 
-  virtual void output(std::ostream& out) const = 0;
+  virtual bool operator==(const Type& other) const = 0;
+  bool operator!=(const Type& other) const {
+    return !(*this == other);
+  }
   virtual SType clone() const = 0;
+  virtual void output(std::ostream& out) const = 0;
 
   // type traits
+  virtual bool isFundalmental() const { return false; }
   virtual bool isVoid() const { return false; }
   virtual bool isPointer() const { return false; }
   virtual bool isReference() const { return false; }
@@ -83,16 +83,6 @@ inline std::ostream& operator<<(std::ostream& out, const Type& type) {
   return out;
 }
 
-// A helper, nonreal type
-class CvQualifierType : public Type {
-  bool isReal() const override { return false; }
-  void output(std::ostream& out) const override { outputCvQualifier(out); }
-  SType clone() const override { 
-    return std::make_shared<CvQualifierType>(*this); 
-  }
-  SType combine(const Type& other) const override;
-};
-
 class FundalmentalType : public Type {
  public:
   typedef std::vector<ETokenType> TypeSpecifiers;
@@ -103,19 +93,25 @@ class FundalmentalType : public Type {
 
   EFundamentalType getType() const { return type_; }
 
-  SType combine(const Type& other) const override;
+  void combine(const FundalmentalType& other);
   void output(std::ostream& out) const override;
   SType clone() const override {
     return std::make_shared<FundalmentalType>(*this);
   }
+  bool isFundalmental() const override { return true; }
   bool isVoid() const override {
     return type_ == FT_VOID;
+  }
+  bool operator==(const Type& rhs) const override {
+    auto other = dynamic_cast<const FundalmentalType*>(&rhs);
+    return other && type_ == other->type_;
   }
 
  private:
   struct Compare {
     bool operator()(const TypeSpecifiers& a, const TypeSpecifiers& b);
   };
+  void setType();
   static std::map<TypeSpecifiers, EFundamentalType, Compare> validCombinations_;
   static std::map<ETokenType, int> typeSpecifierRank_;
   TypeSpecifiers specifiers_;
@@ -129,6 +125,14 @@ class DependentType : public Type {
     checkDepended(depended);
     depended_ = depended;
   }
+
+  bool operator==(const Type& other) const override {
+    if (typeid(*this) != typeid(other)) {
+      return false;
+    }
+    return *depended_ == *static_cast<const DependentType&>(other).depended_;
+  }
+
  protected:
   virtual void checkDepended(SType depended) const = 0;
   void outputDepended(std::ostream& out) const;
@@ -201,6 +205,8 @@ class FunctionType : public DependentType {
     return std::make_shared<FunctionType>(*this);
   }
   bool isFunction() const override { return true; }
+
+  bool operator==(const Type& other) const override;
 
  protected:
   void checkDepended(SType depended) const override;

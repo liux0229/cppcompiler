@@ -21,12 +21,14 @@ void Driver::postTokenProcessor(const PostToken& token) {
   tokens_.push_back(token.copy());
 }
 
-void Driver::process() {
+bool Driver::process() {
   try {
     preprocessor_.process();
     frame_ = SemanticParser(tokens_, parserOption_).process();
+    return true;
   } catch (const exception& e) {
 		cerr << "ERROR: " << e.what() << endl;
+    return false;
   }
 }
 

@@ -19,6 +19,7 @@
 #define EXB(func) #func, make_delegate(&Base::func, static_cast<Base*>(this))
 
 #include "parsers/Base-inl.cpp"
+#include "parsers/Declaration-inl.cpp"
 #include "parsers/SimpleDeclaration-inl.cpp"
 #include "parsers/ConstantExpression-inl.cpp"
 
@@ -31,6 +32,7 @@ using namespace std;
 namespace SemanticParserImp {
 
 class ParserImp : 
+        Declaration,
         SimpleDeclaration,
         ConstantExpression
 {
@@ -47,7 +49,7 @@ public:
 private:
 
   void translationUnit() {
-    while (!isEof() && BT(true, EXB(simpleDeclaration))) {
+    while (!isEof() && BT(true, EXB(declaration))) {
     }
     if (!isEof()) {
       BAD_EXPECT("<eof>");

@@ -39,9 +39,10 @@ int main(int argc, char** argv)
 			string srcFile = args[i + 2];
       out << "start translation unit " << srcFile << endl;
       Driver driver(env, srcFile, option);
-      driver.process();
-      auto globalNs = driver.getGlobalNamespace();
-      out << *globalNs;
+      if (driver.process()) {
+        auto globalNs = driver.getGlobalNamespace();
+        out << *globalNs;
+      }
       out << "end translation unit" << endl;
 		}
 	}

@@ -22,7 +22,7 @@ class Driver {
                               std::placeholders::_1)),
       parserOption_(option) {
   }
-  void process();
+  bool process();
   const Namespace* getGlobalNamespace() const;
  private:
   void postTokenProcessor(const PostToken& token);

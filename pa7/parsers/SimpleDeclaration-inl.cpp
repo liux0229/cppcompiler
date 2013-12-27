@@ -10,113 +10,112 @@ namespace SemanticParserImp {
 using namespace std;
 
 struct SimpleDeclaration : virtual Base {
-#if 0
-  /* =============
-   *  declarations
-   * =============
-   */
-  AST declaration() {
-    VAST c;
-    AST node;
-    (node = BT(emptyDeclaration)) ||
-    (node = BT(blockDeclaration)) ||
-    (node = TR(namespaceDefinition));
-    c.push_back(move(node));
-    return get(ASTType::Declaration, move(c));
-  }
-
-  AST blockDeclaration() {
-    VAST c;
-    AST node;
-    (node = BT(simpleDeclaration)) ||
-    (node = BT(namespaceAliasDefinition)) ||
-    (node = BT(usingDeclaration)) ||
-    (node = BT(usingDirective)) ||
-    (node = TR(aliasDeclaration));
-    c.push_back(move(node));
-    return get(ASTType::BlockDeclaration, move(c));
-  }
-#endif
-
   // TODO: initDeclaratorList can be omitted when declaring a class or
   // enumeration
   void simpleDeclaration() override {
     DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
-    auto declarators = TR(EX(initDeclaratorList));
+    TR(EX(initDeclaratorList), declSpecifiers);
     expect(OP_SEMICOLON);
-
-    for (auto& declarator : declarators) {
-      declarator->appendType(declSpecifiers.type);
-      frame_->curNamespace()->addMember(
-                                declarator->getId(),
-                                declarator->getType());
-      // cout << declarator->getId() << " " << *declarator->getType() << endl;
-    }
   }
 
   DeclSpecifiers declSpecifierSeq() {
     DeclSpecifiers declSpecifiers;
     while (BT(EX(declSpecifier), declSpecifiers)) {
     }
-    declSpecifiers.validate();
+    declSpecifiers.finalize();
     return declSpecifiers;
   }
 
   void declSpecifier(DeclSpecifiers& declSpecifiers) {
-    SType type = TR(EX(typeSpecifier));
-    declSpecifiers.setType(type);
-  }
-
-  SType typeSpecifier() {
-    return TR(EX(trailingTypeSpecifier));
-  }
-
-  SType trailingTypeSpecifier() {
-    if (auto cv = BT(EX(cvQualifier))) {
-      auto ret = make_shared<CvQualifierType>();
-      ret->setCvQualifier(*cv);
-      return ret;
-    } else {
-      return TR(EX(simpleTypeSpecifier));
+    if (tryAdvSimple(KW_TYPEDEF)) {
+      declSpecifiers.setTypedef();
+    } else if (!BT(EX(storageClassSpecifier), declSpecifiers)) {
+      TR(EX(typeSpecifier), declSpecifiers);
     }
   }
 
-  UCvQualifier cvQualifier() {
+  void storageClassSpecifier(DeclSpecifiers& declSpecifiers) {
+    if (tryAdvSimple(KW_STATIC)) {
+      declSpecifiers.addStorageClass(DeclSpecifiers::Static);
+    } else if (tryAdvSimple(KW_THREAD_LOCAL)) {
+      declSpecifiers.addStorageClass(DeclSpecifiers::ThreadLocal);
+    } else {
+      expect(KW_EXTERN);
+      declSpecifiers.addStorageClass(DeclSpecifiers::Extern);
+    }
+  }
+
+  void typeSpecifier(DeclSpecifiers& declSpecifiers) {
+    TR(EX(trailingTypeSpecifier), declSpecifiers);
+  }
+
+  void trailingTypeSpecifier(DeclSpecifiers& declSpecifiers) {
+    CvQualifier cv;
+    if (BT(EX(cvQualifier), cv)) {
+      declSpecifiers.addCvQualifier(cv);
+    } else {
+      TR(EX(simpleTypeSpecifier), declSpecifiers);
+    }
+  }
+
+  void cvQualifier(CvQualifier& cv) {
     if (tryAdvSimple(KW_CONST)) {
-      return make_unique<CvQualifier>(CvQualifier::Const);
+      cv = CvQualifier::Const;
     } else {
       expect(KW_VOLATILE);
-      return make_unique<CvQualifier>(CvQualifier::Volatile);
+      cv = CvQualifier::Volatile;
     }
   }
 
-  SType simpleTypeSpecifier() {
+  void simpleTypeSpecifier(DeclSpecifiers& declSpecifiers) {
     if (isSimple({
           KW_CHAR, KW_CHAR16_T, KW_CHAR32_T, KW_WCHAR_T, KW_BOOL, KW_SHORT,
           KW_INT, KW_LONG, KW_SIGNED, KW_UNSIGNED, KW_FLOAT, KW_DOUBLE,
           KW_VOID /*, KW_AUTO */
         })) {
-      return make_shared<FundalmentalType>(getAdvSimple()->type);
+      declSpecifiers.addType(
+        make_shared<FundalmentalType>(getAdvSimple()->type), false);
     } else {
-      Throw("Not implemented");
-      // zeroOrOne(nestedNameSpecifier);
-      // c.push_back(TR(typeName));
-      return nullptr;
+      // Note that here we could avoid the lookup by checking whether
+      // declSpecifiers already contain a type
+      // However the current implementation is correct and is most clean
+      auto type = TR(EX(typeName));
+      declSpecifiers.addType(type, true);
     }
   }
 
-  vector<UDeclarator> initDeclaratorList() {
-    vector<UDeclarator> ret;
-    ret.push_back(TR(EX(initDeclarator)));
-    while (tryAdvSimple(OP_COMMA)) {
-      ret.push_back(TR(EX(initDeclarator)));
+  SType typeName() {
+    return TR(EX(typedefName));
+  }
+
+  SType typedefName() {
+    auto name = expectIdentifier();
+    auto members = curNamespace()->lookup(name,
+                                          Namespace::MemberKind::Typedef);
+    if (members.empty()) {
+      Throw("typedef name expected; got {}", name);
     }
-    return ret;
+    return members[0].type;
+  }
+
+  void initDeclaratorList(DeclSpecifiers& declSpecifiers) {
+    TR(EX(initDeclarator), declSpecifiers);
+    while (tryAdvSimple(OP_COMMA)) {
+      TR(EX(initDeclarator), declSpecifiers);
+    }
   }
 
   // TODO: initializer
-  UDeclarator initDeclarator() {
-    return TR(EX(declarator));
+  void initDeclarator(DeclSpecifiers& declSpecifiers) {
+    auto declarator = TR(EX(declarator));
+    declarator->appendType(declSpecifiers.getType());
+    if (declSpecifiers.isTypedef()) {
+      curNamespace()->addTypedef(declarator->getId(), 
+                                 declarator->getType());
+    } else {
+      curNamespace()->addMember(declarator->getId(),
+                                declarator->getType());
+    }
   }
 
   // TODO: noptr-declarator parameters-and-qualifiers trailing-return-type
@@ -163,9 +162,9 @@ struct SimpleDeclaration : virtual Base {
       return make_unique<PtrOperator>(PtrOperator::RValueRef);
     } else {
       expect(OP_STAR);
-      CvQualifier cvQualifiers;
-      while (auto cv = BT(EX(cvQualifier))) {
-        cvQualifiers |= *cv;
+      CvQualifier cvQualifiers, cv;
+      while (BT(EX(cvQualifier), cv)) {
+        cvQualifiers = cvQualifiers.combine(cv, true);
       }
       return make_unique<PtrOperator>(PtrOperator::Pointer, cvQualifiers);
     }
@@ -260,7 +259,7 @@ struct SimpleDeclaration : virtual Base {
     (declarator = BT(EX(declarator))) ||
     (declarator = BT(EX(abstractDeclarator))) ||
     (declarator = make_unique<Declarator>());
-    declarator->appendType(declSpecifiers.type);
+    declarator->appendType(declSpecifiers.getType());
     return declarator->getType();
   }
 

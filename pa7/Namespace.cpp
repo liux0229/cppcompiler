@@ -4,6 +4,27 @@ namespace compiler {
 
 using namespace std;
 
+std::ostream& operator<<(std::ostream& out, Namespace::MemberKind kind) {
+  switch (kind) {
+    case Namespace::MemberKind::Namespace:
+      out << "namespace";
+      break;
+    case Namespace::MemberKind::Function:
+      out << "function";
+      break;
+    case Namespace::MemberKind::Variable:
+      out << "variable";
+      break;
+    case Namespace::MemberKind::Typedef:
+      out << "typedef";
+      break;
+    default:
+      out << "<undeclared>";
+      break;
+    }
+  return out;
+}
+
 Namespace::Namespace(const string& name, 
                      bool unnamed, 
                      bool isInline,
@@ -24,6 +45,8 @@ Namespace::MemberKind Namespace::lookupMember(const string& name) const {
     return MemberKind::Function;
   } else if (variables_.find(name) != variables_.end()) {
     return MemberKind::Variable;
+  } else if (typedefs_.find(name) != typedefs_.end()) {
+    return MemberKind::Typedef;
   } else {
     return MemberKind::NotDeclared;
   }
@@ -39,8 +62,8 @@ Namespace* Namespace::addNamespace(string name,
   auto kind = lookupMember(name);
   if (kind == MemberKind::Namespace) {
     return namespaces_[name].get();
-  } else if (kind != MemberKind::NotDeclared) {
-    Throw("{} redeclared to be a namespace; was {}", kind);
+  } else {
+    checkUndeclared(kind, name, "namespace");
   }
 
   auto ns = make_unique<Namespace>(name, unnamed, isInline, this);
@@ -51,16 +74,59 @@ Namespace* Namespace::addNamespace(string name,
   return ret.first->second.get();
 }
 
-void Namespace::addMember(const string& name, SType type) {
-  // TODO: ODR
-  if (type->isFunction()) {
-    functions_.insert(make_pair(name, 
-                                static_pointer_cast<FunctionType>(type)));
-    declarationOrder_.func.push_back(name);
+void Namespace::addFunction(const string& name, 
+                            SType type, 
+                            MemberKind kind) {
+  if (kind == MemberKind::Function) {
+    // TODO: handle overloads
+    return;
   } else {
-    variables_.insert(make_pair(name, type));
-    declarationOrder_.var.push_back(name);
+    checkUndeclared(kind, name, *type);
   }
+
+  functions_.insert(make_pair(name, 
+                              static_pointer_cast<FunctionType>(type)));
+  declarationOrder_.func.push_back(name);
+}
+
+void Namespace::addVariable(const string& name, SType type, MemberKind kind) {
+  if (kind == MemberKind::Variable) {
+    auto& exist = variables_[name];
+    if (*exist != *type) {
+      Throw("{} redeclared to be {}; was {}", name, *type, *exist);
+    }
+    return;
+  } else {
+    checkUndeclared(kind, name, *type);
+  }
+
+  variables_.insert(make_pair(name, type));
+  declarationOrder_.var.push_back(name);
+}
+
+void Namespace::addMember(const string& name, SType type) {
+  auto kind = lookupMember(name);
+  if (type->isFunction()) {
+    addFunction(name, type, kind);
+  } else {
+    addVariable(name, type, kind);
+  }
+}
+
+void Namespace::addTypedef(const string& name, SType type) {
+  auto kind = lookupMember(name);
+  if (kind == MemberKind::Typedef) {
+    if (*typedefs_[name] != *type) {
+      Throw("{} typedef'd to be a different type {}; was {}", 
+            name, 
+            *type,
+            *typedefs_[name]);
+    }
+    return;
+  } else {
+    checkUndeclared(kind, name, *type);
+  }
+  typedefs_.insert(make_pair(name, type));
 }
 
 void Namespace::output(ostream& out) const {
@@ -84,6 +150,19 @@ void Namespace::output(ostream& out) const {
   }
 
   out << "end namespace" << endl;
+}
+
+Namespace::VMember
+Namespace::lookup(const string& name, MemberKind kind) const {
+  auto it = typedefs_.find(name);
+  if (it != typedefs_.end()) {
+    return {Member{it->second}};
+  }
+  if (parent_) {
+    return parent_->lookup(name, kind);
+  } else {
+    return {};
+  }
 }
 
 }

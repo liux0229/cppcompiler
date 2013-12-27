@@ -16,10 +16,37 @@ class Namespace {
     Function = 0x8,
     Typedef = 0x10,
   };
+
   struct Member {
+    virtual MemberKind getKind() const { return MemberKind::NotDeclared; }
+    bool isTypedef() const {
+      return getKind() == MemberKind::Typedef;
+    }
+  };
+  MakeUnique(Member);
+  using VMember = std::vector<UMember>;
+
+  struct TypedefMember : Member {
+    TypedefMember(SType t) : type(t) { }
+    MemberKind getKind() const override { return MemberKind::Typedef; }
     SType type;
   };
-  using VMember = std::vector<Member>;
+  MakeUnique(TypedefMember);
+  struct VariableMember : Member {
+    VariableMember(SType t) : type(t) { }
+    MemberKind getKind() const override { return MemberKind::Variable; }
+    SType type;
+  };
+  struct FunctionMember : Member {
+    FunctionMember(SType t) : type(t) { }
+    MemberKind getKind() const override { return MemberKind::Function; }
+    SType type;
+  };
+  struct NamespaceMember : Member {
+    NamespaceMember(const Namespace* n) : ns(n) { }
+    MemberKind getKind() const override { return MemberKind::Namespace; }
+    const Namespace* ns = nullptr;
+  };
 
   Namespace(const std::string& name, 
             bool unamed, 
@@ -32,7 +59,8 @@ class Namespace {
   void addTypedef(const std::string& name, SType type);
 
   void output(std::ostream& out) const;
-  VMember lookup(const std::string& name, MemberKind kind) const;
+  VMember lookup(const std::string& name) const;
+  UTypedefMember lookupTypedef(const std::string& name) const;
 
  private:
   // TODO: use different names for different TUs
@@ -47,7 +75,7 @@ class Namespace {
     }
   }
 
-  MemberKind lookupMember(const std::string &name) const;
+  UMember lookupMember(const std::string &name) const;
   void addFunction(const std::string& name, SType type, MemberKind kind);
   void addVariable(const std::string& name, SType type, MemberKind kind);
 

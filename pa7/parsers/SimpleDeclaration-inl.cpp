@@ -90,12 +90,11 @@ struct SimpleDeclaration : virtual Base {
 
   SType typedefName() {
     auto name = expectIdentifier();
-    auto members = curNamespace()->lookup(name,
-                                          Namespace::MemberKind::Typedef);
-    if (members.empty()) {
+    auto member = curNamespace()->lookupTypedef(name);
+    if (!member) {
       Throw("typedef name expected; got {}", name);
     }
-    return members[0].type;
+    return member->type;
   }
 
   void initDeclaratorList(DeclSpecifiers& declSpecifiers) {

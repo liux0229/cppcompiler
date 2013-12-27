@@ -38,18 +38,32 @@ Namespace::Namespace(const string& name,
   }
 }
 
-Namespace::MemberKind Namespace::lookupMember(const string& name) const {
-  if (namespaces_.find(name) != namespaces_.end()) {
-    return MemberKind::Namespace;
-  } else if (functions_.find(name) != functions_.end()) {
-    return MemberKind::Function;
-  } else if (variables_.find(name) != variables_.end()) {
-    return MemberKind::Variable;
-  } else if (typedefs_.find(name) != typedefs_.end()) {
-    return MemberKind::Typedef;
-  } else {
-    return MemberKind::NotDeclared;
+Namespace::UMember Namespace::lookupMember(const string& name) const {
+  {
+    auto it = namespaces_.find(name);
+    if (it != namespaces_.end()) {
+      return make_unique<NamespaceMember>(it->second.get());
+    }
   }
+  {
+    auto it = functions_.find(name);
+    if (it != functions_.end()) {
+      return make_unique<FunctionMember>(it->second);
+    }
+  }
+  {
+    auto it = variables_.find(name);
+    if (it != variables_.end()) {
+      return make_unique<VariableMember>(it->second);
+    }
+  }
+  {
+    auto it = typedefs_.find(name);
+    if (it != typedefs_.end()) {
+      return make_unique<TypedefMember>(it->second);
+    }
+  }
+return make_unique<Member>();
 }
 
 Namespace* Namespace::addNamespace(string name,
@@ -59,7 +73,7 @@ Namespace* Namespace::addNamespace(string name,
     name = getUniqueName();
   }
 
-  auto kind = lookupMember(name);
+  auto kind = lookupMember(name)->getKind();
   if (kind == MemberKind::Namespace) {
     return namespaces_[name].get();
   } else {
@@ -105,7 +119,7 @@ void Namespace::addVariable(const string& name, SType type, MemberKind kind) {
 }
 
 void Namespace::addMember(const string& name, SType type) {
-  auto kind = lookupMember(name);
+  auto kind = lookupMember(name)->getKind();
   if (type->isFunction()) {
     addFunction(name, type, kind);
   } else {
@@ -114,7 +128,7 @@ void Namespace::addMember(const string& name, SType type) {
 }
 
 void Namespace::addTypedef(const string& name, SType type) {
-  auto kind = lookupMember(name);
+  auto kind = lookupMember(name)->getKind();
   if (kind == MemberKind::Typedef) {
     if (*typedefs_[name] != *type) {
       Throw("{} typedef'd to be a different type {}; was {}", 
@@ -153,16 +167,30 @@ void Namespace::output(ostream& out) const {
 }
 
 Namespace::VMember
-Namespace::lookup(const string& name, MemberKind kind) const {
-  auto it = typedefs_.find(name);
-  if (it != typedefs_.end()) {
-    return {Member{it->second}};
+Namespace::lookup(const string& name) const {
+  auto member = lookupMember(name);
+  if (member->getKind() == MemberKind::NotDeclared) {
+    if (parent_) {
+      return parent_->lookup(name);
+    } else {
+      return {};
+    }
   }
-  if (parent_) {
-    return parent_->lookup(name, kind);
-  } else {
-    return {};
-  }
+  VMember ret;
+  ret.push_back(move(member));
+  return ret;
 }
+
+Namespace::UTypedefMember
+Namespace::lookupTypedef(const string& name) const {
+  auto members = lookup(name);
+  if (members.empty() || !members[0]->isTypedef()) {
+    return nullptr;
+  }
+  return UTypedefMember(
+           static_cast<Namespace::TypedefMember*>(
+             members[0].release()));
+}
+
 
 }

@@ -125,8 +125,13 @@ struct SimpleDeclaration : virtual Base {
       curNamespace()->addTypedef(id.unqualified,
                                  declarator->getType());
     } else {
-      curNamespace()->addVariableOrFunction(id.unqualified,
-                                            declarator->getType());
+      if (!id.isQualified()) {
+        curNamespace()->addVariableOrFunction(id.unqualified,
+                                              declarator->getType());
+      } else {
+        // TODO: check the name has already been declared
+        id.ns->addVariableOrFunction(id.unqualified, declarator->getType());
+      }
     }
   }
 
@@ -314,7 +319,9 @@ struct SimpleDeclaration : virtual Base {
 
   SType typeId() {
     auto typeSpecifiers = TR(EX(typeSpecifierSeq));
-    auto declarator = TR(EX(abstractDeclarator));
+    UDeclarator declarator;
+    (declarator = BT(EX(abstractDeclarator))) ||
+    (declarator = make_unique<Declarator>());
     declarator->appendType(typeSpecifiers.getType());
     return declarator->getType();
   }

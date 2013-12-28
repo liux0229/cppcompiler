@@ -18,6 +18,9 @@ struct CvQualifier {
   bool operator==(CvQualifier other) const {
     return value == other.value;
   }
+  bool operator!=(CvQualifier other) const {
+    return value != other.value;
+  }
 
   CvQualifier combine(CvQualifier other, bool checkDuplicate) const {
     if (checkDuplicate && (value & other.value)) {
@@ -103,6 +106,9 @@ class FundalmentalType : public Type {
     return type_ == FT_VOID;
   }
   bool operator==(const Type& rhs) const override {
+    if (!Type::operator==(rhs)) {
+      return false;
+    }
     auto other = dynamic_cast<const FundalmentalType*>(&rhs);
     return other && type_ == other->type_;
   }
@@ -127,6 +133,9 @@ class DependentType : public Type {
   }
 
   bool operator==(const Type& other) const override {
+    if (!Type::operator==(other)) {
+      return false;
+    }
     if (typeid(*this) != typeid(other)) {
       return false;
     }
@@ -169,6 +178,7 @@ class ReferenceType : public DependentType {
   }
   void output(std::ostream& out) const override;
   bool isReference() const override { return true; }
+  void setDepended(SType depended) override;
 
  protected:
   void checkDepended(SType depended) const override;
@@ -187,7 +197,9 @@ class ArrayType : public DependentType {
   void setCvQualifier(CvQualifier cvQualifier) override;
   void output(std::ostream& out) const override;
   bool isArray() const override { return true; }
+  bool operator==(const Type& other) const override;
 
+  bool addSizeTo(const ArrayType& other) const;
   SPointerType toPointer() const; 
 
  protected:

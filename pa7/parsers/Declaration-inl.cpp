@@ -122,7 +122,7 @@ struct Declaration : virtual Base {
   }
 
   Namespace::SNamespaceMember qualifiedNamespaceSpecifier() {
-    auto ns = TR(EX(nestedNameSpecifier));
+    auto ns = BT(EX(nestedNameSpecifier));
     return TR(EX(namespaceName), ns);
   }
 

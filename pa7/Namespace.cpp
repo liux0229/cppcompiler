@@ -157,14 +157,31 @@ void Namespace::addFunction(const string& name,
 void Namespace::addVariable(const string& name, SType type) {
   auto member = lookupMember(name);
   if (member) {
+    bool error = false;
     if (member->isVariable()) {
-      auto exist = member->toVariable();
-      if (*exist->type != *type) {
-        Throw("{} redeclared to be {}; was {}", name, *type, *exist->type);
+      if (!member->ownedBy(this)) {
+        // there was already a using-declaration of a variable for this name
+        error = true;
+      } else {
+        auto exist = member->toVariable();
+        if (*exist->type != *type) {
+          if (exist->type->isArray() && type->isArray()) {
+            auto& ea = static_cast<ArrayType&>(*exist->type);
+            auto& ta = static_cast<ArrayType&>(*type);
+            if (ta.addSizeTo(ea)) {
+              // modify type of the existing variable
+              members_[name]->toVariable()->type = type;
+            }
+          }
+        }
       }
-      return;
+    } else {
+      error = true;
     }
-    reportRedeclaration(name, *type, member->getKind());
+    if (error) {
+      reportRedeclaration(name, *type, member->getKind());
+    }
+    return;
   }
 
   members_.insert(make_pair(name, 

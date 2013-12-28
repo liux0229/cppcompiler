@@ -21,6 +21,10 @@ string Type::getName() const {
   return oss.str();
 }
 
+bool Type::operator==(const Type& other) const {
+  return cvQualifier_ == other.cvQualifier_;
+}
+
 map<FundalmentalType::TypeSpecifiers,
     EFundamentalType, 
     FundalmentalType::Compare>
@@ -164,6 +168,26 @@ void ReferenceType::output(ostream& out) const {
   outputDepended(out);
 }
 
+void ReferenceType::setDepended(SType depended) {
+  if (!depended->isReference()) {
+    DependentType::setDepended(depended);
+  } else {
+    // Note that this implementation does not handle T&&& cases correctly
+    // To handle this case we need to pass in an additional flag indicating
+    // whether the setDepended operation is for a typedef'd type
+
+    auto& ref = static_cast<ReferenceType&>(*depended);
+    Kind collapsed;
+    if (kind_ == LValueRef || ref.kind_ == LValueRef) {
+      collapsed = LValueRef;
+    } else {
+      collapsed = RValueRef;
+    }
+    kind_ = collapsed;
+    DependentType::setDepended(ref.depended_);
+  }
+}
+
 void ArrayType::checkDepended(SType depended) const {
   if (depended->isFunction()) {
     Throw("array element type cannot be a function: {}", *depended);
@@ -196,6 +220,21 @@ SPointerType ArrayType::toPointer() const {
   auto ret = make_shared<PointerType>();
   ret->setDepended(depended_);
   return ret;
+}
+
+bool ArrayType::operator==(const Type& rhs) const {
+  if (!DependentType::operator==(rhs)) {
+    return false;
+  }
+  auto& other = static_cast<const ArrayType&>(rhs);
+  return size_ == other.size_;
+}
+
+bool ArrayType::addSizeTo(const ArrayType& other) const {
+  if (!DependentType::operator==(other)) {
+    return false;
+  }
+  return size_ && !other.size_;
 }
 
 FunctionType::FunctionType(std::vector<SType>&& params, bool hasVarArgs)
@@ -252,7 +291,7 @@ void FunctionType::output(ostream& out) const {
 }
 
 bool FunctionType::operator==(const Type& rhs) const {
-  if (!this->DependentType::operator==(rhs)) {
+  if (!DependentType::operator==(rhs)) {
     return false;
   }
   auto& other = static_cast<const FunctionType&>(rhs);

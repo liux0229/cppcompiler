@@ -53,7 +53,12 @@ void DeclSpecifiers::finalize() {
   }
   // the cv-qualifiers associated with the type can be duplicated with
   // the cv-qualifiers in the DeclSpecifierSeq
-  type_->setCvQualifier(type_->getCvQualifier().combine(cvQualifier_, false));
+  auto cv = type_->getCvQualifier().combine(cvQualifier_, false);
+  if (cv != type_->getCvQualifier()) {
+    // need to create a new type object
+    type_ = type_->clone();
+    type_->setCvQualifier(cv);
+  }
   finalized_ = true;
 }
 

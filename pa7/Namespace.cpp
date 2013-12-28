@@ -342,7 +342,7 @@ Namespace::unqualifiedLookup(const string& name,
 
 void Namespace::checkLookupAmbiguity(const string& name,
                                      MemberSet& members) const {
-  cout << format("lookup result [{}]: {}", name, members) << endl;
+  // cout << format("lookup result [{}]: {}", name, members) << endl;
 
   // in the current feature set, members either contain 
   // 1) 1 of vars, funcs, or ns

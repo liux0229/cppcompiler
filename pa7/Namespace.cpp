@@ -109,6 +109,10 @@ Namespace* Namespace::addNamespace(string name,
   if (member) {
     if (member->isNamespace()) {
       auto exist = member->toNamespace();
+      if (!exist->ownedBy(this)) {
+        // a namespace alias 
+        Throw("namespace alias name redeclared to be namespace: {}", name);
+      }
       if (isInline && !exist->ns->isInline()) {
         Throw("extension-namespace-definition is inline "
               "while the original one was not: {}", name);
@@ -221,14 +225,14 @@ void Namespace::addUsingDeclaration(const MemberSet& ms) {
       if (exist != m) { 
         if (exist->getKind() != m->getKind()) {
           error = true;
-        } else if (m->isFunction() || m->isVariable()) {
-          error = true;
         } else if (m->isTypedef()) {
           auto em = exist->toTypedef();
           auto tm = m->toTypedef();
           if (tm->type != em->type) {
             error = true;
           }
+        } else {
+          error = true;
         }
       }
       
@@ -245,6 +249,21 @@ void Namespace::addUsingDeclaration(const MemberSet& ms) {
 
     members_.insert(make_pair(m->name, m));
   }
+}
+
+void Namespace::addNamespaceAlias(const std::string& name, 
+                                  SNamespaceMember ns) {
+  auto exist = lookupMember(name);
+  if (exist) {
+    if (exist != ns) {
+      Throw("{} redeclared to be a namespace-alias; was {}", 
+            name,
+            *exist);
+    }
+    // duplicate aliases allowed
+    return;
+  }
+  members_.insert(make_pair(name, ns));
 }
 
 void Namespace::output(ostream& out) const {
@@ -304,8 +323,9 @@ Namespace::unqualifiedLookup(const string& name,
   }
 }
 
-void Namespace::checkLookupAmbiguity(MemberSet& members) const {
-  cout << "lookup result: " << members << endl;
+void Namespace::checkLookupAmbiguity(const string& name,
+                                     MemberSet& members) const {
+  cout << format("lookup result [{}]: {}", name, members) << endl;
 
   // in the current feature set, members either contain 
   // 1) 1 of vars, funcs, or ns
@@ -325,7 +345,7 @@ void Namespace::checkLookupAmbiguity(MemberSet& members) const {
       exist = tm;
     }
     if (ambiguious) {
-      Throw("lookup is ambiguious; found: {}", members);
+      Throw("lookup for {} is ambiguious; found: {}", name, members);
     }
     while (members.size() > 1) {
       members.erase(members.begin());
@@ -336,14 +356,14 @@ void Namespace::checkLookupAmbiguity(MemberSet& members) const {
 Namespace::MemberSet Namespace::unqualifiedLookup(const string& name) const {
   UsingDirectiveMap usingDirectiveMap;
   auto members = unqualifiedLookup(name, usingDirectiveMap);
-  checkLookupAmbiguity(members);
+  checkLookupAmbiguity(name, members);
   return members;
 }
 
 Namespace::MemberSet Namespace::qualifiedLookup(const string& name) const {
   set<const Namespace*> visited;
   MemberSet members = qualifiedLookup(name, visited);
-  checkLookupAmbiguity(members);
+  checkLookupAmbiguity(name, members);
   return members;
 }
 

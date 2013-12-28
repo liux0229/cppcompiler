@@ -159,7 +159,7 @@ class Namespace {
 
   // Ns A -> [Ns]: namespace A needs to consider [Ns] in its unqualified lookup
   using UsingDirectiveMap = std::map<const Namespace*, NamespaceSet>;
-  void checkLookupAmbiguity(MemberSet& members) const;
+  void checkLookupAmbiguity(const std::string& name, MemberSet& members) const;
   MemberSet unqualifiedLookup(const std::string& name, 
                               UsingDirectiveMap& usingDirectiveMap) const;
   MemberSet qualifiedLookup(const std::string& name, 

@@ -8,6 +8,7 @@ struct Declaration : virtual Base {
   void declaration() override {
     BT(EX(emptyDeclaration)) ||
     BT(EX(namespaceDefinition)) ||
+    BT(EX(namespaceAliasDefinition)) ||
     BT(EX(usingDirective)) ||
     BT(EX(usingDeclaration)) ||
     BT(EXB(aliasDeclaration)) ||
@@ -47,7 +48,6 @@ struct Declaration : virtual Base {
     expect(KW_USING);
     expect(KW_NAMESPACE);
     auto ns = BT(EX(nestedNameSpecifier));
-    auto name = expectIdentifier();
     auto used = TR(EX(namespaceName), ns);
     curNamespace()->addUsingDirective(used->ns);
     expect(OP_SEMICOLON);

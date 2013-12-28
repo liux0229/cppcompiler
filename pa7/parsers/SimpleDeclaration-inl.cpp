@@ -76,23 +76,31 @@ struct SimpleDeclaration : virtual Base {
       declSpecifiers.addType(
         make_shared<FundalmentalType>(getAdvSimple()->type), false);
     } else {
+      auto ns = BT(EXB(nestedNameSpecifier));
       // Note that here we could avoid the lookup by checking whether
       // declSpecifiers already contain a type
       // However the current implementation is correct and is most clean
-      auto type = TR(EX(typeName));
+      auto type = TR(EX(typeName), ns);
       declSpecifiers.addType(type, true);
     }
   }
 
-  SType typeName() {
-    return TR(EX(typedefName));
+  SType typeName(Namespace* ns) {
+    return TR(EX(typedefName), ns);
   }
 
-  SType typedefName() {
+  SType typedefName(Namespace* ns) {
     auto name = expectIdentifier();
-    auto member = curNamespace()->lookupTypedef(name, false);
+    Namespace::STypedefMember member;
+    if (ns) {
+      member = ns->lookupTypedef(name, true);
+    } else {
+      member = curNamespace()->lookupTypedef(name, false);
+    }
     if (!member) {
-      Throw("typedef name expected; got {}", name);
+      Throw("typedef name expected; got {}{}", 
+            ns ? ns->getName() + "::" : string{},
+            name);
     }
     return member->type;
   }
@@ -108,11 +116,16 @@ struct SimpleDeclaration : virtual Base {
   void initDeclarator(DeclSpecifiers& declSpecifiers) {
     auto declarator = TR(EX(declarator));
     declarator->appendType(declSpecifiers.getType());
+    auto id = declarator->getId();
     if (declSpecifiers.isTypedef()) {
-      curNamespace()->addTypedef(declarator->getId(), 
+      if (id.isQualified()) {
+        Throw("typedef declarator id cannot be a qualified id: {}",
+              id.getName());
+      }
+      curNamespace()->addTypedef(id.unqualified,
                                  declarator->getType());
     } else {
-      curNamespace()->addVariableOrFunction(declarator->getId(),
+      curNamespace()->addVariableOrFunction(id.unqualified,
                                             declarator->getType());
     }
   }
@@ -182,14 +195,9 @@ struct SimpleDeclaration : virtual Base {
       expect(OP_RPAREN);
       return declarator;
     } else {
-      auto id = TR(EX(declaratorId));
+      auto id = TR(EXB(idExpression));
       return make_unique<Declarator>(*id);
     }
-  }
-
-  UDeclaratorId declaratorId() {
-    auto id = TR(EX(idExpression));
-    return make_unique<DeclaratorId>(*id);
   }
 
   void noptrDeclaratorSuffix(const UDeclarator& declarator) {
@@ -304,173 +312,31 @@ struct SimpleDeclaration : virtual Base {
     return declarator;
   }
 
-#if 0
-  AST namespaceAliasDefinition() {
-    VAST c;
-    c.push_back(expect(KW_NAMESPACE));
-    c.push_back(expectIdentifier());
-    c.push_back(expect(OP_ASS));
-    c.push_back(TR(qualifiedNamespaceSpecifier));
-    c.push_back(expect(OP_SEMICOLON));
-    return getAST(NamespaceAliasDefinition);
+  SType typeId() {
+    auto typeSpecifiers = TR(EX(typeSpecifierSeq));
+    auto declarator = TR(EX(abstractDeclarator));
+    declarator->appendType(typeSpecifiers.getType());
+    return declarator->getType();
   }
 
-  AST qualifiedNamespaceSpecifier() {
-    VAST c;
-    zeroOrOne(nestedNameSpecifier);
-    c.push_back(TR(namespaceName));
-    return getAST(QualifiedNamespaceSpecifier);
-  }
-
-  AST usingDirective() {
-    VAST c;
-    c.push_back(expect(KW_USING));
-    c.push_back(expect(KW_NAMESPACE));
-    zeroOrOne(nestedNameSpecifier);
-    c.push_back(expectIdentifier());
-    c.push_back(expect(OP_SEMICOLON));
-    return getAST(UsingDirective);
-  }
-
-  AST namespaceDefinition() {
-    VAST c;
-    if (isSimple(KW_INLINE)) {
-      c.push_back(getAdv());
+  DeclSpecifiers typeSpecifierSeq() {
+    DeclSpecifiers typeSpecifiers;
+    TR(EX(typeSpecifier), typeSpecifiers);
+    while (BT(EX(typeSpecifier), typeSpecifiers)) {
     }
-    c.push_back(expect(KW_NAMESPACE));
-    if (isIdentifier()) {
-      c.push_back(getAdv(ASTType::Identifier));
-    }
-    c.push_back(expect(OP_LBRACE));
-    c.push_back(TR(namespaceBody));
-    c.push_back(expect(OP_RBRACE));
-    return getAST(NamespaceDefinition);
+    typeSpecifiers.finalize();
+    return typeSpecifiers;
   }
 
-  AST namespaceBody() {
-    VAST c;
-    zeroOrMore(declaration);
-    return getAST(NamespaceBody);
+  void aliasDeclaration() override {
+    expect(KW_USING);
+    auto name = expectIdentifier();
+    expect(OP_ASS);
+    auto type = TR(EX(typeId));
+    expect(OP_SEMICOLON);
+
+    curNamespace()->addTypedef(name, type);
   }
-
-  AST emptyDeclaration() {
-    // give it a separate layer
-    return expectM(ASTType::EmptyDeclaration, 
-                   "empty declaration", 
-                   {OP_SEMICOLON});
-  }
-
-#endif
-
-  /* ===============
-   *  id expression
-   * ===============
-   */
-  UId idExpression() {
-    auto id = expectIdentifier();
-    return make_unique<Id>(id);
-    // TODO: make the parsing more effective
-#if 0
-    AST node;
-    (node = BT(qualifiedId)) ||
-    (node = TR(unqualifiedId));
-    VAST c;
-    c.push_back(move(node));
-    return get(ASTType::IdExpression, move(c));
-#endif
-  }
-
-#if 0
-  AST unqualifiedId() {
-    VAST c;
-    c.push_back(expectIdentifier());
-    return getAST(UnqualifiedId);
-  }
-
-  AST typeSpecifierSeq() {
-    VAST c;
-    oneOrMore(typeSpecifier);
-    return get(ASTType::TypeSpecifierSeq, move(c));
-  }
-
-
-  AST nestedNameSpecifier() {
-    VAST c;
-    c.push_back(TR(nestedNameSpecifierRoot));
-    zeroOrMore(nestedNameSpecifierSuffix);
-    return get(ASTType::NestedNameSpecifier, move(c));
-  }
-
-  AST nestedNameSpecifierRoot() {
-    // TODO: decltype
-    VAST c;
-    zeroOrOne(namespaceName);
-    c.push_back(expect(OP_COLON2));
-    return get(ASTType::NestedNameSpecifierRoot, move(c));
-  }
-
-  AST nestedNameSpecifierSuffix() {
-    VAST c;
-    c.push_back(expectIdentifier());
-    c.push_back(expect(OP_COLON2));
-    return get(ASTType::NestedNameSpecifierSuffix, move(c));
-  }
-
-  AST storageClassSpecifier() {
-    return 
-      expectM(ASTType::StorageClassSpecifier,
-              "storage class specifier",
-              {KW_STATIC, KW_THREAD_LOCAL, KW_EXTERN});
-  }
-
-  AST usingDeclaration() {
-    VAST c;
-    c.push_back(expect(KW_USING));
-    c.push_back(TR(nestedNameSpecifier));
-    c.push_back(TR(unqualifiedId));
-    c.push_back(expect(OP_SEMICOLON));
-    return get(ASTType::UsingDeclaration, move(c));
-  }
-
-  AST aliasDeclaration() {
-    VAST c;
-    c.push_back(expect(KW_USING));
-    c.push_back(expectIdentifier());
-    c.push_back(expect(OP_ASS));
-    c.push_back(TR(typeId));
-    c.push_back(expect(OP_SEMICOLON));
-    return get(ASTType::AliasDeclaration, move(c));
-  } 
-
-  AST typeName() {
-    // An important NT - give it a level
-    VAST c;
-    c.push_back(TR(typedefName));
-    return get(ASTType::TypeName, move(c));
-  }
-
-  AST namespaceName() {
-    if (!isNamespaceName()) {
-      BAD_EXPECT("namespace name");
-    }
-    // should be fine to not use the Identifier type
-    return getAdv(ASTType::NamespaceName);
-  }
-
-  AST typedefName() {
-    if (!isTypedefName()) {
-      BAD_EXPECT("typedef name");
-    }
-    return getAdv(ASTType::TypedefName);
-  }
-
-  AST qualifiedId() {
-    VAST c;
-    c.push_back(TR(nestedNameSpecifier));
-    c.push_back(TR(unqualifiedId));
-    return getAST(QualifiedId);
-  }
-#endif
 };
 
 } }

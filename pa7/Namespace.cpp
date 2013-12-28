@@ -22,28 +22,36 @@ ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
   return out;
 }
 
+ostream& operator<<(ostream& out, const Namespace::Member& m) {
+  m.output(out);
+  return out;
+}
+
 ostream& operator<<(ostream& out, Namespace::SMember m) {
   m->output(out);
   return out;
 }
 
 void Namespace::Member::output(std::ostream& out) const {
-  out << format("{}::{} => ", owner->getName(), name);
+  if (!owner->isGlobal()) {
+    out << format("{}::", owner->getName());
+  }
+  out << format("{} => ", name);
 }
 
 void Namespace::TypedefMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {}]", getKind(), type);
+  out << format("[{} {}]", getKind(), *type);
 }
 
 void Namespace::VariableMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {}]", getKind(), type);
+  out << format("[{} {}]", getKind(), *type);
 }
 
 void Namespace::FunctionMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {}]", getKind(), type);
+  out << format("[{} {}]", getKind(), *type);
 }
 
 void Namespace::NamespaceMember::output(std::ostream& out) const {
@@ -67,6 +75,8 @@ Namespace::Namespace(const string& name,
 string Namespace::getName() const {
   if (!parent_) {
     return ""; 
+  } else if (parent_->isGlobal()) {
+    return name_;
   } else {
     return parent_->getName() + "::" + name_;
   }
@@ -116,6 +126,10 @@ Namespace* Namespace::addNamespace(string name,
   members_.insert(make_pair(name,
                             make_shared<NamespaceMember>(this, name, ns)));
   declarationOrder_.ns.push_back(name);
+
+  if (unnamed || isInline) {
+    addUsingDirective(ns);
+  }
 
   return ns;
 }
@@ -188,6 +202,51 @@ void Namespace::addUsingDirective(Namespace* ns) {
   usingDirectives_.insert(ns);
 }
 
+void Namespace::addUsingDeclaration(const MemberSet& ms) {
+  for (auto& m : ms) {
+    if (m->owner == this) {
+      continue;
+    }
+
+    if (m->isNamespace()) {
+      auto ns = m->toNamespace()->ns;
+      Throw("using-declaration refers to a namespace: {}", ns->getName());
+    }
+
+    auto exist = lookupMember(m->name); 
+    if (exist) {
+      bool error = false;
+
+      // if they don't refer to the same member
+      if (exist != m) { 
+        if (exist->getKind() != m->getKind()) {
+          error = true;
+        } else if (m->isFunction() || m->isVariable()) {
+          error = true;
+        } else if (m->isTypedef()) {
+          auto em = exist->toTypedef();
+          auto tm = m->toTypedef();
+          if (tm->type != em->type) {
+            error = true;
+          }
+        }
+      }
+      
+      if (error) {
+        Throw("{} redeclared by a using-declaration to be {}; was {}",
+              exist->name, 
+              *m,
+              *exist);
+      }
+
+      // ignore this redeclaration
+      return;
+    }
+
+    members_.insert(make_pair(m->name, m));
+  }
+}
+
 void Namespace::output(ostream& out) const {
   if (!unnamed_) {
     out << "start namespace " << name_ << endl;
@@ -246,6 +305,8 @@ Namespace::unqualifiedLookup(const string& name,
 }
 
 void Namespace::checkLookupAmbiguity(MemberSet& members) const {
+  cout << "lookup result: " << members << endl;
+
   // in the current feature set, members either contain 
   // 1) 1 of vars, funcs, or ns
   // 2) multiple typedefs which refer to the same type
@@ -261,6 +322,7 @@ void Namespace::checkLookupAmbiguity(MemberSet& members) const {
       if (exist && exist->type != tm->type) {
         ambiguious = true;
       }
+      exist = tm;
     }
     if (ambiguious) {
       Throw("lookup is ambiguious; found: {}", members);
@@ -322,13 +384,14 @@ Namespace::lookupTypedef(const string& name, bool qualified) const {
   return (*members.begin())->toTypedef();
 }
 
-Namespace*
-Namespace::lookupNamespace(const string& name, bool qualified) const {
+auto Namespace::lookupNamespace(const string& name, bool qualified) const 
+-> SNamespaceMember 
+{
   auto members = qualified ? qualifiedLookup(name) : unqualifiedLookup(name);
   if (members.empty() || !(*members.begin())->isNamespace()) {
     return nullptr;
   }
-  return (*members.begin())->toNamespace()->ns;
+  return (*members.begin())->toNamespace();
 }
 
 auto Namespace::getUsingDirectiveClosure() const -> NamespaceSet {

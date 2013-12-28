@@ -118,14 +118,17 @@ class Namespace {
   void addVariableOrFunction(const std::string& name, SType type);
   void addTypedef(const std::string& name, SType type);
   void addUsingDirective(Namespace* ns);
+  void addUsingDeclaration(const MemberSet& members);
+  void addNamespaceAlias(const std::string& name, SNamespaceMember ns);
 
   std::string getName() const;
   bool isInline() const { return inline_; }
+  bool isGlobal() const { return !parent_; }
   void output(std::ostream& out) const;
   STypedefMember lookupTypedef(const std::string& name, 
                                bool qualified) const;
-  Namespace* lookupNamespace(const std::string& name, 
-                             bool qualified) const;
+  SNamespaceMember lookupNamespace(const std::string& name, 
+                                   bool qualified) const;
   MemberSet unqualifiedLookup(const std::string& name) const;
   MemberSet qualifiedLookup(const std::string& name) const;
 

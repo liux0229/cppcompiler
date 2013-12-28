@@ -9,6 +9,8 @@ struct Declaration : virtual Base {
     BT(EX(emptyDeclaration)) ||
     BT(EX(namespaceDefinition)) ||
     BT(EX(usingDirective)) ||
+    BT(EX(usingDeclaration)) ||
+    BT(EXB(aliasDeclaration)) ||
     TR(EXB(simpleDeclaration));
   }
 
@@ -46,20 +48,38 @@ struct Declaration : virtual Base {
     expect(KW_NAMESPACE);
     auto ns = BT(EX(nestedNameSpecifier));
     auto name = expectIdentifier();
-    Namespace* used;
-    if (ns) {
-      used = ns->lookupNamespace(name, true);
-    } else {
-      used = curNamespace()->lookupNamespace(name, false);
-    }
-    if (!used) {
-      Throw("using-directive ill-formed: {}::{}", ns->getName(), name);
-    }
-    curNamespace()->addUsingDirective(used);
+    auto used = TR(EX(namespaceName), ns);
+    curNamespace()->addUsingDirective(used->ns);
     expect(OP_SEMICOLON);
   }
 
-  Namespace* nestedNameSpecifier() {
+  Namespace::SNamespaceMember namespaceName(Namespace* root) {
+    auto name = expectIdentifier();
+    Namespace::SNamespaceMember ns;
+    if (root) {
+      ns = root->lookupNamespace(name, true);
+    } else {
+      ns = curNamespace()->lookupNamespace(name, false);
+    }
+    if (!ns) {
+      Throw("expect namespace-name; got: {}{}", 
+            root ? root->getName() + "::" : string{},  
+            name);
+    }
+    return ns;
+  }
+
+  void usingDeclaration() {
+    expect(KW_USING);
+    auto ns = TR(EX(nestedNameSpecifierRoot));
+    auto name = TR(EX(unqualifiedId));
+    expect(OP_SEMICOLON);
+
+    auto members = ns->qualifiedLookup(name);
+    curNamespace()->addUsingDeclaration(members);
+  }
+
+  Namespace* nestedNameSpecifier() override {
     auto ns = TR(EX(nestedNameSpecifierRoot));
     while (auto n = BT(EX(nestedNameSpecifierSuffix), ns)) {
       ns = n;
@@ -73,47 +93,56 @@ struct Declaration : virtual Base {
     } else {
       auto name = expectIdentifier();
       expect(OP_COLON2);
-      auto ns = curNamespace()->lookupNamespace(name, false);
-      if (!ns) {
+      auto n = curNamespace()->lookupNamespace(name, false);
+      if (!n) {
         Throw("Expect namespace-name; got {}", name);
       }
-      return ns;
+      return n->ns;
     }
   }
 
   Namespace* nestedNameSpecifierSuffix(Namespace* root) {
     auto name = expectIdentifier();
     expect(OP_COLON2);
-    auto ns = root->lookupNamespace(name, true);
-    if (!ns) {
+    auto n = root->lookupNamespace(name, true);
+    if (!n) {
       Throw("{}::{} is not a namespace", root->getName(), name);
     } 
-    return ns;
+    return n->ns;
   }
 
-#if 0
-  AST declaration() {
-    VAST c;
-    AST node;
-    (node = BT(emptyDeclaration)) ||
-    (node = BT(blockDeclaration)) ||
-    (node = TR(namespaceDefinition));
-    c.push_back(move(node));
-    return get(ASTType::Declaration, move(c));
+  void namespaceAliasDefinition() {
+    expect(KW_NAMESPACE);
+    auto name = expectIdentifier();
+    expect(OP_ASS);
+    auto ns = TR(EX(qualifiedNamespaceSpecifier));
+    expect(OP_SEMICOLON);
+
+    curNamespace()->addNamespaceAlias(name, ns);
   }
 
-  AST blockDeclaration() {
-    VAST c;
-    AST node;
-    (node = BT(simpleDeclaration)) ||
-    (node = BT(namespaceAliasDefinition)) ||
-    (node = BT(usingDeclaration)) ||
-    (node = BT(usingDirective)) ||
-    (node = TR(aliasDeclaration));
-    c.push_back(move(node));
-    return get(ASTType::BlockDeclaration, move(c));
+  Namespace::SNamespaceMember qualifiedNamespaceSpecifier() {
+    auto ns = TR(EX(nestedNameSpecifier));
+    return TR(EX(namespaceName), ns);
   }
-#endif
+
+  UId idExpression() override {
+    UId id = BT(EX(qualifiedId));
+    if (id) {
+      return id;
+    } else {
+      return make_unique<Id>(TR(EX(unqualifiedId)));
+    }
+  }
+
+  string unqualifiedId() {
+    return expectIdentifier();
+  }
+
+  UId qualifiedId() {
+    auto ns = TR(EXB(nestedNameSpecifier));
+    return make_unique<Id>(TR(EX(unqualifiedId)), ns);
+  }
 };
 
 } }

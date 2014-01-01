@@ -26,7 +26,9 @@ RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o
 NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl
+NsInitOBJs=nsinit.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+
+all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
 
 pptoken: $(PPTokenOBJs)
 	$(CXX) $(CPPFLAGS) -o pptoken $(PPTokenOBJs)
@@ -49,47 +51,63 @@ recog: $(RecogOBJs)
 nsdecl: $(NsDeclOBJs)
 	$(CXX) $(CPPFLAGS) -o nsdecl $(NsDeclOBJs)
 
+nsinit: $(NsInitOBJs)
+	$(CXX) $(CPPFLAGS) -o nsinit $(NsInitOBJs)
+
 clean:
-	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl
+	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
+
+test: clean nsinit
+	rm -f tests
+	ln -s tests-pa8 tests
+	tests/scripts/run_all_tests.pl nsinit my
+	tests/scripts/compare_results.pl ref my
 
 # test nsdecl application
-test: clean nsdecl
+test7: clean nsdecl
 	rm -f tests
 	ln -s tests-pa7 tests
-	scripts/run_all_tests.pl nsdecl my tests
-	scripts/compare_results.pl ref my tests
+	tests/scripts/run_all_tests.pl nsdecl my
+	tests/scripts/compare_results.pl ref my
 
 # test recog application
 test6: clean recog
 	rm -f tests
 	ln -s tests-pa6 tests
-	scripts/run_all_tests.pl recog my tests
-	scripts/compare_results.pl ref my tests
+	tests/scripts/run_all_tests.pl recog my
+	tests/scripts/compare_results.pl ref my
 
 # test preproc application
 test5: clean preproc
 	rm -f tests
 	ln -s tests-pa5 tests
-	scripts/run_all_tests.pl preproc my tests
-	scripts/compare_results.pl ref my tests
+	tests/scripts/run_all_tests.pl preproc my
+	tests/scripts/compare_results.pl ref my
 
 # test macro application
 test4: clean macro
-	scripts/run_all_tests.pl macro my tests-pa4
-	scripts/compare_results.pl ref my tests-pa4
+	rm -f tests
+	ln -s tests-pa4 tests
+	tests/scripts/run_all_tests.pl macro my
+	tests/scripts/compare_results.pl ref my
 
 # test ctrlexpr application
 test3: clean ctrlexpr
-	scripts/run_all_tests.pl ctrlexpr my tests-pa3
-	scripts/compare_results.pl ref my tests-pa3
+	rm -f tests
+	ln -s tests-pa3 tests
+	tests/scripts/run_all_tests.pl ctrlexpr my
+	tests/scripts/compare_results.pl ref my
 
 # test posttoken application
 test2: clean posttoken
-	scripts/run_all_tests.pl posttoken my tests-pa2
-	scripts/compare_results.pl ref my tests-pa2
+	rm -f tests
+	ln -s tests-pa2 tests
+	tests/scripts/run_all_tests.pl posttoken my
+	tests/scripts/compare_results.pl ref my
 
 # test pptoken application
 test1: clean pptoken
-	scripts/run_all_tests.pl pptoken my tests-pa1
-	scripts/compare_results.pl ref my tests-pa1
-
+	rm -f tests
+	ln -s tests-pa1 tests
+	tests/scripts/run_all_tests.pl pptoken my
+	tests/scripts/compare_results.pl ref my

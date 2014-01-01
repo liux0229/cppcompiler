@@ -1,5 +1,6 @@
 namespace A {
   typedef int X;
   namespace B {
-    X X, f(X);
+    X X;
+    int f(X);
   }}

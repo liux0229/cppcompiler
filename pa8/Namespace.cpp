@@ -1,8 +1,21 @@
 #include "Namespace.h"
+#include "TranslationUnit.h"
 
 namespace compiler {
 
 using namespace std;
+
+ostream& operator<<(ostream& out, Linkage linkage) {
+  switch (linkage) {
+    case Linkage::External:
+      out << "[E]";
+      break;
+    case Linkage::Internal:
+      out << "[I]";
+      break;
+  }
+  return out;
+}
 
 ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
   switch (kind) {
@@ -18,7 +31,7 @@ ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
     case Namespace::MemberKind::Typedef:
       out << "typedef";
       break;
-    }
+  }
   return out;
 }
 
@@ -62,11 +75,13 @@ void Namespace::NamespaceMember::output(std::ostream& out) const {
 Namespace::Namespace(const string& name, 
                      bool unnamed, 
                      bool isInline,
-                     const Namespace* parent)
+                     const Namespace* parent,
+                     TranslationUnit* unit)
   : name_(name),
     unnamed_(unnamed),
     inline_(isInline),
-    parent_(parent) {
+    parent_(parent),
+    unit_(unit) {
   if (unnamed_) {
     name_ = getUniqueName();
   }
@@ -82,20 +97,30 @@ string Namespace::getName() const {
   }
 }
 
-// This version assumes the # of members with this name is <= 1
 Namespace::SMember Namespace::lookupMember(const string& name) const {
-  auto it = members_.find(name);
-  if (it != members_.end()) {
-    return it->second;
-  } else {
+  MemberSet members;
+  lookupMember(name, members);
+  if (members.size() > 1) {
+    bool allFunc = all_of(members.begin(), 
+                          members.end(), 
+                          [](SMember m) { return m->isFunction(); });
+    MCHECK(allFunc, 
+           format("lookupMember({}) got more than 1 matching members, "
+                  "not all of which are functions: {}",
+                  name,
+                  members));
+  }
+  if (members.empty()) {
     return nullptr;
+  } else {
+    return *members.begin();
   }
 }
 
 void Namespace::lookupMember(const string& name, MemberSet& members) const {
-  auto member = lookupMember(name);
-  if (member) {
-    members.insert(member);
+  auto p = members_.equal_range(name);
+  for (auto it = p.first; it != p.second; ++it) {
+    members.insert(it->second);
   }
 }
 
@@ -120,17 +145,17 @@ Namespace* Namespace::addNamespace(string name,
       }
       return exist->ns;
     } else {
-      reportRedeclaration(name, "namespace", member->getKind());
+      reportRedeclaration(name, "namespace", *member);
     }
   }
 
   namespaces_.push_back(
-    make_unique<Namespace>(name, unnamed, isInline, this));
+    make_unique<Namespace>(name, unnamed, isInline, this, unit_));
 
   auto ns = namespaces_.back().get();
-  members_.insert(make_pair(name,
-                            make_shared<NamespaceMember>(this, name, ns)));
-  declarationOrder_.ns.push_back(name);
+  auto m = make_shared<NamespaceMember>(this, name, ns);
+  members_.insert(make_pair(name, m));
+  declarationOrder_.ns.push_back(m);
 
   if (unnamed || isInline) {
     addUsingDirective(ns);
@@ -140,22 +165,56 @@ Namespace* Namespace::addNamespace(string name,
 }
 
 void Namespace::addFunction(const string& name, 
-                            SType type) {
-  auto member = lookupMember(name);
-  if (member) {
-    if (member->isFunction()) {
-      // TODO: handle overloads
-      return;
-    }
-    reportRedeclaration(name, *type, member->getKind());
+                            SFunctionType type,
+                            bool requireDeclaration,
+                            // TODO: def should replace declaration
+                            bool isDef) {
+  MemberSet members;
+  lookupMember(name, members);
+
+  auto it = find_if(members.begin(), 
+                    members.end(), 
+                    [](SMember m) { return !m->isFunction(); });
+  if (it != members.end()) {
+    reportRedeclaration(name, *type, **it);
   }
 
-  members_.insert(make_pair(name, 
-                            make_shared<FunctionMember>(this, name, type)));
-  declarationOrder_.func.push_back(name);
+  for (auto& m : members) {
+    auto& func = static_cast<FunctionMember&>(*m);
+    if (*type == *func.type) {
+      if (!func.ownedBy(this)) {
+        Throw("using declaration {} redeclared to be {}: {}",
+              name,
+              type,
+              func);
+      }
+      // just a redeclaration
+      return;
+    }
+
+    if (type->sameParameterAndQualifier(*func.type)) {
+      Throw("cannot overload function {}: {} vs {}", 
+            name, 
+            *func.type, 
+            *type);
+    }
+  }
+
+  if (requireDeclaration) {
+    Throw("{}: {} must be declared first", name, *type);
+  }
+      
+  auto m = make_shared<FunctionMember>(this, name, type, isDef);
+  members_.insert(make_pair(name, m));
+  declarationOrder_.func.push_back(m);
+  unit_->addMember(m);
 }
 
-void Namespace::addVariable(const string& name, SType type) {
+void Namespace::addVariable(const string& name, 
+                            SType type, 
+                            bool requireDeclaration,
+                            // TODO: def should replace declaration
+                            bool isDef) {
   auto member = lookupMember(name);
   if (member) {
     bool error = false;
@@ -166,12 +225,16 @@ void Namespace::addVariable(const string& name, SType type) {
       } else {
         auto exist = member->toVariable();
         if (*exist->type != *type) {
+          // type mismatch with an existing variable
+          // disallowed unless it is adding size to array
+          error = true;
           if (exist->type->isArray() && type->isArray()) {
             auto& ea = static_cast<ArrayType&>(*exist->type);
             auto& ta = static_cast<ArrayType&>(*type);
             if (ta.addSizeTo(ea)) {
               // modify type of the existing variable
-              members_[name]->toVariable()->type = type;
+              exist->type = type;
+              error = false;
             }
           }
         }
@@ -180,21 +243,32 @@ void Namespace::addVariable(const string& name, SType type) {
       error = true;
     }
     if (error) {
-      reportRedeclaration(name, *type, member->getKind());
+      reportRedeclaration(name, *type, *member);
     }
     return;
   }
 
-  members_.insert(make_pair(name, 
-                            make_shared<VariableMember>(this, name, type)));
-  declarationOrder_.var.push_back(name);
+  if (requireDeclaration) {
+    Throw("{} must be declared first", name);
+  }
+
+  auto m = make_shared<VariableMember>(this, name, type, isDef);
+  members_.insert(make_pair(name, m));
+  declarationOrder_.var.push_back(m);
+  unit_->addMember(m);
 }
 
-void Namespace::addVariableOrFunction(const string& name, SType type) {
+void Namespace::addVariableOrFunction(const string& name, 
+                                      SType type, 
+                                      bool requireDeclaration,
+                                      bool isDef) {
   if (type->isFunction()) {
-    addFunction(name, type);
+    addFunction(name, 
+                static_pointer_cast<FunctionType>(type), 
+                requireDeclaration,
+                isDef);
   } else {
-    addVariable(name, type);
+    addVariable(name, type, requireDeclaration, isDef);
   }
 }
 
@@ -210,7 +284,7 @@ void Namespace::addTypedef(const string& name, SType type) {
               *exist->type);
       }
     } else {
-      reportRedeclaration(name, *type, member->getKind());
+      reportRedeclaration(name, *type, *member);
     }
   }
   members_.insert(make_pair(name, 
@@ -226,6 +300,8 @@ void Namespace::addUsingDirective(Namespace* ns) {
 
 void Namespace::addUsingDeclaration(const MemberSet& ms) {
   for (auto& m : ms) {
+    // note that because of the "same member" check below, this should be
+    // redundant; keep it here for now for clarity
     if (m->owner == this) {
       continue;
     }
@@ -238,19 +314,57 @@ void Namespace::addUsingDeclaration(const MemberSet& ms) {
     auto exist = lookupMember(m->name); 
     if (exist) {
       bool error = false;
+      bool ignore = true;
 
-      // if they don't refer to the same member
-      if (exist != m) { 
-        if (exist->getKind() != m->getKind()) {
+      if (exist->isFunction()) {
+        if (!m->isFunction()) {
           error = true;
-        } else if (m->isTypedef()) {
-          auto em = exist->toTypedef();
-          auto tm = m->toTypedef();
-          if (tm->type != em->type) {
+        } else {
+          MemberSet members;
+          lookupMember(m->name, members);
+
+          // cout << "lookupMember returns: " << members << endl;
+
+          // if this using declaration refers to a member we currently don't
+          // have and its type is compatible with existing ones,
+          // then we should add it
+          ignore = false;
+          for (auto& e : members) {
+            // see the comment about the same member below
+            if (e != m) {
+              auto fe = e->toFunction();
+              auto fm = m->toFunction();
+              if (fe->type->sameParameterAndQualifier(*fm->type)) {
+                error = true;
+                // so we get proper error reporting below
+                exist = e;
+                break;
+              }
+            } else {
+              // we currently have this member
+              ignore = true;
+              break;
+            }
+          }
+        }
+      } else {
+        // if they don't refer to the same member
+        // e.g. this could happen when two namespaces have using declarations
+        // for the same member from a 3rd namespace, and a 4th namespace
+        // has using declarations refering to the using declaration member
+        // in the first two namespaces
+        if (exist != m) { 
+          if (exist->getKind() != m->getKind()) {
+            error = true;
+          } else if (m->isTypedef()) {
+            auto em = exist->toTypedef();
+            auto tm = m->toTypedef();
+            if (tm->type != em->type) {
+              error = true;
+            }
+          } else {
             error = true;
           }
-        } else {
-          error = true;
         }
       }
       
@@ -261,10 +375,12 @@ void Namespace::addUsingDeclaration(const MemberSet& ms) {
               *exist);
       }
 
-      // ignore this redeclaration
-      return;
+      if (ignore) {
+        return;
+      }
     }
 
+    // cout << format("using declaration: added: {} {}", m->name, m) << endl;
     members_.insert(make_pair(m->name, m));
   }
 }
@@ -282,31 +398,6 @@ void Namespace::addNamespaceAlias(const std::string& name,
     return;
   }
   members_.insert(make_pair(name, ns));
-}
-
-void Namespace::output(ostream& out) const {
-  if (!unnamed_) {
-    out << "start namespace " << name_ << endl;
-  } else {
-    out << "start unnamed namespace" << endl;
-  }
-  if (inline_) {
-    out << "inline namespace" << endl;
-  }
-
-  for (auto& name : declarationOrder_.var) {
-    out << "variable " << name << " " 
-        << *lookupMember(name)->toVariable()->type << endl;
-  }
-  for (auto& name : declarationOrder_.func) {
-    out << "function " << name << " "
-        << *lookupMember(name)->toFunction()->type << endl;
-  }
-  for (auto& name : declarationOrder_.ns) {
-    out << *lookupMember(name)->toNamespace()->ns;
-  }
-
-  out << "end namespace" << endl;
 }
 
 Namespace::MemberSet
@@ -468,6 +559,10 @@ void Namespace::getInlineNamespaceClosure(NamespaceSet& closure) const {
   }
 }
 
+bool Namespace::enclosedBy(const Namespace* other) const {
+  return getLCA(this, other) == other;
+}
+
 const Namespace* Namespace::getLCA(const Namespace* a, const Namespace* b) {
   if (a == b) {
     return a;
@@ -503,6 +598,29 @@ size_t Namespace::getDepth() const {
   } else {
     return 1 + parent_->getDepth();
   }
+}
+
+void Namespace::output(ostream& out) const {
+  if (!unnamed_) {
+    out << "start namespace " << name_ << endl;
+  } else {
+    out << "start unnamed namespace" << endl;
+  }
+  if (inline_) {
+    out << "inline namespace" << endl;
+  }
+
+  for (auto& m : declarationOrder_.var) {
+    out << "variable " << m->name << " " << *m->type << endl;
+  }
+  for (auto& m : declarationOrder_.func) {
+    out << "function " << m->name << " " << *m->type << endl;
+  }
+  for (auto& m : declarationOrder_.ns) {
+    out << *m->ns;
+  }
+
+  out << "end namespace" << endl;
 }
 
 }

@@ -1,6 +1,7 @@
 #include "BuildEnv.h"
 #include "common.h"
 #include "Driver.h"
+#include "Linker.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -22,8 +23,13 @@ int main(int argc, char** argv)
     }
 
     ParserOption option;
-    if (ParserOption::hasSwitch(args, "--trace")) {
+    if (hasCommandlineSwitch(args, "--trace")) {
       option.isTrace = true;
+    }
+
+    bool printDeclarations = false;
+    if (hasCommandlineSwitch(args, "--print")) {
+      printDeclarations = true;
     }
 
 		if (args.size() < 3 || args[0] != "-o") {
@@ -35,19 +41,30 @@ int main(int argc, char** argv)
 
 		ofstream out(outfile);
 
-    out << nsrcfiles << " translation units" << endl;
+    if (printDeclarations) {
+      out << nsrcfiles << " translation units" << endl;
+    }
+
+    Linker linker;
 		for (size_t i = 0; i < nsrcfiles; i++)
 		{
 			string srcFile = args[i + 2];
-      out << "start translation unit " << srcFile << endl;
+      if (printDeclarations) {
+        out << "start translation unit " << srcFile << endl;
+      }
       Driver driver(env, srcFile, option);
       auto tu = driver.process();
       if (!tu) {
         return EXIT_FAILURE;
       }
-      out << *tu->getGlobalNamespace();
-      out << "end translation unit" << endl;
+      if (printDeclarations) {
+        out << *tu->getGlobalNamespace();
+        out << "end translation unit" << endl;
+      }
+      linker.addTranslationUnit(move(tu));
 		}
+
+    linker.process();
 	}
 	catch (exception& e)
 	{

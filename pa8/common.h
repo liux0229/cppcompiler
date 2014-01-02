@@ -46,11 +46,6 @@ auto make_delegate(R (Obj::*func)(Args...), Obj* obj) ->
   return Delegate<Obj, R, Args...>(obj, func);
 }
 
-namespace {
-
-// EndOfFile: synthetic "character" to represent the end of source file
-constexpr int EndOfFile = -1;
-
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
@@ -63,7 +58,24 @@ void Throw(const char* fmt, Args&&... args)
   throw CompilerException(format(fmt, std::forward<Args>(args)...));
 }
 
-} // anoymous
+inline bool hasCommandlineSwitch(std::vector<std::string>& args, 
+                                 const char* name)
+{
+  auto it = std::find(args.begin(), args.end(), name);
+  bool ret = false;
+  if (it != args.end()) {
+    ret = true;
+    args.erase(it);
+  }
+  return ret;
+}
+
+namespace {
+
+// EndOfFile: synthetic "character" to represent the end of source file
+constexpr int EndOfFile = -1;
+
+} // anonymous
 
 } // compiler
 

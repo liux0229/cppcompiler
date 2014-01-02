@@ -24,7 +24,7 @@ std::ostream& operator<<(std::ostream& oss, const std::vector<T>& v)
   const char* sep = "";
   for (const auto& e : v) {
     oss << sep << e;
-    sep = ",";
+    sep = " ,";
   }
   oss << "]";
   return oss;
@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream& oss, const std::set<T>& v)
   const char* sep = "";
   for (const auto& e : v) {
     oss << sep << e;
-    sep = ",";
+    sep = " ,";
   }
   oss << "]";
   return oss;

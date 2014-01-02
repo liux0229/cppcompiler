@@ -5,6 +5,14 @@
 
 namespace compiler {
 
+enum class Linkage {
+  External,
+  Internal
+};
+std::ostream& operator<<(std::ostream& out, Linkage linkage);
+
+class TranslationUnit;
+
 class Namespace;
 MakeUnique(Namespace);
 class Namespace {
@@ -26,7 +34,8 @@ class Namespace {
   MakeShared(TypedefMember);
 
   struct Member : std::enable_shared_from_this<Member> {
-    Member(Namespace* o, const std::string& n) : owner(o), name(n) { }
+    Member(Namespace* o, const std::string& n, Linkage link, bool defined) 
+      : owner(o), name(n), linkage(link), isDefined(defined) { }
 
     virtual MemberKind getKind() const = 0;
     virtual void output(std::ostream& out) const = 0;
@@ -65,15 +74,21 @@ class Namespace {
       return n == owner;
     }
 
+    std::string getQualifiedName() const {
+      return format("{}::{}", owner->getName(), name);
+    }
+
     Namespace* owner;
     const std::string name;
+    Linkage linkage;
+    bool isDefined;
   };
   MakeShared(Member);
   using MemberSet = std::set<SMember>;
 
   struct TypedefMember : Member {
     TypedefMember(Namespace* owner, const std::string& name, SType t) 
-      : Member(owner, name), type(t) { }
+      : Member(owner, name, Linkage::Internal, true), type(t) { }
 
     MemberKind getKind() const override { return MemberKind::Typedef; }
     void output(std::ostream& out) const override;
@@ -82,8 +97,11 @@ class Namespace {
   };
 
   struct VariableMember : Member {
-    VariableMember(Namespace* owner, const std::string& name, SType t) 
-      : Member(owner, name), type(t) { }
+    VariableMember(Namespace* owner, 
+                   const std::string& name, 
+                   SType t,
+                   bool isDef) 
+      : Member(owner, name, Linkage::External, isDef), type(t) { }
     MemberKind getKind() const override { return MemberKind::Variable; }
     void output(std::ostream& out) const override;
 
@@ -91,17 +109,20 @@ class Namespace {
   };
 
   struct FunctionMember : Member {
-    FunctionMember(Namespace* owner, const std::string& name, SType t) 
-      : Member(owner, name), type(t) { }
+    FunctionMember(Namespace* owner, 
+                   const std::string& name, 
+                   SFunctionType t,
+                   bool isDef) 
+      : Member(owner, name, Linkage::External, isDef), type(t) { }
     MemberKind getKind() const override { return MemberKind::Function; }
     void output(std::ostream& out) const override;
 
-    SType type;
+    SFunctionType type;
   };
 
   struct NamespaceMember : Member {
     NamespaceMember(Namespace* owner, const std::string& name, Namespace* n) 
-      : Member(owner, name), ns(n) { }
+      : Member(owner, name, Linkage::External, true), ns(n) { }
     MemberKind getKind() const override { return MemberKind::Namespace; }
     void output(std::ostream& out) const override;
 
@@ -111,11 +132,15 @@ class Namespace {
   Namespace(const std::string& name, 
             bool unamed, 
             bool isInline, 
-            const Namespace* parent);
+            const Namespace* parent,
+            TranslationUnit* unit);
 
   const Namespace* parentNamespace() const { return parent_; }
   Namespace* addNamespace(std::string name, bool unnamed, bool isInline);
-  void addVariableOrFunction(const std::string& name, SType type);
+  void addVariableOrFunction(const std::string& name, 
+                             SType type, 
+                             bool requireDeclaration,
+                             bool isDef);
   void addTypedef(const std::string& name, SType type);
   void addUsingDirective(Namespace* ns);
   void addUsingDeclaration(const MemberSet& members);
@@ -124,6 +149,7 @@ class Namespace {
   std::string getName() const;
   bool isInline() const { return inline_; }
   bool isGlobal() const { return !parent_; }
+  bool enclosedBy(const Namespace* other) const;
   void output(std::ostream& out) const;
   STypedefMember lookupTypedef(const std::string& name, 
                                bool qualified) const;
@@ -143,14 +169,20 @@ class Namespace {
   template<typename T>
   static void reportRedeclaration(const std::string& name, 
                                   const T& entity,
-                                  MemberKind kind) {
-    Throw("{} redeclared to be a {}; was {}", name, entity, kind);
+                                  const Member& exist) {
+    Throw("{} redeclared to be a {}; was {}", name, entity, exist);
   }
 
   SMember lookupMember(const std::string &name) const;
   void lookupMember(const std::string &name, MemberSet& members) const;
-  void addFunction(const std::string& name, SType type);
-  void addVariable(const std::string& name, SType type);
+  void addFunction(const std::string& name, 
+                   SFunctionType type, 
+                   bool requireDeclaration,
+                   bool isDef);
+  void addVariable(const std::string& name, 
+                   SType type, 
+                   bool requireDeclaration,
+                   bool isDef);
 
   void getUsingDirectiveClosure(NamespaceSet& closure) const;
   NamespaceSet getUsingDirectiveClosure() const;
@@ -169,16 +201,17 @@ class Namespace {
   bool unnamed_;
   bool inline_;
   const Namespace* parent_;
+  TranslationUnit* unit_;
 
-  std::map<std::string, SMember> members_;
+  std::multimap<std::string, SMember> members_;
   // manage lifetime of namespaces
   std::vector<UNamespace> namespaces_;
   std::set<Namespace*> usingDirectives_;
 
   struct {
-    std::vector<std::string> var;
-    std::vector<std::string> func;
-    std::vector<std::string> ns;
+    std::vector<SVariableMember> var;
+    std::vector<SFunctionMember> func;
+    std::vector<SNamespaceMember> ns;
   } declarationOrder_;
 };
 
@@ -186,5 +219,7 @@ inline std::ostream& operator<<(std::ostream& out, const Namespace& ns) {
   ns.output(out);
   return out;
 }
+
+std::ostream& operator<<(std::ostream& out, const Namespace::Member& m);
 
 }

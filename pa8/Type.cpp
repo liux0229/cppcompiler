@@ -290,11 +290,7 @@ void FunctionType::output(ostream& out) const {
   outputDepended(out);
 }
 
-bool FunctionType::operator==(const Type& rhs) const {
-  if (!DependentType::operator==(rhs)) {
-    return false;
-  }
-  auto& other = static_cast<const FunctionType&>(rhs);
+bool FunctionType::sameParameterAndQualifier(const FunctionType& other) const {
   if (parameters_.size() != other.parameters_.size()) {
     return false;
   }
@@ -304,6 +300,13 @@ bool FunctionType::operator==(const Type& rhs) const {
     }
   }
   return hasVarArgs_ == other.hasVarArgs_;
+}
+
+bool FunctionType::operator==(const Type& rhs) const {
+  if (!DependentType::operator==(rhs)) {
+    return false;
+  }
+  return sameParameterAndQualifier(static_cast<const FunctionType&>(rhs));
 }
 
 }

@@ -28,6 +28,7 @@ class DeclSpecifiers {
     return type_;
   }
   bool isTypedef() const { return isTypedef_; }
+  StorageClass getStorageClass() const { return storageClass_; }
 
  private:
   SType type_;

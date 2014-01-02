@@ -51,6 +51,7 @@ class Type {
   std::string getName() const;
 
   // type manipulators to support parsing
+  // TODO: this interface does not seem to belong here
   virtual void setDepended(SType depended) { }
   virtual void setCvQualifier(CvQualifier cvQualifier) {
     cvQualifier_ = cvQualifier;
@@ -128,6 +129,7 @@ class FundalmentalType : public Type {
 class DependentType : public Type {
  public:
   void setDepended(SType depended) override {
+    CHECK(depended);
     checkDepended(depended);
     depended_ = depended;
   }
@@ -218,6 +220,7 @@ class FunctionType : public DependentType {
   }
   bool isFunction() const override { return true; }
 
+  bool sameParameterAndQualifier(const FunctionType& other) const;
   bool operator==(const Type& other) const override;
 
  protected:

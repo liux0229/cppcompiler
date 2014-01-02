@@ -26,7 +26,8 @@ RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o
 NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-NsInitOBJs=nsinit.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+NsInitLib=Linker.o
+NsInitOBJs=nsinit.o $(NsInitLib) $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
 all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
 

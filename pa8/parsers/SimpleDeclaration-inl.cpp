@@ -126,11 +126,36 @@ struct SimpleDeclaration : virtual Base {
                                  declarator->getType());
     } else {
       if (!id.isQualified()) {
+        auto type = declarator->getType();
+        // refactor this:
+        // 1) separate variable and function
+        // 2) should pass in the storage class and let namespace determine
+        // storage duration and linkage
+        // 3) member should contain linkage and storage duration
+        // 4) storage duration of thread_local should be checked for
+        // consistency
+        bool isDef = true;
+        if (!type->isFunction() && 
+            (declSpecifiers.getStorageClass() & DeclSpecifiers::Extern)) {
+          isDef = false;
+        }
         curNamespace()->addVariableOrFunction(id.unqualified,
-                                              declarator->getType());
+                                              type,
+                                              false,
+                                              isDef);
       } else {
-        // TODO: check the name has already been declared
-        id.ns->addVariableOrFunction(id.unqualified, declarator->getType());
+        if (id.ns->enclosedBy(curNamespace())) {
+          id.ns->addVariableOrFunction(id.unqualified, 
+                                       declarator->getType(), 
+                                       true,
+                                       true);
+        } else {
+          Throw("Declaring {} in {} not allowed: {} does not enclose {}",
+                id.getName(),
+                curNamespace()->getName(),
+                curNamespace()->getName(),
+                id.ns->getName());
+        }
       }
     }
   }

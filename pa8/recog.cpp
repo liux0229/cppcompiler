@@ -49,10 +49,10 @@ int main(int argc, char** argv)
 			args.emplace_back(argv[i]);
 
     ParserOption option;
-    if (ParserOption::hasSwitch(args, "--trace")) {
+    if (hasCommandlineSwitch(args, "--trace")) {
       option.isTrace = true;
     }
-    if (ParserOption::hasSwitch(args, "--expand")) {
+    if (hasCommandlineSwitch(args, "--expand")) {
       option.isCollapse = false;
     }
 

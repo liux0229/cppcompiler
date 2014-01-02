@@ -59,6 +59,7 @@ void DeclSpecifiers::finalize() {
     type_ = type_->clone();
     type_->setCvQualifier(cv);
   }
+
   finalized_ = true;
 }
 

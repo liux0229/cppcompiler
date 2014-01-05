@@ -198,6 +198,8 @@ void ReferenceType::setDepended(SType depended) {
   if (!depended->isReference()) {
     DependentType::setDepended(depended);
   } else {
+    // TODO: T& & would crash
+
     // Note that this implementation does not handle T&&& cases correctly
     // To handle this case we need to pass in an additional flag indicating
     // whether the setDepended operation is for a typedef'd type

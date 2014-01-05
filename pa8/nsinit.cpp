@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		ofstream out(outfile);
 
     if (printDeclarations) {
-      out << nsrcfiles << " translation units" << endl;
+      cout << nsrcfiles << " translation units" << endl;
     }
 
     Linker linker;
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 		{
 			string srcFile = args[i + 2];
       if (printDeclarations) {
-        out << "start translation unit " << srcFile << endl;
+        cout << "start translation unit " << srcFile << endl;
       }
       Driver driver(env, srcFile, option);
       auto tu = driver.process();
@@ -58,13 +58,16 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
       }
       if (printDeclarations) {
-        out << *tu->getGlobalNamespace();
-        out << "end translation unit" << endl;
+        cout << *tu->getGlobalNamespace();
+        cout << "end translation unit" << endl;
       }
       linker.addTranslationUnit(move(tu));
 		}
 
-    linker.process();
+    auto image = linker.process();
+    for (auto c : image) {
+      out << c;
+    }
 	}
 	catch (exception& e)
 	{

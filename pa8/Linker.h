@@ -5,13 +5,14 @@ namespace compiler {
 
 class Linker {
  public:
+  using Image = std::vector<char>;
+
   void addTranslationUnit(UTranslationUnit&& unit);
-  void process();
+  Image process();
  private:
   using SMember = Namespace::SMember;
   using SVariableMember = Namespace::SVariableMember;
   using SFunctionMember = Namespace::SFunctionMember;
-  using Image = std::vector<char>;
 
   void checkOdr();
   void addExternal(SMember m);
@@ -28,6 +29,8 @@ class Linker {
   void genFunction();
   void genFundalmental(SVariableMember m);
   void genArray(SVariableMember m);
+  void genPointer(SVariableMember m);
+  void genReference(SVariableMember m);
 
   std::vector<UTranslationUnit> units_;
   std::multimap<std::string, Namespace::SMember> members_;

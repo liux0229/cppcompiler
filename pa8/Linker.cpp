@@ -162,6 +162,14 @@ void Linker::genArray(SVariableMember m) {
   genZero(m->type->getSize(), m->type->getAlign());
 }
 
+void Linker::genPointer(SVariableMember m) {
+  genZero(m->type->getSize(), m->type->getAlign());
+}
+
+void Linker::genReference(SVariableMember m) {
+  genZero(m->type->getSize(), m->type->getAlign());
+}
+
 void Linker::generateImage() {
   genHeader();
 
@@ -176,7 +184,9 @@ void Linker::generateImage() {
         if (type->isFundalmental()) {
           genFundalmental(vm);
         } else if (type->isPointer()) {
+          genPointer(vm);
         } else if (type->isReference()) {
+          genReference(vm);
         } else if (type->isArray()) {
           genArray(vm);
         } else {
@@ -187,9 +197,10 @@ void Linker::generateImage() {
   }
 }
 
-void Linker::process() {
+auto Linker::process() -> Image {
   checkOdr();
   generateImage();
+  return image_;
 }
 
 }

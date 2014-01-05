@@ -1,4 +1,5 @@
 #include "Declarator.h"
+#include "Expression.h"
 #include <type_traits>
 
 #define LOG() cout << format("[{}] index={} [{}]\n", \
@@ -269,6 +270,7 @@ struct Base {
   virtual void simpleDeclaration() = 0;
   virtual void aliasDeclaration() = 0;
   virtual size_t constantExpression() = 0;
+  virtual UExpression expression() = 0;
   virtual Namespace* nestedNameSpecifier() = 0;
   virtual UId idExpression() = 0;
 

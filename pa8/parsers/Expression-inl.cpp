@@ -1,13 +1,17 @@
-#define EX(func) #func, make_delegate(&ConstantExpression::func, this)
+#define EX(func) #func, make_delegate(&Expression::func, this)
 
 namespace compiler {
 
 namespace SemanticParserImp {
 
-struct ConstantExpression : virtual Base {
+struct Expression : virtual Base {
 
   size_t constantExpression() override {
     return expectLiteral()->toSigned64();
+  }
+
+  UExpression expression() override {
+    return nullptr;
   }
 
 };

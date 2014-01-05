@@ -21,7 +21,7 @@
 #include "parsers/Base-inl.cpp"
 #include "parsers/Declaration-inl.cpp"
 #include "parsers/SimpleDeclaration-inl.cpp"
-#include "parsers/ConstantExpression-inl.cpp"
+#include "parsers/Expression-inl.cpp"
 
 #define EX(func) #func, make_delegate(&ParserImp::func, this)
 
@@ -34,7 +34,7 @@ namespace SemanticParserImp {
 class ParserImp : 
         Declaration,
         SimpleDeclaration,
-        ConstantExpression
+        Expression
 {
 public:
   ParserImp(const vector<UToken>& tokens, const ParserOption& option)

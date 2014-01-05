@@ -1,5 +1,6 @@
 #include "Declarator.h"
 #include "DeclSpecifiers.h"
+#include "Initializer.h"
 
 #define EX(func) #func, make_delegate(&SimpleDeclaration::func, this)
 
@@ -130,9 +131,10 @@ struct SimpleDeclaration : virtual Base {
     }
   }
 
-  // TODO: initializer
   void initDeclarator(const DeclSpecifiers& declSpecifiers) {
     auto declarator = TR(EX(declarator), declSpecifiers);
+    auto initializer = TR(EX(initializer));
+
     auto id = declarator->getId();
     if (declSpecifiers.isTypedef()) {
       if (id.isQualified()) {
@@ -161,6 +163,15 @@ struct SimpleDeclaration : virtual Base {
                             requirePriorDeclaration,
                             declSpecifiers);
       }
+    }
+  }
+
+  Initializer initializer() {
+    if (tryAdvSimple(OP_ASS)) {
+      auto expr = TR(EXB(expression));
+      return Initializer(Initializer::Copy, move(expr));
+    } else {
+      return Initializer(Initializer::Default, nullptr);
     }
   }
 

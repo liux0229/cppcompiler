@@ -8,10 +8,6 @@ using namespace std;
 
 namespace {
 
-using SMember = Namespace::SMember;
-using SVariableMember = Namespace::SVariableMember;
-using SFunctionMember = Namespace::SFunctionMember;
-
 enum CompareResult {
   Conflict,
   MultipleDefs,

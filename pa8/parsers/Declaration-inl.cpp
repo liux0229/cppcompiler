@@ -54,9 +54,9 @@ struct Declaration : virtual Base {
     expect(OP_SEMICOLON);
   }
 
-  Namespace::SNamespaceMember namespaceName(Namespace* root) {
+  SNamespaceMember namespaceName(Namespace* root) {
     auto name = expectIdentifier();
-    Namespace::SNamespaceMember ns;
+    SNamespaceMember ns;
     if (root) {
       ns = root->lookupNamespace(name, true);
     } else {
@@ -122,7 +122,7 @@ struct Declaration : virtual Base {
     curNamespace()->addNamespaceAlias(name, ns);
   }
 
-  Namespace::SNamespaceMember qualifiedNamespaceSpecifier() {
+  SNamespaceMember qualifiedNamespaceSpecifier() {
     auto ns = BT(EX(nestedNameSpecifier));
     return TR(EX(namespaceName), ns);
   }

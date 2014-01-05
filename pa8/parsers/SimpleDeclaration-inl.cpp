@@ -92,7 +92,7 @@ struct SimpleDeclaration : virtual Base {
 
   SType typedefName(Namespace* ns) {
     auto name = expectIdentifier();
-    Namespace::STypedefMember member;
+    STypedefMember member;
     if (ns) {
       member = ns->lookupTypedef(name, true);
     } else {

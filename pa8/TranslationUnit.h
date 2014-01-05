@@ -7,7 +7,7 @@ namespace compiler {
 
 class TranslationUnit {
  public:
-  using VMember = std::vector<Namespace::SMember>;
+  using VMember = std::vector<SMember>;
 
   TranslationUnit() {
     globalNamespace_ = make_unique<Namespace>("", true, false, nullptr, this);
@@ -30,7 +30,7 @@ class TranslationUnit {
     namespaces_.pop_back();
   }
 
-  void addMember(Namespace::SMember m) {
+  void addMember(SMember m) {
     members_.push_back(m);
   }
   const VMember& getVariablesFunctions() const {

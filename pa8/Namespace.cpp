@@ -5,63 +5,9 @@ namespace compiler {
 
 using namespace std;
 
-ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
-  switch (kind) {
-    case Namespace::MemberKind::Namespace:
-      out << "namespace";
-      break;
-    case Namespace::MemberKind::Function:
-      out << "function";
-      break;
-    case Namespace::MemberKind::Variable:
-      out << "variable";
-      break;
-    case Namespace::MemberKind::Typedef:
-      out << "typedef";
-      break;
-  }
-  return out;
-}
-
-ostream& operator<<(ostream& out, const Namespace::Member& m) {
-  m.output(out);
-  return out;
-}
-
-ostream& operator<<(ostream& out, Namespace::SMember m) {
+ostream& operator<<(ostream& out, SMember m) {
   m->output(out);
   return out;
-}
-
-void Namespace::Member::output(std::ostream& out) const {
-  if (!owner->isGlobal()) {
-    out << format("{}::", owner->getName());
-  }
-  out << format("{} => ", name);
-}
-
-void Namespace::TypedefMember::output(std::ostream& out) const {
-  Member::output(out);
-  out << format("[{} {}]", getKind(), *type);
-}
-
-void Namespace::VariableMember::output(std::ostream& out) const {
-  Member::output(out);
-  out << format("[{} {} {} {}]", 
-                getKind(), 
-                linkage, 
-                storage,
-                *type);
-}
-
-void Namespace::FunctionMember::output(std::ostream& out) const {
-  Member::output(out);
-  out << format("[{} {} {}]", getKind(), linkage, *type);
-}
-
-void Namespace::NamespaceMember::output(std::ostream& out) const {
-  Member::output(out);
-  out << format("{}", getKind());
 }
 
 Namespace::Namespace(const string& name, 
@@ -89,7 +35,7 @@ string Namespace::getName() const {
   }
 }
 
-Namespace::SMember Namespace::lookupMember(const string& name) const {
+SMember Namespace::lookupMember(const string& name) const {
   MemberSet members;
   lookupMember(name, members);
   if (members.size() > 1) {
@@ -550,7 +496,7 @@ Namespace::qualifiedLookup(const string& name, NamespaceSet& visited) const {
   return members;
 }
 
-Namespace::STypedefMember
+STypedefMember
 Namespace::lookupTypedef(const string& name, bool qualified) const {
   auto members = qualified ? qualifiedLookup(name) : unqualifiedLookup(name);
   CHECK(members.size() <= 1);
@@ -560,8 +506,8 @@ Namespace::lookupTypedef(const string& name, bool qualified) const {
   return (*members.begin())->toTypedef();
 }
 
-auto Namespace::lookupNamespace(const string& name, bool qualified) const 
--> SNamespaceMember 
+SNamespaceMember 
+Namespace::lookupNamespace(const string& name, bool qualified) const 
 {
   auto members = qualified ? qualifiedLookup(name) : unqualifiedLookup(name);
   if (members.empty() || !(*members.begin())->isNamespace()) {

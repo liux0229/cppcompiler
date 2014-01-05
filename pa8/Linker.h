@@ -10,9 +10,6 @@ class Linker {
   void addTranslationUnit(UTranslationUnit&& unit);
   Image process();
  private:
-  using SMember = Namespace::SMember;
-  using SVariableMember = Namespace::SVariableMember;
-  using SFunctionMember = Namespace::SFunctionMember;
 
   void checkOdr();
   void addExternal(SMember m);
@@ -33,7 +30,7 @@ class Linker {
   void genReference(SVariableMember m);
 
   std::vector<UTranslationUnit> units_;
-  std::multimap<std::string, Namespace::SMember> members_;
+  std::multimap<std::string, SMember> members_;
   Image image_;
 };
 

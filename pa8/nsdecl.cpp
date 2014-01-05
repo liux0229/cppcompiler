@@ -40,7 +40,9 @@ int main(int argc, char** argv)
       out << "start translation unit " << srcFile << endl;
       Driver driver(env, srcFile, option);
       auto tu = driver.process();
-      out << *tu->getGlobalNamespace();
+      if (tu) {
+        out << *tu->getGlobalNamespace();
+      }
       out << "end translation unit" << endl;
 		}
 	}

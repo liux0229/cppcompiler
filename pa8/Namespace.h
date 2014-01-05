@@ -2,14 +2,10 @@
 
 #include "common.h"
 #include "Type.h"
+#include "StorageClass.h"
+#include "DeclSpecifiers.h"
 
 namespace compiler {
-
-enum class Linkage {
-  External,
-  Internal
-};
-std::ostream& operator<<(std::ostream& out, Linkage linkage);
 
 class TranslationUnit;
 
@@ -34,7 +30,10 @@ class Namespace {
   MakeShared(TypedefMember);
 
   struct Member : std::enable_shared_from_this<Member> {
-    Member(Namespace* o, const std::string& n, Linkage link, bool defined) 
+    Member(Namespace* o, 
+           const std::string& n, 
+           Linkage link, 
+           bool defined) 
       : owner(o), name(n), linkage(link), isDefined(defined) { }
 
     virtual MemberKind getKind() const = 0;
@@ -80,6 +79,8 @@ class Namespace {
 
     Namespace* owner;
     const std::string name;
+    // TODO: revisit this design later (does linkage naturally apply to every
+    // kind of member)
     Linkage linkage;
     bool isDefined;
   };
@@ -88,7 +89,11 @@ class Namespace {
 
   struct TypedefMember : Member {
     TypedefMember(Namespace* owner, const std::string& name, SType t) 
-      : Member(owner, name, Linkage::Internal, true), type(t) { }
+      : Member(owner, 
+               name, 
+               Linkage::Internal, 
+               true), 
+        type(t) { }
 
     MemberKind getKind() const override { return MemberKind::Typedef; }
     void output(std::ostream& out) const override;
@@ -100,20 +105,34 @@ class Namespace {
     VariableMember(Namespace* owner, 
                    const std::string& name, 
                    SType t,
+                   Linkage link,
+                   StorageDuration store,
                    bool isDef) 
-      : Member(owner, name, Linkage::External, isDef), type(t) { }
+      : Member(owner, 
+               name, 
+               link,
+               isDef), 
+        type(t),
+        storage(store) { 
+    }
     MemberKind getKind() const override { return MemberKind::Variable; }
     void output(std::ostream& out) const override;
 
     SType type;
+    StorageDuration storage;
   };
 
   struct FunctionMember : Member {
     FunctionMember(Namespace* owner, 
                    const std::string& name, 
                    SFunctionType t,
+                   Linkage link,
                    bool isDef) 
-      : Member(owner, name, Linkage::External, isDef), type(t) { }
+      : Member(owner, 
+               name, 
+               link,
+               isDef), 
+        type(t) { }
     MemberKind getKind() const override { return MemberKind::Function; }
     void output(std::ostream& out) const override;
 
@@ -137,10 +156,15 @@ class Namespace {
 
   const Namespace* parentNamespace() const { return parent_; }
   Namespace* addNamespace(std::string name, bool unnamed, bool isInline);
-  void addVariableOrFunction(const std::string& name, 
-                             SType type, 
-                             bool requireDeclaration,
-                             bool isDef);
+  void addFunction(const std::string& name, 
+                   SFunctionType type, 
+                   bool requireDeclaration,
+                   bool isDef,
+                   const DeclSpecifiers& declSpecifiers);
+  void addVariable(const std::string& name, 
+                   SType type, 
+                   bool requireDeclaration,
+                   const DeclSpecifiers& declSpecifiers);
   void addTypedef(const std::string& name, SType type);
   void addUsingDirective(Namespace* ns);
   void addUsingDeclaration(const MemberSet& members);
@@ -175,14 +199,6 @@ class Namespace {
 
   SMember lookupMember(const std::string &name) const;
   void lookupMember(const std::string &name, MemberSet& members) const;
-  void addFunction(const std::string& name, 
-                   SFunctionType type, 
-                   bool requireDeclaration,
-                   bool isDef);
-  void addVariable(const std::string& name, 
-                   SType type, 
-                   bool requireDeclaration,
-                   bool isDef);
 
   void getUsingDirectiveClosure(NamespaceSet& closure) const;
   NamespaceSet getUsingDirectiveClosure() const;

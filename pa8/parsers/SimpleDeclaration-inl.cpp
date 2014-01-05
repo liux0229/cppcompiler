@@ -36,12 +36,12 @@ struct SimpleDeclaration : virtual Base {
 
   void storageClassSpecifier(DeclSpecifiers& declSpecifiers) {
     if (tryAdvSimple(KW_STATIC)) {
-      declSpecifiers.addStorageClass(DeclSpecifiers::Static);
+      declSpecifiers.addStorageClass(StorageClass::Static);
     } else if (tryAdvSimple(KW_THREAD_LOCAL)) {
-      declSpecifiers.addStorageClass(DeclSpecifiers::ThreadLocal);
+      declSpecifiers.addStorageClass(StorageClass::ThreadLocal);
     } else {
       expect(KW_EXTERN);
-      declSpecifiers.addStorageClass(DeclSpecifiers::Extern);
+      declSpecifiers.addStorageClass(StorageClass::Extern);
     }
   }
 
@@ -105,17 +105,34 @@ struct SimpleDeclaration : virtual Base {
     return member->type;
   }
 
-  void initDeclaratorList(DeclSpecifiers& declSpecifiers) {
+  void initDeclaratorList(const DeclSpecifiers& declSpecifiers) {
     TR(EX(initDeclarator), declSpecifiers);
     while (tryAdvSimple(OP_COMMA)) {
       TR(EX(initDeclarator), declSpecifiers);
     }
   }
 
+  // get the namespace associated with a specific declarator id
+  Namespace* getTargetNamespace(Id id) {
+    if (!id.isQualified()) {
+      return curNamespace();
+    } else {
+      if (id.ns->enclosedBy(curNamespace())) {
+        return id.ns;
+      } else {
+        Throw("Declaring {} in {} not allowed: {} does not enclose {}",
+              id.getName(),
+              curNamespace()->getName(),
+              curNamespace()->getName(),
+              id.ns->getName());
+        return nullptr;
+      }
+    }
+  }
+
   // TODO: initializer
-  void initDeclarator(DeclSpecifiers& declSpecifiers) {
-    auto declarator = TR(EX(declarator));
-    declarator->appendType(declSpecifiers.getType());
+  void initDeclarator(const DeclSpecifiers& declSpecifiers) {
+    auto declarator = TR(EX(declarator), declSpecifiers);
     auto id = declarator->getId();
     if (declSpecifiers.isTypedef()) {
       if (id.isQualified()) {
@@ -125,44 +142,33 @@ struct SimpleDeclaration : virtual Base {
       curNamespace()->addTypedef(id.unqualified,
                                  declarator->getType());
     } else {
-      if (!id.isQualified()) {
-        auto type = declarator->getType();
-        // refactor this:
-        // 1) separate variable and function
-        // 2) should pass in the storage class and let namespace determine
-        // storage duration and linkage
-        // 3) member should contain linkage and storage duration
-        // 4) storage duration of thread_local should be checked for
-        // consistency
-        bool isDef = true;
-        if (!type->isFunction() && 
-            (declSpecifiers.getStorageClass() & DeclSpecifiers::Extern)) {
-          isDef = false;
-        }
-        curNamespace()->addVariableOrFunction(id.unqualified,
-                                              type,
-                                              false,
-                                              isDef);
+      auto target = getTargetNamespace(id);
+      auto type = declarator->getType();
+      bool requirePriorDeclaration = id.isQualified();
+      if (type->isFunction()) {
+        target->addFunction(id.unqualified,
+                            static_pointer_cast<FunctionType>(type),
+                            requirePriorDeclaration,
+                            false, /* isDef */
+                            declSpecifiers);
       } else {
-        if (id.ns->enclosedBy(curNamespace())) {
-          id.ns->addVariableOrFunction(id.unqualified, 
-                                       declarator->getType(), 
-                                       true,
-                                       true);
-        } else {
-          Throw("Declaring {} in {} not allowed: {} does not enclose {}",
-                id.getName(),
-                curNamespace()->getName(),
-                curNamespace()->getName(),
-                id.ns->getName());
+        if (type->isVoid()) {
+          Throw("{} cannot have type {}", id.unqualified, *type);
         }
+
+        target->addVariable(id.unqualified,
+                            type,
+                            requirePriorDeclaration,
+                            declSpecifiers);
       }
     }
   }
 
   // TODO: noptr-declarator parameters-and-qualifiers trailing-return-type
-  UDeclarator declarator() {
-    return TR(EX(ptrDeclarator));
+  UDeclarator declarator(const DeclSpecifiers& declSpecifiers) {
+    auto declarator = TR(EX(ptrDeclarator));
+    declarator->appendType(declSpecifiers.getType());
+    return declarator;
   }
 
   // TODO: a purely recursive parse may not be very efficient
@@ -293,15 +299,18 @@ struct SimpleDeclaration : virtual Base {
     DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
     // TODO: disallow typedef and storage class
     UDeclarator declarator;
-    (declarator = BT(EX(declarator))) ||
-    (declarator = BT(EX(abstractDeclarator))) ||
-    (declarator = make_unique<Declarator>());
-    declarator->appendType(declSpecifiers.getType());
-    return declarator->getType();
+    if ((declarator = BT(EX(declarator), declSpecifiers)) ||
+        (declarator = BT(EX(abstractDeclarator), declSpecifiers))) {
+      return declarator->getType();
+    } else {
+      return declSpecifiers.getType();
+    }
   }
 
-  UDeclarator abstractDeclarator() {
-    return TR(EX(ptrAbstractDeclarator));
+  UDeclarator abstractDeclarator(const DeclSpecifiers& declSpecifiers) {
+    auto declarator = TR(EX(ptrAbstractDeclarator));
+    declarator->appendType(declSpecifiers.getType());
+    return declarator;
   }
 
   UDeclarator ptrAbstractDeclarator() {
@@ -345,10 +354,12 @@ struct SimpleDeclaration : virtual Base {
   SType typeId() {
     auto typeSpecifiers = TR(EX(typeSpecifierSeq));
     UDeclarator declarator;
-    (declarator = BT(EX(abstractDeclarator))) ||
-    (declarator = make_unique<Declarator>());
-    declarator->appendType(typeSpecifiers.getType());
-    return declarator->getType();
+    if (UDeclarator declarator = BT(EX(abstractDeclarator), typeSpecifiers)) {
+      declarator->appendType(typeSpecifiers.getType());
+      return declarator->getType();
+    } else {
+      return typeSpecifiers.getType();
+    }
   }
 
   DeclSpecifiers typeSpecifierSeq() {
@@ -368,6 +379,29 @@ struct SimpleDeclaration : virtual Base {
     expect(OP_SEMICOLON);
 
     curNamespace()->addTypedef(name, type);
+  }
+
+  void functionDefinition() override {
+    DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
+    UDeclarator declarator = TR(EX(declarator), declSpecifiers);
+    TR(EX(functionBody));
+    auto type = declarator->getType();
+    if (!type->isFunction()) {
+      Throw("Expect function-type in function-definition; got {}", *type);
+    }
+    auto id = declarator->getId();
+    auto target = getTargetNamespace(id);
+    bool requirePriorDeclaration = id.isQualified();
+    target->addFunction(id.unqualified,
+                        static_pointer_cast<FunctionType>(type),
+                        requirePriorDeclaration,
+                        true, /* isDef */
+                        declSpecifiers);
+  }
+
+  void functionBody() {
+    expect(OP_LBRACE);
+    expect(OP_RBRACE);
   }
 };
 

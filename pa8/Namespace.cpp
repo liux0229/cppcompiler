@@ -5,18 +5,6 @@ namespace compiler {
 
 using namespace std;
 
-ostream& operator<<(ostream& out, Linkage linkage) {
-  switch (linkage) {
-    case Linkage::External:
-      out << "[E]";
-      break;
-    case Linkage::Internal:
-      out << "[I]";
-      break;
-  }
-  return out;
-}
-
 ostream& operator<<(ostream& out, Namespace::MemberKind kind) {
   switch (kind) {
     case Namespace::MemberKind::Namespace:
@@ -59,12 +47,16 @@ void Namespace::TypedefMember::output(std::ostream& out) const {
 
 void Namespace::VariableMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {}]", getKind(), *type);
+  out << format("[{} {} {} {}]", 
+                getKind(), 
+                linkage, 
+                storage,
+                *type);
 }
 
 void Namespace::FunctionMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {}]", getKind(), *type);
+  out << format("[{} {} {}]", getKind(), linkage, *type);
 }
 
 void Namespace::NamespaceMember::output(std::ostream& out) const {
@@ -167,8 +159,11 @@ Namespace* Namespace::addNamespace(string name,
 void Namespace::addFunction(const string& name, 
                             SFunctionType type,
                             bool requireDeclaration,
-                            // TODO: def should replace declaration
-                            bool isDef) {
+                            bool isDef,
+                            const DeclSpecifiers& declSpecifiers) {
+  bool internalLinkage = 
+         declSpecifiers.getStorageClass() & StorageClass::Static;
+
   MemberSet members;
   lookupMember(name, members);
 
@@ -188,7 +183,24 @@ void Namespace::addFunction(const string& name,
               type,
               func);
       }
-      // just a redeclaration
+
+      // a redeclaration
+
+      if (internalLinkage && func.linkage != Linkage::Internal) {
+        Throw("Linkage mismatch for {}; previous: {} current: {}",
+              func,
+              func.linkage,
+              Linkage::Internal);
+      }
+
+      if (isDef) {
+        if (m->isDefined) {
+          Throw("Multiple definitions of {}", *m);
+        }
+        m->isDefined = true;
+      }
+
+      // redeclaration allowed
       return;
     }
 
@@ -201,10 +213,15 @@ void Namespace::addFunction(const string& name,
   }
 
   if (requireDeclaration) {
-    Throw("{}: {} must be declared first", name, *type);
+    Throw("{}: {} must be declared in {} first", name, *type, getName());
   }
       
-  auto m = make_shared<FunctionMember>(this, name, type, isDef);
+  auto m = make_shared<FunctionMember>(
+             this, 
+             name, 
+             type, 
+             internalLinkage ? Linkage::Internal : Linkage::External,
+             isDef);
   members_.insert(make_pair(name, m));
   declarationOrder_.func.push_back(m);
   unit_->addMember(m);
@@ -213,8 +230,15 @@ void Namespace::addFunction(const string& name,
 void Namespace::addVariable(const string& name, 
                             SType type, 
                             bool requireDeclaration,
-                            // TODO: def should replace declaration
-                            bool isDef) {
+                            const DeclSpecifiers& declSpecifiers) {
+  auto storageClass = declSpecifiers.getStorageClass();
+  bool isDef = !(storageClass & StorageClass::Extern);
+
+  bool internalLinkage = 
+         (storageClass & StorageClass::Static) ||
+         (type->isConst() && !(storageClass & StorageClass::Extern));
+  bool threadLocalStorage = storageClass & StorageClass::ThreadLocal;
+
   auto member = lookupMember(name);
   if (member) {
     bool error = false;
@@ -238,6 +262,22 @@ void Namespace::addVariable(const string& name,
             }
           }
         }
+
+        if (!error) {
+          if (internalLinkage && exist->linkage != Linkage::Internal) {
+            Throw("Linkage mismatch for {}; previous: {} current: {}",
+                  *exist,
+                  exist->linkage,
+                  Linkage::Internal);
+          }
+          if (threadLocalStorage && exist->storage !=
+              StorageDuration::ThreadLocal) {
+            Throw("Storage duration mismatch for {}; previous {} current: {}",
+                  *exist,
+                  exist->storage,
+                  StorageDuration::ThreadLocal);
+          }
+        }
       }
     } else {
       error = true;
@@ -245,31 +285,38 @@ void Namespace::addVariable(const string& name,
     if (error) {
       reportRedeclaration(name, *type, *member);
     }
+
+    // a redeclaration
+    if (isDef) {
+      if (member->isDefined) {
+        Throw("Multiple definitions of {}", *member);
+      }
+      member->isDefined = true;
+    }
+
     return;
   }
 
   if (requireDeclaration) {
-    Throw("{} must be declared first", name);
+    Throw("{} must be declared in {} first", name, getName());
   }
 
-  auto m = make_shared<VariableMember>(this, name, type, isDef);
+  auto m = make_shared<VariableMember>(
+             this, 
+             name, 
+             type, 
+             internalLinkage ? 
+               Linkage::Internal : 
+               // same as the owning namespace (and we haven't made
+               // unnamed namespaces explicitly internal)
+               Linkage::External,
+             threadLocalStorage ? 
+               StorageDuration::ThreadLocal :
+               StorageDuration::Static,
+             isDef);
   members_.insert(make_pair(name, m));
   declarationOrder_.var.push_back(m);
   unit_->addMember(m);
-}
-
-void Namespace::addVariableOrFunction(const string& name, 
-                                      SType type, 
-                                      bool requireDeclaration,
-                                      bool isDef) {
-  if (type->isFunction()) {
-    addFunction(name, 
-                static_pointer_cast<FunctionType>(type), 
-                requireDeclaration,
-                isDef);
-  } else {
-    addVariable(name, type, requireDeclaration, isDef);
-  }
 }
 
 void Namespace::addTypedef(const string& name, SType type) {

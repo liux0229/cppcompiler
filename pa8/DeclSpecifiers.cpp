@@ -5,7 +5,7 @@ namespace compiler {
 using namespace std;
 
 void DeclSpecifiers::setTypedef() {
-  if (type_ || storageClass_ != Unspecified) {
+  if (type_ || storageClass_ != StorageClass::Unspecified) {
     Throw("typedef must be the first declSpecifier in declSpecifierSeq");
   }
   isTypedef_ = true;
@@ -18,7 +18,8 @@ void DeclSpecifiers::addStorageClass(StorageClass storage) {
   if (storageClass_ & storage) {
     Throw("duplicate storage class specifier: {x}", storage);
   }
-  if (storage != ThreadLocal && (storageClass_ & ~ThreadLocal)) {
+  if (storage != StorageClass::ThreadLocal && 
+      (storageClass_ & ~StorageClass::ThreadLocal)) {
     Throw("incompatible storage class specifiers: {x} vs {x}", 
            storage, 
            storageClass_); 

@@ -83,6 +83,28 @@ map<ETokenType, int> FundalmentalType::typeSpecifierRank_ {
   { KW_VOID, 2 },
 };
 
+map<EFundamentalType, size_t> FundalmentalType::Sizes_ {
+  { FT_SIGNED_CHAR, 1 },
+  { FT_SHORT_INT, 2 },
+  { FT_INT, 4 },
+  { FT_LONG_INT, 8 },
+  { FT_LONG_LONG_INT, 8 },
+  { FT_UNSIGNED_CHAR, 1 },
+  { FT_UNSIGNED_SHORT_INT, 2 },
+  { FT_UNSIGNED_INT, 4 },
+  { FT_UNSIGNED_LONG_INT, 8 },
+  { FT_UNSIGNED_LONG_LONG_INT, 8 },
+  { FT_WCHAR_T, 4 },
+  { FT_CHAR, 1 },
+  { FT_CHAR16_T, 2 },
+  { FT_CHAR32_T, 4 },
+  { FT_BOOL, 1 },
+  { FT_FLOAT, 4 },
+  { FT_DOUBLE, 8 },
+  { FT_LONG_DOUBLE, 16 },
+  { FT_NULLPTR_T, 8 },
+};
+
 bool FundalmentalType::Compare::operator()(const TypeSpecifiers& a, 
                                            const TypeSpecifiers& b) {
   if (a.size() != b.size()) {
@@ -125,6 +147,10 @@ void FundalmentalType::combine(const FundalmentalType& other) {
   };
   sort(specifiers_.begin(), specifiers_.end(), compare);
   setType();
+}
+
+size_t FundalmentalType::getSize() const {
+  return Sizes_.at(type_);
 }
 
 void FundalmentalType::output(ostream& out) const {
@@ -204,6 +230,14 @@ void ArrayType::setCvQualifier(CvQualifier cvQualifier) {
   CHECK(depended_);
   depended_ = depended_->clone();
   depended_->setCvQualifier(cvQualifier);
+}
+
+size_t ArrayType::getSize() const {
+  return size_ * depended_->getSize();
+}
+
+size_t ArrayType::getAlign() const {
+  return depended_->getAlign();
 }
 
 void ArrayType::output(ostream& out) const {

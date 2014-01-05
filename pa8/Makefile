@@ -23,7 +23,7 @@ PreProcOBJs=preproc.o $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 ParserLib=Parser.o
 RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o
+NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o StorageClass.o
 NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
 NsInitLib=Linker.o

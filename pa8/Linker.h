@@ -9,12 +9,29 @@ class Linker {
   void process();
  private:
   using SMember = Namespace::SMember;
+  using SVariableMember = Namespace::SVariableMember;
+  using SFunctionMember = Namespace::SFunctionMember;
+  using Image = std::vector<char>;
 
   void checkOdr();
   void addExternal(SMember m);
+  void generateImage();
+
+  template<size_t N>
+  void gen(const char (&data)[N]) {
+    genEntry(data, N, N);
+  }
+  void genEntry(const char* data, size_t n, size_t alignment);
+  void genZero(size_t n, size_t alignment);
+
+  void genHeader();
+  void genFunction();
+  void genFundalmental(SVariableMember m);
+  void genArray(SVariableMember m);
 
   std::vector<UTranslationUnit> units_;
   std::multimap<std::string, Namespace::SMember> members_;
+  Image image_;
 };
 
 }

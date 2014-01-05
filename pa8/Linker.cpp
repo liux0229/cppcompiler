@@ -1,5 +1,7 @@
 #include "Linker.h"
 
+#include <tuple>
+
 namespace compiler {
 
 using namespace std;
@@ -73,7 +75,7 @@ CompareResult compareEntity(SMember e, SMember m) {
            compareFunction(e->toFunction(), m->toFunction());
 }
 
-}
+} // unnamed
 
 void Linker::addTranslationUnit(UTranslationUnit&& unit) {
   units_.push_back(move(unit));
@@ -111,6 +113,7 @@ void Linker::checkOdr() {
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
     for (auto& m : ms) {
+      cout << "Linking: " << *m << endl;
       if (m->linkage != Linkage::External) {
         if (!m->isDefined) {
           Throw("{} is not defined", *m);
@@ -127,8 +130,66 @@ void Linker::checkOdr() {
   }
 }
 
+void Linker::genEntry(const char* data, size_t n, size_t alignment) {
+  auto start = ((image_.size() + alignment - 1) / alignment) * alignment;
+  while (image_.size() < start) {
+    image_.push_back(0);
+  }
+  image_.insert(image_.end(), data, data + n);
+}
+
+
+void Linker::genHeader() {
+  gen("PA8");
+}
+
+void Linker::genFunction() {
+  gen("fun");
+}
+
+void Linker::genZero(size_t n, size_t alignment) {
+  vector<char> v(n);
+  genEntry(v.data(), n, alignment); 
+}
+
+// TODO: consider making image generation part of Type so we can use
+// virtual dispatch
+void Linker::genFundalmental(SVariableMember m) {
+  genZero(m->type->getSize(), m->type->getAlign());
+}
+
+void Linker::genArray(SVariableMember m) {
+  genZero(m->type->getSize(), m->type->getAlign());
+}
+
+void Linker::generateImage() {
+  genHeader();
+
+  for (auto& u : units_) {
+    auto& ms = u->getVariablesFunctions();
+    for (auto& m : ms) {
+      if (m->isFunction()) {
+        genFunction();
+      } else {
+        auto vm = m->toVariable();
+        auto type = vm->type;
+        if (type->isFundalmental()) {
+          genFundalmental(vm);
+        } else if (type->isPointer()) {
+        } else if (type->isReference()) {
+        } else if (type->isArray()) {
+          genArray(vm);
+        } else {
+          CHECK(false);
+        }
+      }
+    }
+  }
+}
+
 void Linker::process() {
   checkOdr();
+  generateImage();
 }
 
 }

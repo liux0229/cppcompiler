@@ -71,6 +71,12 @@ class Type {
   virtual bool isReference() const { return false; }
   virtual bool isArray() const { return false; }
   virtual bool isFunction() const { return false; }
+  bool isConst() const { return cvQualifier_.isConst(); }
+
+  virtual size_t getSize() const = 0;
+  virtual size_t getAlign() const { 
+    return getSize();
+  }
 
   void outputCvQualifier(std::ostream& out) const {
     out << cvQualifier_;
@@ -106,6 +112,7 @@ class FundalmentalType : public Type {
   bool isVoid() const override {
     return type_ == FT_VOID;
   }
+  size_t getSize() const override;
   bool operator==(const Type& rhs) const override {
     if (!Type::operator==(rhs)) {
       return false;
@@ -121,6 +128,7 @@ class FundalmentalType : public Type {
   void setType();
   static std::map<TypeSpecifiers, EFundamentalType, Compare> validCombinations_;
   static std::map<ETokenType, int> typeSpecifierRank_;
+  static std::map<EFundamentalType, size_t> Sizes_;
   TypeSpecifiers specifiers_;
   // TODO: maybe refactor this out
   EFundamentalType type_;
@@ -158,6 +166,7 @@ class PointerType : public DependentType {
 
   void output(std::ostream& out) const override;
   bool isPointer() const override { return true; }
+  size_t getSize() const override { return 8; }
 
  protected:
   void checkDepended(SType depended) const override;
@@ -180,6 +189,7 @@ class ReferenceType : public DependentType {
   }
   void output(std::ostream& out) const override;
   bool isReference() const override { return true; }
+  size_t getSize() const override { return 8; }
   void setDepended(SType depended) override;
 
  protected:
@@ -199,6 +209,8 @@ class ArrayType : public DependentType {
   void setCvQualifier(CvQualifier cvQualifier) override;
   void output(std::ostream& out) const override;
   bool isArray() const override { return true; }
+  size_t getSize() const override;
+  size_t getAlign() const override;
   bool operator==(const Type& other) const override;
 
   bool addSizeTo(const ArrayType& other) const;
@@ -219,6 +231,8 @@ class FunctionType : public DependentType {
     return std::make_shared<FunctionType>(*this);
   }
   bool isFunction() const override { return true; }
+  // note: not used for now
+  size_t getSize() const override { return 0; }
 
   bool sameParameterAndQualifier(const FunctionType& other) const;
   bool operator==(const Type& other) const override;

@@ -12,6 +12,7 @@ struct Declaration : virtual Base {
     BT(EX(usingDirective)) ||
     BT(EX(usingDeclaration)) ||
     BT(EXB(aliasDeclaration)) ||
+    BT(EXB(functionDefinition)) ||
     TR(EXB(simpleDeclaration));
   }
 

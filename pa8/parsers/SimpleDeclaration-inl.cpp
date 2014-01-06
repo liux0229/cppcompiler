@@ -133,13 +133,16 @@ struct SimpleDeclaration : virtual Base {
 
   void initDeclarator(const DeclSpecifiers& declSpecifiers) {
     auto declarator = TR(EX(declarator), declSpecifiers);
-    auto initializer = TR(EX(initializer));
+    auto initializer = BT(EX(initializer));
 
     auto id = declarator->getId();
     if (declSpecifiers.isTypedef()) {
       if (id.isQualified()) {
         Throw("typedef declarator id cannot be a qualified id: {}",
               id.getName());
+      }
+      if (initializer) {
+        Throw("typedef cannot have initializer: {}", id.getName());
       }
       curNamespace()->addTypedef(id.unqualified,
                                  declarator->getType());
@@ -148,6 +151,9 @@ struct SimpleDeclaration : virtual Base {
       auto type = declarator->getType();
       bool requirePriorDeclaration = id.isQualified();
       if (type->isFunction()) {
+        if (initializer) {
+          Throw("function declaration cannot have initializer", id.getName());
+        }
         target->addFunction(id.unqualified,
                             static_pointer_cast<FunctionType>(type),
                             requirePriorDeclaration,
@@ -161,18 +167,16 @@ struct SimpleDeclaration : virtual Base {
         target->addVariable(id.unqualified,
                             type,
                             requirePriorDeclaration,
-                            declSpecifiers);
+                            declSpecifiers,
+                            move(initializer));
       }
     }
   }
 
-  Initializer initializer() {
-    if (tryAdvSimple(OP_ASS)) {
-      auto expr = TR(EXB(expression));
-      return Initializer(Initializer::Copy, move(expr));
-    } else {
-      return Initializer(Initializer::Default, nullptr);
-    }
+  UInitializer initializer() {
+    expect(OP_ASS);
+    auto expr = TR(EXB(expression));
+    return make_unique<Initializer>(Initializer::Copy, expr);
   }
 
   // TODO: noptr-declarator parameters-and-qualifiers trailing-return-type

@@ -31,7 +31,8 @@ class Namespace {
   void addVariable(const std::string& name, 
                    SType type, 
                    bool requireDeclaration,
-                   const DeclSpecifiers& declSpecifiers);
+                   const DeclSpecifiers& declSpecifiers,
+                   UInitializer initializer);
   void addTypedef(const std::string& name, SType type);
   void addUsingDirective(Namespace* ns);
   void addUsingDeclaration(const MemberSet& members);
@@ -79,6 +80,10 @@ class Namespace {
                               UsingDirectiveMap& usingDirectiveMap) const;
   MemberSet qualifiedLookup(const std::string& name, 
                             NamespaceSet& visited) const;
+
+  void checkInitializer(const std::string& name, 
+                        SType& type, 
+                        UInitializer& initializer);
 
   std::string name_;
   bool unnamed_;

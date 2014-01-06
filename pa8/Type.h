@@ -45,8 +45,13 @@ std::ostream& operator<<(std::ostream& out, const CvQualifier& cvQualifier);
 
 class Type;
 MakeShared(Type);
+class FundalmentalType;
+MakeShared(FundalmentalType);
+class ArrayType;
+MakeShared(ArrayType);
 
-class Type {
+// note: public inheritance is required
+class Type : public std::enable_shared_from_this<Type> {
  public:
   std::string getName() const;
 
@@ -58,6 +63,7 @@ class Type {
   }
 
   virtual bool operator==(const Type& other) const = 0;
+  bool equalsIgnoreCv(const Type& other) const;
   bool operator!=(const Type& other) const {
     return !(*this == other);
   }
@@ -73,6 +79,10 @@ class Type {
   virtual bool isFunction() const { return false; }
   bool isConst() const { return cvQualifier_.isConst(); }
 
+  // get derived types
+  SFundalmentalType toFundalmental();
+  SArrayType toArray();
+
   virtual size_t getSize() const = 0;
   virtual size_t getAlign() const { 
     return getSize();
@@ -84,6 +94,7 @@ class Type {
   CvQualifier getCvQualifier() const {
     return cvQualifier_;
   }
+
  private:
   CvQualifier cvQualifier_;
 };
@@ -100,6 +111,7 @@ class FundalmentalType : public Type {
   FundalmentalType(ETokenType type) : FundalmentalType(TypeSpecifiers{type}) {
   }
   FundalmentalType(const TypeSpecifiers& typeSpecifier);
+  FundalmentalType(EFundamentalType t) : type_(t) { }
 
   EFundamentalType getType() const { return type_; }
 
@@ -140,6 +152,10 @@ class DependentType : public Type {
     CHECK(depended);
     checkDepended(depended);
     depended_ = depended;
+  }
+
+  SType getDepended() const {
+    return depended_;
   }
 
   bool operator==(const Type& other) const override {

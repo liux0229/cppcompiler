@@ -34,7 +34,7 @@ namespace SemanticParserImp {
 class ParserImp : 
         Declaration,
         SimpleDeclaration,
-        Expression
+        Expressions
 {
 public:
   ParserImp(const vector<UToken>& tokens, const ParserOption& option)

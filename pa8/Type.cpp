@@ -25,6 +25,25 @@ bool Type::operator==(const Type& other) const {
   return cvQualifier_ == other.cvQualifier_;
 }
 
+bool Type::equalsIgnoreCv(const Type& other) const {
+  // TODO: this can be made more efficient
+  auto a = clone();
+  auto b = other.clone();
+  a->setCvQualifier(CvQualifier::None);
+  b->setCvQualifier(CvQualifier::None);
+  return *a == *b;
+}
+
+SFundalmentalType Type::toFundalmental() {
+  CHECK(isFundalmental());
+  return static_pointer_cast<FundalmentalType>(shared_from_this());
+}
+
+SArrayType Type::toArray() {
+  CHECK(isArray());
+  return static_pointer_cast<ArrayType>(shared_from_this());
+}
+
 map<FundalmentalType::TypeSpecifiers,
     EFundamentalType, 
     FundalmentalType::Compare>

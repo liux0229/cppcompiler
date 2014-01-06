@@ -2,6 +2,7 @@
 #include "common.h"
 #include "StorageClass.h"
 #include "Type.h"
+#include "Initializer.h"
 
 namespace compiler {
 
@@ -80,6 +81,8 @@ MakeShared(Member);
 
 std::ostream& operator<<(std::ostream& out, const Member& m);
 
+std::ostream& operator<<(std::ostream& out, SMember m);
+
 struct TypedefMember : Member {
   TypedefMember(Namespace* owner, const std::string& name, SType t) 
     : Member(owner, 
@@ -100,19 +103,25 @@ struct VariableMember : Member {
                  SType t,
                  Linkage link,
                  StorageDuration store,
-                 bool isDef) 
+                 bool isDef,
+                 UInitializer&& init)
     : Member(owner, 
              name, 
              link,
              isDef), 
       type(t),
-      storage(store) { 
+      storage(store),
+      initializer(move(init)) { 
+    if (isDefined) {
+      CHECK(initializer);
+    }
   }
   MemberKind getKind() const override { return MemberKind::Variable; }
   void output(std::ostream& out) const override;
 
   SType type;
   StorageDuration storage;
+  UInitializer initializer;
 };
 
 struct FunctionMember : Member {

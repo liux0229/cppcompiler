@@ -32,6 +32,11 @@ ostream& operator<<(ostream& out, const Member& m) {
   return out;
 }
 
+ostream& operator<<(ostream& out, SMember m) {
+  m->output(out);
+  return out;
+}
+
 void Member::output(std::ostream& out) const {
   if (!owner->isGlobal()) {
     out << format("{}::", owner->getName());

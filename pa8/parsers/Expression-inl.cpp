@@ -1,17 +1,47 @@
-#define EX(func) #func, make_delegate(&Expression::func, this)
+#define EX(func) #func, make_delegate(&Expressions::func, this)
 
 namespace compiler {
 
 namespace SemanticParserImp {
 
-struct Expression : virtual Base {
+struct Expressions : virtual Base {
 
   size_t constantExpression() override {
     return expectLiteral()->toSigned64();
   }
 
-  UExpression expression() override {
-    return nullptr;
+  SExpression expression() override {
+    UConstantValue literal;
+    if (tryAdvSimple(OP_LPAREN)) {
+      return TR(EX(expression));
+      expect(OP_RPAREN);
+    } else if (tryAdvSimple(KW_TRUE)) {
+      literal = ConstantValue::createFundalmentalValue(FT_BOOL, true);
+    } else if (tryAdvSimple(KW_FALSE)) {
+      literal = ConstantValue::createFundalmentalValue(FT_BOOL, false);
+    } else if (tryAdvSimple(KW_NULLPTR)) {
+      literal = ConstantValue::createFundalmentalValue(FT_NULLPTR_T, nullptr);
+    } else if (auto value = tryGetLiteral()) {
+      literal = value->toConstantValue();
+    }
+    if (literal) {
+      return make_shared<LiteralExpression>(move(literal));
+    }
+
+    auto id = TR(EXB(idExpression));
+    Namespace::MemberSet members;
+    if (id->isQualified()) {
+      members = id->ns->qualifiedLookup(id->unqualified);
+    } else {
+      members = curNamespace()->unqualifiedLookup(id->unqualified);
+    }
+    if (members.empty()) {
+      Throw("{} is not declared", id->getName());
+    } else if (members.size() > 1) {
+      Throw("cannot resolve {}: {}", id->getName(), members);
+    }
+
+    return make_shared<IdExpression>(*members.begin());
   }
 
 };

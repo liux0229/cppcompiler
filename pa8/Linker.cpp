@@ -109,7 +109,6 @@ void Linker::checkOdr() {
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
     for (auto& m : ms) {
-      cout << "Linking: " << *m << endl;
       if (m->linkage != Linkage::External) {
         if (!m->isDefined) {
           Throw("{} is not defined", *m);
@@ -117,6 +116,12 @@ void Linker::checkOdr() {
       } else {
         addExternal(m);
       }
+
+      cout << "Linking: " << *m;
+      if (m->isVariable()) {
+        cout << " " << *m->toVariable()->initializer;
+      }
+      cout << endl;
     }
   }
   for (auto& kv : members_) {
@@ -151,7 +156,15 @@ void Linker::genZero(size_t n, size_t alignment) {
 // TODO: consider making image generation part of Type so we can use
 // virtual dispatch
 void Linker::genFundalmental(SVariableMember m) {
-  genZero(m->type->getSize(), m->type->getAlign());
+  CHECK(m->initializer);
+  auto& initializer = *m->initializer;
+  if (!initializer.isDefault() && initializer.expr->isConstant()) {
+    auto literal = initializer.expr->toConstant();
+    auto bytes = literal->value->toBytes();
+    genEntry(bytes.data(), bytes.size(), m->type->getAlign());
+  } else {
+    genZero(m->type->getSize(), m->type->getAlign());
+  }
 }
 
 void Linker::genArray(SVariableMember m) {

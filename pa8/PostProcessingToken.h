@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "PostTokenUtils.h"
+#include "ConstantValue.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -219,6 +220,52 @@ struct GetTypeSpecifier<std::vector<T>> {
   }
 };
 
+template<typename T>
+struct LiteralTypeTraits {
+  using TElement = T;
+
+  SType getType(const T&) const {
+    return std::make_shared<FundalmentalType>(FundamentalTypeOf<T>());
+  }
+
+  // not used
+  std::vector<TElement> getArrayValue(const T&) const { return {}; }
+};
+
+template<>
+struct LiteralTypeTraits<std::string> {
+  using TElement = char;
+
+  SType getType(const std::string& v) const {
+    auto type = std::make_shared<ArrayType>(v.size());
+    auto element = LiteralTypeTraits<char>().getType(char{});
+    element->setCvQualifier(CvQualifier::Const);
+    type->setDepended(element);
+    return type;
+  }
+
+  std::vector<TElement> getArrayValue(const std::string& d) const {
+    return std::vector<TElement>(d.begin(), d.end());
+  }
+};
+
+template<typename T>
+struct LiteralTypeTraits<std::vector<T>> {
+  using TElement = T;
+
+  SType getType(const std::vector<T>& v) const {
+    auto type = std::make_shared<ArrayType>(v.size());
+    auto element = LiteralTypeTraits<T>().getType(T{});
+    element->setCvQualifier(CvQualifier::Const);
+    type->setDepended(element);
+    return type;
+  }
+
+  std::vector<TElement> getArrayValue(const std::vector<TElement>& d) const {
+    return d;
+  }
+};
+
 namespace {
 
 template<typename T>
@@ -262,6 +309,8 @@ struct PostTokenLiteralBase : public PostToken
   virtual std::unique_ptr<PostTokenLiteralBase> promoteTo64() const = 0;
 
   virtual std::string toIntegralStr() const = 0;
+
+  virtual UConstantValue toConstantValue() const = 0;
 
   EFundamentalType type;
   std::string udSuffix;
@@ -309,6 +358,10 @@ struct PostTokenLiteral : public PostTokenLiteralBase
       data(_data) { }
 
   std::unique_ptr<PostToken> copy() const override {
+    return make_unique<PostTokenLiteral<T>>(*this);
+  }
+  // TODO: find a more elegant way of expressing this
+  std::unique_ptr<PostTokenLiteral<T>> typedCopy() const {
     return make_unique<PostTokenLiteral<T>>(*this);
   }
 
@@ -407,6 +460,21 @@ struct PostTokenLiteral : public PostTokenLiteralBase
                   getDump());
   }
 
+  UConstantValue toConstantValue() const override {
+    CHECK(udSuffix.empty());
+    LiteralTypeTraits<T> traits;
+    auto type = traits.getType(data);
+    if (type->isFundalmental()) {
+      return make_unique<FundalmentalValue<T>>(type->toFundalmental(), data); 
+    } else {
+      CHECK(type->isArray());
+      using ET = typename LiteralTypeTraits<T>::TElement;
+      return make_unique<ArrayValue<ET>>(
+               type->toArray(), 
+               traits.getArrayValue(data));
+    }
+  }
+
   T data;
 };
 
@@ -414,7 +482,7 @@ namespace {
 
 namespace GetPostTokenLiteral {
   template<typename T>
-  std::unique_ptr<PostToken> get(const std::string& source,
+  std::unique_ptr<PostTokenLiteral<T>> get(const std::string& source,
                                  EFundamentalType type, 
                                  const T& data,
                                  const std::string& udSuffix = "") {

@@ -17,6 +17,11 @@ namespace compiler {
 // Make the function definitions local to file
 namespace {
 
+std::ostream& operator<<(std::ostream& oss, std::nullptr_t) {
+  oss << "nullptr"; 
+  return oss;
+}
+
 template<typename T>
 std::ostream& operator<<(std::ostream& oss, const std::vector<T>& v)
 {

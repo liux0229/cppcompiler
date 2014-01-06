@@ -5,11 +5,6 @@ namespace compiler {
 
 using namespace std;
 
-ostream& operator<<(ostream& out, SMember m) {
-  m->output(out);
-  return out;
-}
-
 Namespace::Namespace(const string& name, 
                      bool unnamed, 
                      bool isInline,
@@ -173,12 +168,46 @@ void Namespace::addFunction(const string& name,
   unit_->addMember(m);
 }
 
+// Check whether initializer is valid for type
+// Add necessary conversions and potentially mutate type
+void Namespace::checkInitializer(
+                  const string& name, 
+                  SType& type, 
+                  UInitializer& initializer) {
+  if (!initializer) {
+    if (type->isConst() || type->isReference()) {
+      Throw("{} ({}) cannot be default initialized", name, *type);
+    }
+
+    initializer = make_unique<Initializer>(Initializer::Default, nullptr);
+    return;
+  }
+
+  auto& expr = initializer->expr;
+  if (auto r = expr->assignableTo(type)) {
+    expr = r;
+  }
+  if (expr->isConstant()) {
+    expr = expr->toConstant();
+  }
+
+  cout << format("{} {} {}", name, *type, *initializer) << endl;
+}
+
 void Namespace::addVariable(const string& name, 
                             SType type, 
                             bool requireDeclaration,
-                            const DeclSpecifiers& declSpecifiers) {
+                            const DeclSpecifiers& declSpecifiers,
+                            UInitializer initializer) {
   auto storageClass = declSpecifiers.getStorageClass();
-  bool isDef = !(storageClass & StorageClass::Extern);
+  // variable with extern specifier and without an initializer is not 
+  // a definition
+  bool isDef = !((storageClass & StorageClass::Extern) && 
+                 !initializer);
+
+  if (isDef) {
+    checkInitializer(name, type, initializer);
+  }
 
   bool internalLinkage = 
          (storageClass & StorageClass::Static) ||
@@ -237,6 +266,7 @@ void Namespace::addVariable(const string& name,
       if (member->isDefined) {
         Throw("Multiple definitions of {}", *member);
       }
+      member->toVariable()->initializer = move(initializer);
       member->isDefined = true;
     }
 
@@ -259,7 +289,8 @@ void Namespace::addVariable(const string& name,
              threadLocalStorage ? 
                StorageDuration::ThreadLocal :
                StorageDuration::Static,
-             isDef);
+             isDef,
+             move(initializer));
   members_.insert(make_pair(name, m));
   declarationOrder_.var.push_back(m);
   unit_->addMember(m);

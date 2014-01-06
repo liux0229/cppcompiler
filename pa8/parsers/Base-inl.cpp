@@ -187,6 +187,13 @@ struct Base {
     return cur().isLiteral();
   }
 
+  const PostTokenLiteralBase* tryGetLiteral() {
+    if (!isLiteral()) {
+      return nullptr;
+    }
+    return static_cast<const PostTokenLiteralBase*>(getAdv());
+  }
+
   const PostTokenLiteralBase* expectLiteralFromFunc(const char* func) {
     if (!isLiteral()) {
       complainExpect("literal", func);
@@ -270,7 +277,7 @@ struct Base {
   virtual void simpleDeclaration() = 0;
   virtual void aliasDeclaration() = 0;
   virtual size_t constantExpression() = 0;
-  virtual UExpression expression() = 0;
+  virtual SExpression expression() = 0;
   virtual Namespace* nestedNameSpecifier() = 0;
   virtual UId idExpression() = 0;
 

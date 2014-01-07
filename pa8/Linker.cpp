@@ -161,22 +161,34 @@ void Linker::genFundalmental(SVariableMember m) {
   if (!initializer.isDefault() && initializer.expr->isConstant()) {
     auto literal = initializer.expr->toConstant();
     auto bytes = literal->value->toBytes();
-    genEntry(bytes.data(), bytes.size(), m->type->getAlign());
+    genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
   } else {
-    genZero(m->type->getSize(), m->type->getAlign());
+    genZero(m->type->getTypeSize(), m->type->getTypeAlign());
   }
 }
 
 void Linker::genArray(SVariableMember m) {
-  genZero(m->type->getSize(), m->type->getAlign());
+  CHECK(m->initializer);
+  auto& initializer = *m->initializer;
+  if (initializer.isDefault()) {
+    genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+  } else {
+    CHECK(initializer.expr->isConstant());
+    auto literal = initializer.expr->toConstant();
+    literals_.push_back(literal->value->clone());
+
+    auto bytes = literal->value->toBytes();
+    genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
+    genZero(m->type->getTypeSize() - bytes.size(), m->type->getTypeAlign());
+  }
 }
 
 void Linker::genPointer(SVariableMember m) {
-  genZero(m->type->getSize(), m->type->getAlign());
+  genZero(m->type->getTypeSize(), m->type->getTypeAlign());
 }
 
 void Linker::genReference(SVariableMember m) {
-  genZero(m->type->getSize(), m->type->getAlign());
+  genZero(m->type->getTypeSize(), m->type->getTypeAlign());
 }
 
 void Linker::generateImage() {
@@ -203,6 +215,11 @@ void Linker::generateImage() {
         }
       }
     }
+  }
+
+  for (auto& literal : literals_) {
+    auto bytes = literal->toBytes();
+    genEntry(bytes.data(), bytes.size(), literal->type->getTypeAlign());
   }
 }
 

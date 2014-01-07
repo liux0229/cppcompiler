@@ -168,7 +168,7 @@ void FundalmentalType::combine(const FundalmentalType& other) {
   setType();
 }
 
-size_t FundalmentalType::getSize() const {
+size_t FundalmentalType::getTypeSize() const {
   return Sizes_.at(type_);
 }
 
@@ -253,12 +253,12 @@ void ArrayType::setCvQualifier(CvQualifier cvQualifier) {
   depended_->setCvQualifier(cvQualifier);
 }
 
-size_t ArrayType::getSize() const {
-  return size_ * depended_->getSize();
+size_t ArrayType::getTypeSize() const {
+  return size_ * depended_->getTypeSize();
 }
 
-size_t ArrayType::getAlign() const {
-  return depended_->getAlign();
+size_t ArrayType::getTypeAlign() const {
+  return depended_->getTypeAlign();
 }
 
 void ArrayType::output(ostream& out) const {

@@ -20,7 +20,47 @@ SExpression Expression::assignableTo(SType target) const {
         return make_shared<FundalmentalTypeConversion>(expr, target);
       }
     }
+  } else if (target->isArray()) {
+    if (getType()->isArray()) {
+      auto cur = getType()->toArray();
+      cout << format("target: {} from: {}", *target, *cur) << endl;
+      if (*cur == *target) {
+        return expr;
+      } else {
+        auto ta = target->toArray();
+        if (cur->addSizeTo(*ta)) {
+          return expr;
+        } else {
+          if (ta->getArraySize() > cur->getArraySize()) {
+            return expr;
+          }
+        }
+      }
+    }
+    
+    return nullptr;
+  } else if (target->isPointer()) {
+    if (getType()->isArray()) {
+      expr = make_shared<ArrayToPointerConversion>(expr);
+    } else if (getType()->isFunction()) {
+      expr = make_shared<FunctionToPointerConversion>(expr);
+    }
+
+    if (!expr->getType()->isPointer()) {
+      return nullptr;
+    }
+
+    if (expr->getType()->equalsIgnoreCv(*target)) {
+      return expr;
+    } else if (QualificationConversion::allowed(
+                 expr->getType(),
+                 target->toPointer())) {
+      return make_shared<QualificationConversion>(expr);
+    } else {
+      return nullptr;
+    }
   }
+
   return nullptr;
 }
 
@@ -50,6 +90,17 @@ bool IdExpression::isConstant() const {
     auto& initializer = var->initializer;
     CHECK(initializer && !initializer->isDefault());
     return initializer->expr->isConstant();
+  }
+}
+
+SLiteralExpression IdExpression::toConstant() const {
+  CHECK(isConstant());
+  if (entity->isFunction()) {
+    Throw("Not implemented");
+    return nullptr;
+  } else {
+    auto var = entity->toVariable();
+    return var->initializer->expr->toConstant();
   }
 }
 

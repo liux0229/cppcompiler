@@ -83,9 +83,9 @@ class Type : public std::enable_shared_from_this<Type> {
   SFundalmentalType toFundalmental();
   SArrayType toArray();
 
-  virtual size_t getSize() const = 0;
-  virtual size_t getAlign() const { 
-    return getSize();
+  virtual size_t getTypeSize() const = 0;
+  virtual size_t getTypeAlign() const { 
+    return getTypeSize();
   }
 
   void outputCvQualifier(std::ostream& out) const {
@@ -124,7 +124,7 @@ class FundalmentalType : public Type {
   bool isVoid() const override {
     return type_ == FT_VOID;
   }
-  size_t getSize() const override;
+  size_t getTypeSize() const override;
   bool operator==(const Type& rhs) const override {
     if (!Type::operator==(rhs)) {
       return false;
@@ -182,7 +182,7 @@ class PointerType : public DependentType {
 
   void output(std::ostream& out) const override;
   bool isPointer() const override { return true; }
-  size_t getSize() const override { return 8; }
+  size_t getTypeSize() const override { return 8; }
 
  protected:
   void checkDepended(SType depended) const override;
@@ -205,7 +205,7 @@ class ReferenceType : public DependentType {
   }
   void output(std::ostream& out) const override;
   bool isReference() const override { return true; }
-  size_t getSize() const override { return 8; }
+  size_t getTypeSize() const override { return 8; }
   void setDepended(SType depended) override;
 
  protected:
@@ -225,10 +225,11 @@ class ArrayType : public DependentType {
   void setCvQualifier(CvQualifier cvQualifier) override;
   void output(std::ostream& out) const override;
   bool isArray() const override { return true; }
-  size_t getSize() const override;
-  size_t getAlign() const override;
+  size_t getTypeSize() const override;
+  size_t getTypeAlign() const override;
   bool operator==(const Type& other) const override;
 
+  size_t getArraySize() const { return size_; }
   bool addSizeTo(const ArrayType& other) const;
   SPointerType toPointer() const; 
 
@@ -248,7 +249,7 @@ class FunctionType : public DependentType {
   }
   bool isFunction() const override { return true; }
   // note: not used for now
-  size_t getSize() const override { return 0; }
+  size_t getTypeSize() const override { return 0; }
 
   bool sameParameterAndQualifier(const FunctionType& other) const;
   bool operator==(const Type& other) const override;

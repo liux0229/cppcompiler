@@ -9,7 +9,7 @@ PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.
 PPTokenOBJs=pptoken.o $(PPTokenLib)
 
 PostTokenizers=CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o FloatLiteralPostTokenizer.o IntegerLiteralPostTokenizer.o
-PostTokenLib=PostTokenizer.o Utf16Encoder.o $(PostTokenizers)
+PostTokenLib=PostTokenizer.o Utf16Encoder.o Type.o $(PostTokenizers)
 PostTokenOBJs=posttoken.o $(PostTokenLib) $(PPTokenLib)
 
 CtrlExprOBJs=CtrlExprEval.o ctrlexpr.o $(PostTokenLib) $(PPTokenLib)
@@ -23,7 +23,7 @@ PreProcOBJs=preproc.o $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 ParserLib=Parser.o
 RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o Type.o DeclSpecifiers.o StorageClass.o Member.o Expression.o
+NsDeclLib=Driver.o parsers/SemanticParser.o Namespace.o DeclSpecifiers.o StorageClass.o Member.o Expression.o
 NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
 NsInitLib=Linker.o

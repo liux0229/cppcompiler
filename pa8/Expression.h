@@ -87,6 +87,7 @@ struct IdExpression : Expression {
 
   SType getType() const override;
   bool isConstant() const override;
+  SLiteralExpression toConstant() const override;
 
   void output(std::ostream& out) const override;
 
@@ -117,10 +118,6 @@ struct ConversionExpression : Expression {
   SType type;
 };
 
-// TODO: fix this bug:
-// const int b = 1;
-// int a = b;
-
 struct LValueToRValueConversion : ConversionExpression {
   LValueToRValueConversion(SExpression e)
       : ConversionExpression("LValueToRValueConversion", e) {
@@ -139,9 +136,7 @@ struct ArrayToPointerConversion : ConversionExpression {
   ArrayToPointerConversion(SExpression e)
       : ConversionExpression("ArrayToPointerConversion", e) {
     CHECK(fromType()->isArray());
-    type = std::make_shared<PointerType>();
-    auto& arrayType = static_cast<const ArrayType&>(*fromType());
-    type->setDepended(arrayType.getDepended());
+    type = fromType()->toArray()->toPointer();
   }
   
   bool isConstant() const override {
@@ -176,6 +171,9 @@ struct FundalmentalTypeConversion : ConversionExpression {
   static bool allowed(SFundalmentalType from, SFundalmentalType to);
 
   SLiteralExpression toConstant() const override;
+};
+
+struct QualificationConversion : ConversionExpresion {
 };
 
 }

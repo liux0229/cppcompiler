@@ -15,12 +15,18 @@ struct ConstantValue {
   static UFundalmentalValue<T> 
   createFundalmentalValue(EFundamentalType ft, const T& d);
 
+  template<typename T>
+  static UFundalmentalValue<T> 
+  createFundalmentalValue(const T& d);
+
   ConstantValue(SType t) : type(t) { }
   virtual UConstantValue to(EFundamentalType target) const {
     Throw("cannot convert to fundalmental type {}", target);
     return nullptr;
   }
 
+  virtual UConstantValue clone() const = 0;
+  // TODO: make pure virtual
   virtual std::vector<char> toBytes() const { return {}; }
 
   SType type;
@@ -104,10 +110,14 @@ struct FundalmentalValue : ConstantValue {
     }
   }
 
+  UConstantValue clone() const override {
+    return make_unique<FundalmentalValue<T>>(*this);
+  }
+
   std::vector<char> toBytes() const override { 
     std::vector<char> ret;
     auto buf = reinterpret_cast<const char*>(&data);
-    for (size_t i = 0; i < type->getSize(); ++i) {
+    for (size_t i = 0; i < type->getTypeSize(); ++i) {
       ret.push_back(buf[i]);
     }
     return ret;
@@ -124,6 +134,10 @@ struct FundalmentalValue<std::nullptr_t> : ConstantValue {
   FundalmentalValue(EFundamentalType ft, std::nullptr_t d)
     : FundalmentalValue(std::make_shared<FundalmentalType>(ft), d) {
   }
+
+  UConstantValue clone() const override {
+    return make_unique<FundalmentalValue<std::nullptr_t>>(*this);
+  }
 };
 
 // TODO: remove these
@@ -132,11 +146,19 @@ struct FundalmentalValue<std::string> : ConstantValue {
   FundalmentalValue(SFundalmentalType type, std::string)
     : ConstantValue(type) {
   }
+
+  UConstantValue clone() const override {
+    return nullptr;
+  }
 };
 template<typename T>
 struct FundalmentalValue<std::vector<T>> : ConstantValue {
   FundalmentalValue(SFundalmentalType type, std::vector<T>)
     : ConstantValue(type) {
+  }
+
+  UConstantValue clone() const override {
+    return nullptr;
   }
 };
 
@@ -147,11 +169,31 @@ ConstantValue::createFundalmentalValue(EFundamentalType ft, const T& d) {
 }
 
 template<typename T>
+UFundalmentalValue<T>
+ConstantValue::createFundalmentalValue(const T& d) {
+  return make_unique<FundalmentalValue<T>>(FundamentalTypeOf<T>(), d);
+}
+
+template<typename T>
 struct ArrayValue : ConstantValue {
   ArrayValue(SArrayType type, const std::vector<T>& d)
     : ConstantValue(type),
       data(d) {
   }
+
+  std::vector<char> toBytes() const override { 
+    std::vector<char> ret;
+    for (auto& e : data) {
+      auto eb = createFundalmentalValue(e)->toBytes();
+      ret.insert(ret.end(), eb.begin(), eb.end());
+    }
+    return ret; 
+  }
+
+  UConstantValue clone() const override {
+    return make_unique<ArrayValue<T>>(*this);
+  }
+
   std::vector<T> data;
 };
 

@@ -159,7 +159,18 @@ void StringLiteralPostTokenizer::handle()
                   suffix));
   } else {
     CHECK(type == FT_CHAR32_T || type == FT_WCHAR_T);
-    receiver_.put(*get(getSource(), type, codePoints, suffix));
+    if (type == FT_CHAR32_T) {
+      receiver_.put(*get(getSource(), 
+                    type, 
+                    vector<char32_t>(codePoints.begin(), codePoints.end()), 
+                    suffix));
+    } else {
+      receiver_.put(*get(getSource(), 
+                    type, 
+                    vector<wchar_t>(codePoints.begin(), codePoints.end()), 
+                    suffix));
+    }
+    // receiver_.put(*get(getSource(), type, codePoints, suffix));
   }
 }
 

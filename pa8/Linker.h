@@ -32,6 +32,7 @@ class Linker {
   std::vector<UTranslationUnit> units_;
   std::multimap<std::string, SMember> members_;
   Image image_;
+  std::vector<UConstantValue> literals_;
 };
 
 }

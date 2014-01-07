@@ -184,14 +184,26 @@ void Namespace::checkInitializer(
   }
 
   auto& expr = initializer->expr;
+  cout << format("check(BF): {} {} {}", name, *type, *initializer) << endl;
+
   if (auto r = expr->assignableTo(type)) {
     expr = r;
+  } else {
+    Throw("cannot initialize {} ({}) with {}", name, *type, *expr);
   }
   if (expr->isConstant()) {
     expr = expr->toConstant();
   }
 
-  cout << format("{} {} {}", name, *type, *initializer) << endl;
+  if (type->isArray() && 
+      expr->getType()->isArray()) {
+    auto ea = expr->getType()->toArray();
+    if (ea->addSizeTo(*type->toArray())) {
+      type = ea; 
+    }
+  }
+
+  cout << format("check(AF): {} {} {}", name, *type, *initializer) << endl;
 }
 
 void Namespace::addVariable(const string& name, 

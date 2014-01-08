@@ -50,12 +50,16 @@ SExpression Expression::assignableTo(SType target) const {
       return nullptr;
     }
 
+    if (!expr->isPRValue()) {
+      expr = make_shared<LValueToRValueConversion>(expr);
+    }
+
     if (expr->getType()->equalsIgnoreCv(*target)) {
       return expr;
     } else if (QualificationConversion::allowed(
-                 expr->getType(),
+                 expr->getType()->toPointer(),
                  target->toPointer())) {
-      return make_shared<QualificationConversion>(expr);
+      return make_shared<QualificationConversion>(expr, target);
     } else {
       return nullptr;
     }
@@ -123,6 +127,48 @@ SLiteralExpression FundalmentalTypeConversion::toConstant() const {
   auto c = from->toConstant();
   auto value = c->value->to(type->toFundalmental()->getType());
   return make_shared<LiteralExpression>(move(value)); 
+}
+
+bool QualificationConversion::allowed(SPointerType from, SPointerType to) {
+  // TODO: make this more efficient
+  vector<CvQualifier> cvFrom;
+  vector<CvQualifier> cvTo;
+
+  do {
+    auto fd = from->getDepended();
+    auto td = to->getDepended();
+    cvFrom.push_back(fd->getCvQualifier());
+    cvTo.push_back(td->getCvQualifier());
+    if (fd->equalsIgnoreCv(*td)) {
+      break;
+    } else {
+      if (!fd->isPointer() || !td->isPointer()) {
+        return false;
+      } else {
+        from = fd->toPointer();
+        to = td->toPointer();
+      }
+    }
+  } while (true);
+
+  // note: this implementation will return true if the pointer types are the
+  // same, which is fine.
+  // TODO: probably a QualificationConversion implementation which reduces to
+  // empty in this situation
+  bool requireConst = false;
+  for (int i = cvFrom.size() - 1; i >= 0; i--) {
+    if (!(cvTo[i] >= cvFrom[i])) {
+      return false;
+    }
+    if (requireConst && !cvTo[i].isConst()) {
+      return false;
+    }
+    if (cvTo[i] != cvFrom[i]) {
+      requireConst = true;
+    }
+  }
+
+  return true;
 }
 
 }

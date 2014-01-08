@@ -157,6 +157,7 @@ struct FunctionToPointerConversion : ConversionExpression {
   }
 };
 
+// TODO: check PR value
 struct FundalmentalTypeConversion : ConversionExpression {
   FundalmentalTypeConversion(SExpression e, SType target) 
       : ConversionExpression("FundalmentalTypeConversion", e) {
@@ -165,6 +166,8 @@ struct FundalmentalTypeConversion : ConversionExpression {
           allowed(e->getType()->toFundalmental(), target->toFundalmental()));
 
     type = target->clone();
+    // TODO: what if we say const int x = 1.0; ?
+    // Why do we need this?
     type->setCvQualifier(CvQualifier::None);
   }
 
@@ -173,7 +176,21 @@ struct FundalmentalTypeConversion : ConversionExpression {
   SLiteralExpression toConstant() const override;
 };
 
-struct QualificationConversion : ConversionExpresion {
+// TODO: check PR value
+// TODO: 2nd parameter should be more specifically typed?
+struct QualificationConversion : ConversionExpression {
+  QualificationConversion(SExpression e, SType target) 
+    : ConversionExpression("QualificationConversion", e) {
+    CHECK(e->getType()->isPointer() &&
+          target->isPointer() &&
+          allowed(e->getType()->toPointer(), target->toPointer()));
+
+    type = target;
+  }
+
+  static bool allowed(SPointerType from, SPointerType to);
+
+  // SLiteralExpression toConstant() const override;
 };
 
 }

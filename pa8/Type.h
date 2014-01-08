@@ -22,6 +22,11 @@ struct CvQualifier {
     return value != other.value;
   }
 
+  // more qualified than or equal to
+  bool operator>=(CvQualifier other) const {
+    return (value & other.value) == other.value;
+  }
+
   CvQualifier combine(CvQualifier other, bool checkDuplicate) const {
     if (checkDuplicate && (value & other.value)) {
       Throw("duplicate cv-qualifier: {x} vs {x}", value, other.value);
@@ -49,6 +54,8 @@ class FundalmentalType;
 MakeShared(FundalmentalType);
 class ArrayType;
 MakeShared(ArrayType);
+class PointerType;
+MakeShared(PointerType);
 
 // note: public inheritance is required
 class Type : public std::enable_shared_from_this<Type> {
@@ -77,11 +84,13 @@ class Type : public std::enable_shared_from_this<Type> {
   virtual bool isReference() const { return false; }
   virtual bool isArray() const { return false; }
   virtual bool isFunction() const { return false; }
+
   bool isConst() const { return cvQualifier_.isConst(); }
 
   // get derived types
   SFundalmentalType toFundalmental();
   SArrayType toArray();
+  SPointerType toPointer();
 
   virtual size_t getTypeSize() const = 0;
   virtual size_t getTypeAlign() const { 

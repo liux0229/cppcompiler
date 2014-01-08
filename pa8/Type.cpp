@@ -44,6 +44,11 @@ SArrayType Type::toArray() {
   return static_pointer_cast<ArrayType>(shared_from_this());
 }
 
+SPointerType Type::toPointer() {
+  CHECK(isPointer());
+  return static_pointer_cast<PointerType>(shared_from_this());
+}
+
 map<FundalmentalType::TypeSpecifiers,
     EFundamentalType, 
     FundalmentalType::Compare>

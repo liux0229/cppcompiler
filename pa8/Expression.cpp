@@ -17,7 +17,9 @@ SExpression Expression::assignableTo(SType target) const {
       if (FundalmentalTypeConversion::allowed(
             expr->getType()->toFundalmental(), 
             target->toFundalmental())) {
-        return make_shared<FundalmentalTypeConversion>(expr, target);
+        return make_shared<FundalmentalTypeConversion>(
+                 expr,
+                 target->toFundalmental());
       }
     }
   } else if (target->isArray()) {
@@ -46,12 +48,17 @@ SExpression Expression::assignableTo(SType target) const {
       expr = make_shared<FunctionToPointerConversion>(expr);
     }
 
-    if (!expr->getType()->isPointer()) {
-      return nullptr;
-    }
-
     if (!expr->isPRValue()) {
       expr = make_shared<LValueToRValueConversion>(expr);
+    }
+
+    // TODO: fix const int* p = nullptr;
+    if (PointerConversion::allowed(expr)) {
+      expr = make_shared<PointerConversion>(expr, target->toPointer());
+    }
+
+    if (!expr->getType()->isPointer()) {
+      return nullptr;
     }
 
     if (expr->getType()->equalsIgnoreCv(*target)) {
@@ -59,7 +66,7 @@ SExpression Expression::assignableTo(SType target) const {
     } else if (QualificationConversion::allowed(
                  expr->getType()->toPointer(),
                  target->toPointer())) {
-      return make_shared<QualificationConversion>(expr, target);
+      return make_shared<QualificationConversion>(expr, target->toPointer());
     } else {
       return nullptr;
     }
@@ -81,7 +88,7 @@ SType IdExpression::getType() const {
 
 bool IdExpression::isConstant() const {
   if (entity->isFunction()) {
-    return true;
+    return false;
   } else {
     // TODO: consider making this a field on VariableMember
     if (!entity->isDefined) {
@@ -99,13 +106,9 @@ bool IdExpression::isConstant() const {
 
 SLiteralExpression IdExpression::toConstant() const {
   CHECK(isConstant());
-  if (entity->isFunction()) {
-    Throw("Not implemented");
-    return nullptr;
-  } else {
-    auto var = entity->toVariable();
-    return var->initializer->expr->toConstant();
-  }
+  CHECK(entity->isVariable());
+  auto var = entity->toVariable();
+  return var->initializer->expr->toConstant();
 }
 
 void IdExpression::output(ostream& out) const {
@@ -127,6 +130,48 @@ SLiteralExpression FundalmentalTypeConversion::toConstant() const {
   auto c = from->toConstant();
   auto value = c->value->to(type->toFundalmental()->getType());
   return make_shared<LiteralExpression>(move(value)); 
+}
+
+SLiteralExpression ArrayToPointerConversion::toConstant() const {
+  UConstantValue value;
+  if (from->isConstant()) {
+    value = make_unique<LiteralAddressValue>(
+              getType(),
+              from->toConstant()->value->clone());
+  } else {
+    auto idExpr = dynamic_cast<const IdExpression*>(from.get());
+    CHECK(idExpr);
+    value = make_unique<MemberAddressValue>(getType(), idExpr->entity);
+  }
+  return make_shared<LiteralExpression>(move(value));
+}
+
+SLiteralExpression FunctionToPointerConversion::toConstant() const {
+  CHECK(!from->isConstant());
+  auto idExpr = dynamic_cast<const IdExpression*>(from.get());
+  CHECK(idExpr);
+  auto value = make_unique<MemberAddressValue>(getType(), idExpr->entity);
+  return make_shared<LiteralExpression>(move(value));
+}
+
+bool PointerConversion::allowed(SExpression from) {
+  if (from->isConstant()) {
+    return false;
+  }
+  auto literal = from->toConstant();
+  auto type = literal->getType();
+  if (!type->isFundalmental()) {
+    return false;
+  }
+
+  auto ft = type->toFundalmental();
+  if (ft->getType() == FT_NULLPTR_T) {
+    return true;
+  } else {
+    return ft->isInteger() && 
+           static_cast<FundalmentalValueBase*>(literal->value.get())
+             ->isZero();
+  }
 }
 
 bool QualificationConversion::allowed(SPointerType from, SPointerType to) {

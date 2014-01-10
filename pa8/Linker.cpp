@@ -73,6 +73,8 @@ CompareResult compareEntity(SMember e, SMember m) {
 
 } // unnamed
 
+using Address = Linker::Address;
+
 void Linker::addTranslationUnit(UTranslationUnit&& unit) {
   units_.push_back(move(unit));
 }
@@ -105,6 +107,27 @@ void Linker::addExternal(SMember m) {
   members_.insert(make_pair(name, m));
 }
 
+SMember Linker::getExternal(SMember m) {
+  auto name = m->getQualifiedName();
+  auto p = members_.equal_range(name);
+  for (auto it = p.first; it != p.second; ++it) {
+    auto ret = compareEntity(it->second, m);
+    if (ret == MultipleDefs || ret == Same) {
+      return it->second;
+    }
+  }
+  MCHECK(false, format("cannot find external member: {}", name));
+  return nullptr;
+}
+
+SMember Linker::getUnique(SMember m) {
+  if (m->linkage != Linkage::External) {
+    return m;
+  } else {
+    return getExternal(m);
+  }
+}
+
 void Linker::checkOdr() {
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
@@ -131,12 +154,30 @@ void Linker::checkOdr() {
   }
 }
 
-void Linker::genEntry(const char* data, size_t n, size_t alignment) {
+
+vector<char> Linker::getAddress(size_t addr) {
+  return ConstantValue::createFundalmentalValue(
+           FT_UNSIGNED_LONG_INT,
+           static_cast<unsigned long>(addr))
+         ->toBytes();
+}
+
+vector<char> Linker::getAddress(SMember m) {
+  m = getUnique(m);
+  auto it = memberAddress_.find(m);
+  CHECK(it != memberAddress_.end());
+  auto addr = it->second;
+  return getAddress(addr.first);
+}
+
+Address Linker::genEntry(const char* data, size_t n, size_t alignment) {
   auto start = ((image_.size() + alignment - 1) / alignment) * alignment;
   while (image_.size() < start) {
     image_.push_back(0);
   }
   image_.insert(image_.end(), data, data + n);
+  return Address(image_.end() - image_.begin() - n, 
+                 image_.end() - image_.begin()); 
 }
 
 
@@ -144,51 +185,74 @@ void Linker::genHeader() {
   gen("PA8");
 }
 
-void Linker::genFunction() {
-  gen("fun");
+Address Linker::genFunction() {
+  return gen("fun");
 }
 
-void Linker::genZero(size_t n, size_t alignment) {
+Address Linker::genZero(size_t n, size_t alignment) {
   vector<char> v(n);
-  genEntry(v.data(), n, alignment); 
+  return genEntry(v.data(), n, alignment); 
 }
 
 // TODO: consider making image generation part of Type so we can use
 // virtual dispatch
-void Linker::genFundalmental(SVariableMember m) {
+Address Linker::genFundalmental(SVariableMember m) {
   CHECK(m->initializer);
   auto& initializer = *m->initializer;
   if (!initializer.isDefault() && initializer.expr->isConstant()) {
     auto literal = initializer.expr->toConstant();
     auto bytes = literal->value->toBytes();
-    genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
+    return genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
   } else {
-    genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+    return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
   }
 }
 
-void Linker::genArray(SVariableMember m) {
+Address Linker::genArray(SVariableMember m) {
   CHECK(m->initializer);
   auto& initializer = *m->initializer;
   if (initializer.isDefault()) {
-    genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+    return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
   } else {
     CHECK(initializer.expr->isConstant());
     auto literal = initializer.expr->toConstant();
-    literals_.push_back(literal->value->clone());
+    literals_.push_back(make_pair(literal->value->clone(), nullptr));
 
     auto bytes = literal->value->toBytes();
-    genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
-    genZero(m->type->getTypeSize() - bytes.size(), m->type->getTypeAlign());
+    auto addr1 = genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
+    auto addr2 = genZero(m->type->getTypeSize() - bytes.size(), 
+                         m->type->getTypeAlign());
+    return Address(addr1.first, addr2.second);
   }
 }
 
-void Linker::genPointer(SVariableMember m) {
-  genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+Address Linker::genPointer(SVariableMember m) {
+  CHECK(m->initializer);
+  auto& initializer = *m->initializer;
+  if (!initializer.isDefault() && initializer.expr->isConstant()) {
+    auto literal = initializer.expr->toConstant();
+    vector<char> bytes;
+    auto value = literal->value.get();
+    if (auto ma = dynamic_cast<MemberAddressValue*>(value)) {
+      bytes = getAddress(ma->member);
+    } else if (auto ca = dynamic_cast<LiteralAddressValue*>(value)) {
+      auto addr = genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+      if (ca->literal) {
+        literals_.push_back(
+          make_pair(ca->literal->clone(), 
+                    make_unique<Address>(addr))); 
+      } // else: nullptr
+    } else {
+      MCHECK(false, "expect MemberAddressValue or LiteralAddressValue");
+    }
+    return genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
+  } else {
+    return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+  }
 }
 
-void Linker::genReference(SVariableMember m) {
-  genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+Address Linker::genReference(SVariableMember m) {
+  return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
 }
 
 void Linker::generateImage() {
@@ -196,30 +260,50 @@ void Linker::generateImage() {
 
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
-    for (auto& m : ms) {
+    for (auto& mb : ms) {
+      auto m = getUnique(mb);
+      if (memberAddress_.find(m) != memberAddress_.end()) {
+        continue;
+      }
+
+      Address addr;
       if (m->isFunction()) {
-        genFunction();
+        addr = genFunction();
       } else {
         auto vm = m->toVariable();
         auto type = vm->type;
         if (type->isFundalmental()) {
-          genFundalmental(vm);
+          addr = genFundalmental(vm);
         } else if (type->isPointer()) {
-          genPointer(vm);
+          addr = genPointer(vm);
         } else if (type->isReference()) {
-          genReference(vm);
+          addr = genReference(vm);
         } else if (type->isArray()) {
-          genArray(vm);
+          addr = genArray(vm);
         } else {
           CHECK(false);
         }
       }
+
+      memberAddress_.insert(make_pair(m, addr));
     }
   }
 
-  for (auto& literal : literals_) {
+  for (auto& kv : literals_) {
+    auto& literal = kv.first;
     auto bytes = literal->toBytes();
-    genEntry(bytes.data(), bytes.size(), literal->type->getTypeAlign());
+    auto addr = genEntry(bytes.data(), 
+                         bytes.size(), 
+                         literal->type->getTypeAlign());
+    auto& var = kv.second;
+    if (var) {
+      auto& target = *var;
+      auto varAddress = getAddress(addr.first);
+      CHECK(target.second - target.first == varAddress.size());
+      for (size_t i = 0; i < varAddress.size(); ++i) {
+        image_[target.first + i] = varAddress[i];
+      }
+    }
   }
 }
 

@@ -15,7 +15,7 @@
 #define CHECK(f) assert(f)
 #define MCHECK(f, msg) do {\
                          if (!(f)) {\
-                           std::cerr << (msg).c_str() << std::endl;\
+                           std::cerr << (msg) << std::endl;\
                            assert(f);\
                          }\
                        } while (false)

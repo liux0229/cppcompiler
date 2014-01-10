@@ -133,6 +133,7 @@ class FundalmentalType : public Type {
   bool isVoid() const override {
     return type_ == FT_VOID;
   }
+  bool isInteger() const;
   size_t getTypeSize() const override;
   bool operator==(const Type& rhs) const override {
     if (!Type::operator==(rhs)) {

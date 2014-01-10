@@ -177,6 +177,21 @@ size_t FundalmentalType::getTypeSize() const {
   return Sizes_.at(type_);
 }
 
+bool FundalmentalType::isInteger() const {
+  static set<EFundamentalType> integerTypes {
+    FT_SHORT_INT,
+    FT_INT,
+    FT_LONG_INT,
+    FT_LONG_LONG_INT,
+    FT_UNSIGNED_SHORT_INT,
+    FT_UNSIGNED_INT,
+    FT_UNSIGNED_LONG_INT,
+    FT_UNSIGNED_LONG_LONG_INT
+  };
+
+  return integerTypes.find(type_) != integerTypes.end();
+}
+
 void FundalmentalType::output(ostream& out) const {
   outputCvQualifier(out);
   out << FundamentalTypeToStringMap.at(type_);

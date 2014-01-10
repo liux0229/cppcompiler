@@ -32,19 +32,26 @@ struct ConstantValue {
   SType type;
 };
 
+struct FundalmentalValueBase : ConstantValue {
+  using ConstantValue::ConstantValue;
+  virtual bool isZero() const = 0;
+};
+
 template<typename T>
-struct FundalmentalValue : ConstantValue {
+struct FundalmentalValue : FundalmentalValueBase {
   FundalmentalValue(SType type, const T& d)
-    : ConstantValue(type), data(d) {
+    : FundalmentalValueBase(type), data(d) {
   }
   FundalmentalValue(EFundamentalType ft, const T& d)
     : FundalmentalValue(std::make_shared<FundalmentalType>(ft), d) {
   }
 
   template<typename U>
-  UConstantValue convert(EFundamentalType target) const {
-    return make_unique<FundalmentalValue<U>>(target, 
-                                       static_cast<U>(data));
+  std::unique_ptr<FundalmentalValue<U>>
+  convert(EFundamentalType target) const {
+    return make_unique<FundalmentalValue<U>>(
+             target, 
+             static_cast<U>(data));
   }
 
   UConstantValue to(EFundamentalType target) const override {
@@ -108,6 +115,10 @@ struct FundalmentalValue : ConstantValue {
         return nullptr;
         break;
     }
+  }
+
+  bool isZero() const override {
+    return data == 0;
   }
 
   UConstantValue clone() const override {
@@ -199,12 +210,28 @@ struct ArrayValue : ConstantValue {
 
 struct Member;
 using SMember = std::shared_ptr<Member>;
-struct MemberPointerValue : ConstantValue {
+struct MemberAddressValue : ConstantValue {
+  MemberAddressValue(SType type, SMember m) 
+    : ConstantValue(type),
+      member(m) { }
+
+  UConstantValue clone() const override {
+    return make_unique<MemberAddressValue>(*this);
+  }
+
   SMember member;
 };
 
-struct ConstantPointerValue : ConstantValue {
-  UConstantValue v;
+struct LiteralAddressValue : ConstantValue {
+  LiteralAddressValue(SType type, UConstantValue&& v) 
+    : ConstantValue(type),
+      literal(move(v)) { }
+  UConstantValue clone() const override {
+    auto copy = literal ? literal->clone() : nullptr;
+    return make_unique<LiteralAddressValue>(type, move(copy));
+  }
+
+  UConstantValue literal;
 };
 
 }

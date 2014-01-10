@@ -139,9 +139,13 @@ struct ArrayToPointerConversion : ConversionExpression {
     type = fromType()->toArray()->toPointer();
   }
   
+  // In the current feature set, we always consider the result of such a
+  // conversion to be a constant
   bool isConstant() const override {
     return true;
   }
+
+  SLiteralExpression toConstant() const override;
 };
 
 struct FunctionToPointerConversion : ConversionExpression {
@@ -155,19 +159,18 @@ struct FunctionToPointerConversion : ConversionExpression {
   bool isConstant() const override {
     return true;
   }
+
+  SLiteralExpression toConstant() const override;
 };
 
-// TODO: check PR value
 struct FundalmentalTypeConversion : ConversionExpression {
-  FundalmentalTypeConversion(SExpression e, SType target) 
+  FundalmentalTypeConversion(SExpression e, SFundalmentalType target) 
       : ConversionExpression("FundalmentalTypeConversion", e) {
+    CHECK(e->valueCategory() == ValueCategory::PRValue);
     CHECK(e->getType()->isFundalmental() && 
-          target->isFundalmental() &&
-          allowed(e->getType()->toFundalmental(), target->toFundalmental()));
+          allowed(e->getType()->toFundalmental(), target));
 
     type = target->clone();
-    // TODO: what if we say const int x = 1.0; ?
-    // Why do we need this?
     type->setCvQualifier(CvQualifier::None);
   }
 
@@ -176,21 +179,43 @@ struct FundalmentalTypeConversion : ConversionExpression {
   SLiteralExpression toConstant() const override;
 };
 
-// TODO: check PR value
-// TODO: 2nd parameter should be more specifically typed?
+struct PointerConversion : ConversionExpression {
+  PointerConversion(SExpression e, SPointerType target) 
+    : ConversionExpression("PointerConversion", e) {
+    CHECK(e->valueCategory() == ValueCategory::PRValue);
+    CHECK(allowed(e)); 
+
+    // no modifications to the type; even to the top level constness
+    type = target;
+  }
+
+  bool isConstant() const override {
+    return true;
+  }
+
+  SLiteralExpression toConstant() const override {
+    return std::make_shared<LiteralExpression>(
+             make_unique<LiteralAddressValue>(getType(), nullptr));
+  }
+
+  static bool allowed(SExpression from);
+};
+
 struct QualificationConversion : ConversionExpression {
-  QualificationConversion(SExpression e, SType target) 
+  QualificationConversion(SExpression e, SPointerType target) 
     : ConversionExpression("QualificationConversion", e) {
+    CHECK(e->valueCategory() == ValueCategory::PRValue);
     CHECK(e->getType()->isPointer() &&
-          target->isPointer() &&
-          allowed(e->getType()->toPointer(), target->toPointer()));
+          allowed(e->getType()->toPointer(), target));
 
     type = target;
   }
 
   static bool allowed(SPointerType from, SPointerType to);
 
-  // SLiteralExpression toConstant() const override;
+  SLiteralExpression toConstant() const override {
+    return from->toConstant();
+  }
 };
 
 }

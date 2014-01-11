@@ -6,12 +6,16 @@ namespace compiler {
 class Linker {
  public:
   using Image = std::vector<char>;
-  using Address = std::pair<size_t, size_t>;
+  struct Address : std::pair<size_t, size_t> {
+    using Base = std::pair<size_t, size_t>;
+    using Base::Base;
+    Address() : Base(0, 0) { }
+    bool valid() const { return first < second; }
+  };
 
   void addTranslationUnit(UTranslationUnit&& unit);
   Image process();
  private:
-  using UAddress = std::unique_ptr<Address>;
 
   void checkOdr();
   void addExternal(SMember m);
@@ -36,11 +40,16 @@ class Linker {
   std::vector<char> getAddress(SMember);
   std::vector<char> getAddress(size_t addr);
 
+  // addr - address of the pointer we need to update later
+  void addLiteral(const ConstantValue* literal, Address addr = Address{});
+
   std::vector<UTranslationUnit> units_;
   std::multimap<std::string, SMember> members_;
   Image image_;
-  std::vector<std::pair<UConstantValue, UAddress>> literals_;
   std::map<SMember, Address> memberAddress_;
+
+  std::vector<const ConstantValue*> literals_;
+  std::map<const ConstantValue*, std::vector<Address>> addressToLiteral_;
 };
 
 }

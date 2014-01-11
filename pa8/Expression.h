@@ -218,4 +218,20 @@ struct QualificationConversion : ConversionExpression {
   }
 };
 
+struct ReferenceBinding;
+MakeShared(ReferenceBinding);
+struct ReferenceBinding : Expression {
+  static SReferenceBinding create(SExpression e, SReferenceType target);
+
+  ValueCategory valueCategory() const { return ValueCategory::LValue; }
+
+  SType getType() const override { return type; }
+  bool isConstant() const override { return true; }
+  SLiteralExpression toConstant() const override;
+  void output(std::ostream& out) const override;
+
+  SType type;
+  UConstantValue address;
+};
+
 }

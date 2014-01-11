@@ -56,6 +56,8 @@ class ArrayType;
 MakeShared(ArrayType);
 class PointerType;
 MakeShared(PointerType);
+class ReferenceType;
+MakeShared(ReferenceType);
 
 // note: public inheritance is required
 class Type : public std::enable_shared_from_this<Type> {
@@ -91,6 +93,7 @@ class Type : public std::enable_shared_from_this<Type> {
   SFundalmentalType toFundalmental();
   SArrayType toArray();
   SPointerType toPointer();
+  SReferenceType toReference();
 
   virtual size_t getTypeSize() const = 0;
   virtual size_t getTypeAlign() const { 
@@ -217,6 +220,7 @@ class ReferenceType : public DependentType {
   bool isReference() const override { return true; }
   size_t getTypeSize() const override { return 8; }
   void setDepended(SType depended) override;
+  Kind getKind() const { return kind_; }
 
  protected:
   void checkDepended(SType depended) const override;

@@ -49,6 +49,11 @@ SPointerType Type::toPointer() {
   return static_pointer_cast<PointerType>(shared_from_this());
 }
 
+SReferenceType Type::toReference() {
+  CHECK(isReference());
+  return static_pointer_cast<ReferenceType>(shared_from_this());
+}
+
 map<FundalmentalType::TypeSpecifiers,
     EFundamentalType, 
     FundalmentalType::Compare>

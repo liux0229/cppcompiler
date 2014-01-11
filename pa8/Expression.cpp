@@ -52,7 +52,6 @@ SExpression Expression::assignableTo(SType target) const {
       expr = make_shared<LValueToRValueConversion>(expr);
     }
 
-    // TODO: fix const int* p = nullptr;
     if (PointerConversion::allowed(expr)) {
       expr = make_shared<PointerConversion>(expr, target->toPointer());
     }
@@ -69,6 +68,13 @@ SExpression Expression::assignableTo(SType target) const {
       return make_shared<QualificationConversion>(expr, target->toPointer());
     } else {
       return nullptr;
+    }
+  } else if (target->isReference()) {
+    auto ref = target->toReference();
+    if (ref->getKind() == ReferenceType::LValueRef) {
+      if (auto bind = ReferenceBinding::create(expr, ref)) {
+        return bind;
+      }
     }
   }
 
@@ -95,7 +101,7 @@ bool IdExpression::isConstant() const {
       return false;
     }
     auto var = entity->toVariable();
-    if (!var->type->isConst()) {
+    if (!var->type->isConst() && !var->type->isReference()) {
       return false;
     }
     auto& initializer = var->initializer;
@@ -155,7 +161,8 @@ SLiteralExpression FunctionToPointerConversion::toConstant() const {
 }
 
 bool PointerConversion::allowed(SExpression from) {
-  if (from->isConstant()) {
+  cout << *from << endl;
+  if (!from->isConstant()) {
     return false;
   }
   auto literal = from->toConstant();
@@ -214,6 +221,42 @@ bool QualificationConversion::allowed(SPointerType from, SPointerType to) {
   }
 
   return true;
+}
+
+SReferenceBinding ReferenceBinding::create(SExpression e, 
+                                           SReferenceType target) {
+  if (e->valueCategory() != ValueCategory::LValue) {
+    return nullptr;
+  }
+  auto id = dynamic_pointer_cast<const IdExpression>(e);
+  if (!id) {
+    return nullptr;
+  }
+
+  // Support assignement from reference
+  auto fromType = e->getType();
+  auto toType = target->getDepended();
+  if (fromType->equalsIgnoreCv(*toType) &&
+      toType->getCvQualifier() >= fromType->getCvQualifier()) {
+    auto ref = make_shared<ReferenceBinding>();
+    ref->type = e->getType();
+    ref->address = make_unique<MemberAddressValue>(e->getType(), id->entity);
+    return ref;
+  }
+
+  return nullptr;
+}
+
+SLiteralExpression ReferenceBinding::toConstant() const {
+  return make_shared<LiteralExpression>(address->clone());
+}
+
+void ReferenceBinding::output(ostream& out) const {
+  out << "Reference(";
+  if (auto ma = dynamic_cast<MemberAddressValue*>(address.get())) {
+    out << *ma->member;
+  }
+  out << ")" << endl;
 }
 
 }

@@ -128,6 +128,19 @@ SMember Linker::getUnique(SMember m) {
   }
 }
 
+void Linker::addLiteral(const ConstantValue* literal, Address addr) {
+  auto ret = addressToLiteral_.insert(
+               make_pair(literal,
+                         vector<Address>()));
+  if (ret.second) {
+    literals_.push_back(literal);
+  }
+
+  if (addr.valid()) {
+    ret.first->second.push_back(addr);
+  }
+}
+
 void Linker::checkOdr() {
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
@@ -140,11 +153,13 @@ void Linker::checkOdr() {
         addExternal(m);
       }
 
-      cout << "Linking: " << *m;
-      if (m->isVariable()) {
-        cout << " " << *m->toVariable()->initializer;
+      if (m->isDefined) {
+        cout << "Linking: " << *m;
+        if (m->isVariable()) {
+          cout << " " << *m->toVariable()->initializer;
+        }
+        cout << endl;
       }
-      cout << endl;
     }
   }
   for (auto& kv : members_) {
@@ -215,10 +230,10 @@ Address Linker::genArray(SVariableMember m) {
     return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
   } else {
     CHECK(initializer.expr->isConstant());
-    auto literal = initializer.expr->toConstant();
-    literals_.push_back(make_pair(literal->value->clone(), nullptr));
+    auto literalExpr = initializer.expr->toConstant();
+    addLiteral(literalExpr->value.get());
 
-    auto bytes = literal->value->toBytes();
+    auto bytes = literalExpr->value->toBytes();
     auto addr1 = genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
     auto addr2 = genZero(m->type->getTypeSize() - bytes.size(), 
                          m->type->getTypeAlign());
@@ -238,9 +253,7 @@ Address Linker::genPointer(SVariableMember m) {
     } else if (auto ca = dynamic_cast<LiteralAddressValue*>(value)) {
       auto addr = genZero(m->type->getTypeSize(), m->type->getTypeAlign());
       if (ca->literal) {
-        literals_.push_back(
-          make_pair(ca->literal->clone(), 
-                    make_unique<Address>(addr))); 
+        addLiteral(ca->literal.get(), addr);
       } // else: nullptr
     } else {
       MCHECK(false, "expect MemberAddressValue or LiteralAddressValue");
@@ -252,7 +265,19 @@ Address Linker::genPointer(SVariableMember m) {
 }
 
 Address Linker::genReference(SVariableMember m) {
-  return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+  CHECK(m->initializer);
+  auto& initializer = *m->initializer;
+  CHECK(!initializer.isDefault() && initializer.expr->isConstant());
+
+  auto literal = initializer.expr->toConstant();
+  vector<char> bytes;
+  auto value = literal->value.get();
+  if (auto ma = dynamic_cast<MemberAddressValue*>(value)) {
+    bytes = getAddress(ma->member);
+  } else {
+    CHECK(false);
+  }
+  return genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
 }
 
 void Linker::generateImage() {
@@ -289,15 +314,12 @@ void Linker::generateImage() {
     }
   }
 
-  for (auto& kv : literals_) {
-    auto& literal = kv.first;
+  for (auto literal : literals_) {
     auto bytes = literal->toBytes();
     auto addr = genEntry(bytes.data(), 
                          bytes.size(), 
                          literal->type->getTypeAlign());
-    auto& var = kv.second;
-    if (var) {
-      auto& target = *var;
+    for (auto& target : addressToLiteral_[literal]) {
       auto varAddress = getAddress(addr.first);
       CHECK(target.second - target.first == varAddress.size());
       for (size_t i = 0; i < varAddress.size(); ++i) {

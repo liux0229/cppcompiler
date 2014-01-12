@@ -103,7 +103,8 @@ void Namespace::addFunction(const string& name,
                             bool isDef,
                             const DeclSpecifiers& declSpecifiers) {
   bool internalLinkage = 
-         declSpecifiers.getStorageClass() & StorageClass::Static;
+         declSpecifiers.getStorageClass() & StorageClass::Static ||
+         declSpecifiers.isInline();
 
   MemberSet members;
   lookupMember(name, members);

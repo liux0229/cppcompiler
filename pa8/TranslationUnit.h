@@ -8,6 +8,7 @@ namespace compiler {
 class TranslationUnit {
  public:
   using VMember = std::vector<SMember>;
+  using Frame = size_t;
 
   TranslationUnit() {
     globalNamespace_ = make_unique<Namespace>("", true, false, nullptr, this);
@@ -28,6 +29,17 @@ class TranslationUnit {
 
   void closeNamespace() {
     namespaces_.pop_back();
+  }
+
+  Frame saveFrame() const {
+    return namespaces_.size();
+  }
+
+  void restoreFrame(Frame frame) {
+    CHECK(namespaces_.size() >= frame);
+    while (namespaces_.size() > frame) {
+      closeNamespace();
+    }
   }
 
   void addMember(SMember m) {

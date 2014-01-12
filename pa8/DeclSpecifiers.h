@@ -10,6 +10,7 @@ class DeclSpecifiers {
  public:
   void setTypedef();
   void setConstExpr();
+  void setInline();
   void addStorageClass(StorageClass storage);
   void addCvQualifier(CvQualifier cv);
   void addType(SType t, bool isTypeName);
@@ -21,6 +22,7 @@ class DeclSpecifiers {
   }
   bool isTypedef() const { return isTypedef_; }
   bool isConstExpr() const { return isConstExpr_; }
+  bool isInline() const { return isInline_; }
   StorageClass getStorageClass() const { return storageClass_; }
 
  private:
@@ -29,6 +31,7 @@ class DeclSpecifiers {
   CvQualifier cvQualifier_;
   bool isTypedef_ = false;
   bool isConstExpr_ = false;
+  bool isInline_ = false;
   bool finalized_ = false;
   bool hasTypeName_ = false;
 };

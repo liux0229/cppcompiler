@@ -6,18 +6,27 @@ using namespace std;
 
 void DeclSpecifiers::setTypedef() {
   if (type_ || 
-      storageClass_ != StorageClass::Unspecified ||
-      isConstExpr_) {
+      storageClass_ != StorageClass::Unspecified) {
     Throw("typedef must be the first declSpecifier in declSpecifierSeq");
+  }
+  if (isTypedef_) {
+    Throw("multiple typedef");
   }
   isTypedef_ = true;
 }
 
 void DeclSpecifiers::setConstExpr() {
-  if (isTypedef_) {
-    Throw("unexpected constexpr in typedef");
+  if (isConstExpr_) {
+    Throw("multiple constexpr");
   }
   isConstExpr_ = true;
+}
+
+void DeclSpecifiers::setInline() {
+  if (isInline_) {
+    Throw("multiple inline");
+  }
+  isInline_ = true;
 }
 
 void DeclSpecifiers::addStorageClass(StorageClass storage) {
@@ -61,6 +70,18 @@ void DeclSpecifiers::finalize() {
   if (!type_) {
     Throw("DeclSpecifiers do not have a type associated with it");
   }
+
+  // check specifier conflicts
+  if (isTypedef_ && isConstExpr_) {
+    Throw("typedef and constexpr cannot coexist");
+  }
+  if (isTypedef_ && isInline_) {
+    Throw("typedef and inline cannot coexist");
+  }
+  if (isConstExpr_ && isInline_) {
+    Throw("constexpr and inline cannot coexist");
+  }
+
   // the cv-qualifiers associated with the type can be duplicated with
   // the cv-qualifiers in the DeclSpecifierSeq
   auto cv = type_->getCvQualifier().combine(cvQualifier_, false);

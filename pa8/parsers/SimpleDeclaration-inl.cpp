@@ -32,9 +32,16 @@ struct SimpleDeclaration : virtual Base {
       declSpecifiers.setTypedef();
     } else if (tryAdvSimple(KW_CONSTEXPR)) {
       declSpecifiers.setConstExpr();
-    } else if (!BT(EX(storageClassSpecifier), declSpecifiers)) {
+    } else {
+      BT(EX(functionSpecifier), declSpecifiers) ||
+      BT(EX(storageClassSpecifier), declSpecifiers) ||
       TR(EX(typeSpecifier), declSpecifiers);
     }
+  }
+
+  void functionSpecifier(DeclSpecifiers& declSpecifiers) {
+    expect(KW_INLINE);
+    declSpecifiers.setInline();
   }
 
   void storageClassSpecifier(DeclSpecifiers& declSpecifiers) {
@@ -153,6 +160,10 @@ struct SimpleDeclaration : virtual Base {
       auto type = declarator->getType();
       bool requirePriorDeclaration = id.isQualified();
       if (type->isFunction()) {
+        if (declSpecifiers.isConstExpr()) {
+          Throw("constexpr cannot be used for function declarations: {}",
+                id.getName());
+        }
         if (initializer) {
           Throw("function declaration cannot have initializer", id.getName());
         }
@@ -162,6 +173,10 @@ struct SimpleDeclaration : virtual Base {
                             false, /* isDef */
                             declSpecifiers);
       } else {
+        if (declSpecifiers.isInline()) {
+          Throw("inline cannot be used for variable declarations: {}",
+                id.getName());
+        }
         if (type->isVoid()) {
           Throw("{} cannot have type {}", id.unqualified, *type);
         }
@@ -183,8 +198,12 @@ struct SimpleDeclaration : virtual Base {
 
   // TODO: noptr-declarator parameters-and-qualifiers trailing-return-type
   UDeclarator declarator(const DeclSpecifiers& declSpecifiers) {
+    auto frame = translationUnit_->saveFrame();
+
     auto declarator = TR(EX(ptrDeclarator));
     declarator->appendType(declSpecifiers.getType());
+    
+    translationUnit_->restoreFrame(frame);
     return declarator;
   }
 
@@ -249,6 +268,9 @@ struct SimpleDeclaration : virtual Base {
       return declarator;
     } else {
       auto id = TR(EXB(idExpression));
+      if (id->isQualified()) {
+        translationUnit_->openNamespace(id->ns);
+      }
       return make_unique<Declarator>(*id);
     }
   }
@@ -412,11 +434,17 @@ struct SimpleDeclaration : virtual Base {
     DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
     UDeclarator declarator = TR(EX(declarator), declSpecifiers);
     TR(EX(functionBody));
+    auto id = declarator->getId();
+    if (declSpecifiers.isConstExpr()) {
+      Throw("constexpr cannot be used for function definition: {}", 
+            id.getName());
+    }
+
     auto type = declarator->getType();
     if (!type->isFunction()) {
       Throw("Expect function-type in function-definition; got {}", *type);
     }
-    auto id = declarator->getId();
+
     auto target = getTargetNamespace(id);
     bool requirePriorDeclaration = id.isQualified();
     target->addFunction(id.unqualified,

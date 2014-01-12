@@ -141,6 +141,18 @@ void Linker::addLiteral(const ConstantValue* literal, Address addr) {
   }
 }
 
+void Linker::addTemporary(SVariableMember m, Address addr) {
+  auto ret = addressToTemporary_.insert(
+               make_pair(m,
+                         vector<Address>()));
+  if (ret.second) {
+    temporary_.push_back(m);
+  }
+
+  CHECK(addr.valid());
+  ret.first->second.push_back(addr);
+}
+
 void Linker::checkOdr() {
   for (auto& u : units_) {
     auto& ms = u->getVariablesFunctions();
@@ -177,12 +189,22 @@ vector<char> Linker::getAddress(size_t addr) {
          ->toBytes();
 }
 
-vector<char> Linker::getAddress(SMember m) {
+bool Linker::getAddress(SMember m, vector<char>& ret) {
   m = getUnique(m);
   auto it = memberAddress_.find(m);
-  CHECK(it != memberAddress_.end());
+  if (it == memberAddress_.end()) {
+    return false;
+  }
   auto addr = it->second;
-  return getAddress(addr.first);
+  ret = getAddress(addr.first);
+  return true;
+}
+
+void Linker::update(Address target, const vector<char>& bytes) {
+  CHECK(target.second - target.first == bytes.size());
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    image_[target.first + i] = bytes[i];
+  }
 }
 
 Address Linker::genEntry(const char* data, size_t n, size_t alignment) {
@@ -246,19 +268,26 @@ Address Linker::genPointer(SVariableMember m) {
   auto& initializer = *m->initializer;
   if (!initializer.isDefault() && initializer.expr->isConstant()) {
     auto literal = initializer.expr->toConstant();
-    vector<char> bytes;
+    auto addr = genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+
     auto value = literal->value.get();
     if (auto ma = dynamic_cast<MemberAddressValue*>(value)) {
-      bytes = getAddress(ma->member);
+      vector<char> bytes;
+      if (getAddress(ma->member, bytes)) {
+        update(addr, bytes);
+      } else {
+        addressToMember_[ma->member].push_back(addr);
+      }
     } else if (auto ca = dynamic_cast<LiteralAddressValue*>(value)) {
-      auto addr = genZero(m->type->getTypeSize(), m->type->getTypeAlign());
       if (ca->literal) {
+        // after the literal is laid down, update the address
         addLiteral(ca->literal.get(), addr);
       } // else: nullptr
     } else {
       MCHECK(false, "expect MemberAddressValue or LiteralAddressValue");
     }
-    return genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
+
+    return addr;
   } else {
     return genZero(m->type->getTypeSize(), m->type->getTypeAlign());
   }
@@ -270,14 +299,42 @@ Address Linker::genReference(SVariableMember m) {
   CHECK(!initializer.isDefault() && initializer.expr->isConstant());
 
   auto literal = initializer.expr->toConstant();
-  vector<char> bytes;
+  auto addr = genZero(m->type->getTypeSize(), m->type->getTypeAlign());
+
   auto value = literal->value.get();
   if (auto ma = dynamic_cast<MemberAddressValue*>(value)) {
-    bytes = getAddress(ma->member);
+    vector<char> bytes;
+    if (getAddress(ma->member, bytes)) {
+      update(addr, bytes);
+    } else {
+      addressToMember_[ma->member].push_back(addr);
+    }
+  } else if (auto ca = dynamic_cast<LiteralAddressValue*>(value)) {
+    CHECK(ca->literal);
+    addLiteral(ca->literal.get(), addr);
+  } else {
+    auto ta = dynamic_cast<TemporaryAddressValue*>(value);
+    CHECK(ta);
+    addTemporary(ta->member, addr);
+  }
+
+  return addr;
+}
+
+Address Linker::genVariable(SVariableMember m) {
+  auto type = m->type;
+  if (type->isFundalmental()) {
+    return genFundalmental(m);
+  } else if (type->isPointer()) {
+    return genPointer(m);
+  } else if (type->isReference()) {
+    return genReference(m);
+  } else if (type->isArray()) {
+    return genArray(m);
   } else {
     CHECK(false);
+    return Address{};
   }
-  return genEntry(bytes.data(), bytes.size(), m->type->getTypeAlign());
 }
 
 void Linker::generateImage() {
@@ -288,6 +345,7 @@ void Linker::generateImage() {
     for (auto& mb : ms) {
       auto m = getUnique(mb);
       if (memberAddress_.find(m) != memberAddress_.end()) {
+        // this member has already been laid down
         continue;
       }
 
@@ -295,22 +353,21 @@ void Linker::generateImage() {
       if (m->isFunction()) {
         addr = genFunction();
       } else {
-        auto vm = m->toVariable();
-        auto type = vm->type;
-        if (type->isFundalmental()) {
-          addr = genFundalmental(vm);
-        } else if (type->isPointer()) {
-          addr = genPointer(vm);
-        } else if (type->isReference()) {
-          addr = genReference(vm);
-        } else if (type->isArray()) {
-          addr = genArray(vm);
-        } else {
-          CHECK(false);
-        }
+        addr = genVariable(m->toVariable());
       }
 
       memberAddress_.insert(make_pair(m, addr));
+      // now update any addresses which need to point to this member
+      for (auto target : addressToMember_[m]) {
+        update(target, getAddress(addr.first));
+      }
+    }
+  }
+
+  for (auto t : temporary_) {
+    auto addr = genVariable(t);
+    for (auto& target : addressToTemporary_[t]) {
+      update(target, getAddress(addr.first));
     }
   }
 
@@ -320,11 +377,7 @@ void Linker::generateImage() {
                          bytes.size(), 
                          literal->type->getTypeAlign());
     for (auto& target : addressToLiteral_[literal]) {
-      auto varAddress = getAddress(addr.first);
-      CHECK(target.second - target.first == varAddress.size());
-      for (size_t i = 0; i < varAddress.size(); ++i) {
-        image_[target.first + i] = varAddress[i];
-      }
+      update(target, getAddress(addr.first));
     }
   }
 }

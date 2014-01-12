@@ -52,7 +52,7 @@ inline std::ostream& operator<<(std::ostream& out, const Expression& e) {
 }
 
 struct LiteralExpression : Expression {
-  LiteralExpression(UConstantValue&& v) : value(move(v)) { }
+  LiteralExpression(SConstantValue v) : value(v) { }
 
   bool isConstant() const override {
     return true;
@@ -75,7 +75,7 @@ struct LiteralExpression : Expression {
     out << "<LiteralExpression>";
   }
 
-  UConstantValue value;
+  SConstantValue value;
 };
 
 struct IdExpression : Expression {
@@ -88,6 +88,7 @@ struct IdExpression : Expression {
   SType getType() const override;
   bool isConstant() const override;
   SLiteralExpression toConstant() const override;
+  SAddressValue getAddress() const;
 
   void output(std::ostream& out) const override;
 
@@ -222,16 +223,21 @@ struct ReferenceBinding;
 MakeShared(ReferenceBinding);
 struct ReferenceBinding : Expression {
   static SReferenceBinding create(SExpression e, SReferenceType target);
+  ReferenceBinding(SExpression f, SReferenceType t)
+    : from(f),
+      refType(t) {
+  }
 
   ValueCategory valueCategory() const { return ValueCategory::LValue; }
 
-  SType getType() const override { return type; }
-  bool isConstant() const override { return true; }
+  SType getType() const override { return refType->getDepended(); }
+  bool isConstant() const override;
+  bool isConstant(const IdExpression* id) const;
   SLiteralExpression toConstant() const override;
   void output(std::ostream& out) const override;
 
-  SType type;
-  UConstantValue address;
+  SExpression from;
+  SReferenceType refType;
 };
 
 }

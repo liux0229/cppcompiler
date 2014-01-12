@@ -89,6 +89,14 @@ class Type : public std::enable_shared_from_this<Type> {
 
   bool isConst() const { return cvQualifier_.isConst(); }
 
+  bool isReferenceRelated(const Type& other) const {
+    return equalsIgnoreCv(other);
+  }
+  bool isReferenceCompatible(const Type& other) const {
+    return isReferenceRelated(other) &&
+           cvQualifier_ >= other.cvQualifier_;
+  }
+
   // get derived types
   SFundalmentalType toFundalmental();
   SArrayType toArray();

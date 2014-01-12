@@ -6,26 +6,26 @@ namespace compiler {
 
 template<typename T> struct FundalmentalValue;
 template<typename T> 
-  using UFundalmentalValue = std::unique_ptr<FundalmentalValue<T>>;
+  using SFundalmentalValue = std::shared_ptr<FundalmentalValue<T>>;
 
 struct ConstantValue;
 MakeUnique(ConstantValue);
+MakeShared(ConstantValue);
 struct ConstantValue {
   template<typename T>
-  static UFundalmentalValue<T> 
+  static SFundalmentalValue<T> 
   createFundalmentalValue(EFundamentalType ft, const T& d);
 
   template<typename T>
-  static UFundalmentalValue<T> 
+  static SFundalmentalValue<T> 
   createFundalmentalValue(const T& d);
 
   ConstantValue(SType t) : type(t) { }
-  virtual UConstantValue to(EFundamentalType target) const {
+  virtual SConstantValue to(EFundamentalType target) const {
     Throw("cannot convert to fundalmental type {}", target);
     return nullptr;
   }
 
-  virtual UConstantValue clone() const = 0;
   // TODO: make pure virtual
   virtual std::vector<char> toBytes() const { return {}; }
 
@@ -47,14 +47,14 @@ struct FundalmentalValue : FundalmentalValueBase {
   }
 
   template<typename U>
-  std::unique_ptr<FundalmentalValue<U>>
+  std::shared_ptr<FundalmentalValue<U>>
   convert(EFundamentalType target) const {
-    return make_unique<FundalmentalValue<U>>(
+    return std::make_shared<FundalmentalValue<U>>(
              target, 
              static_cast<U>(data));
   }
 
-  UConstantValue to(EFundamentalType target) const override {
+  SConstantValue to(EFundamentalType target) const override {
     switch (target) {
       case FT_SIGNED_CHAR:
         return convert<signed char>(target);
@@ -121,10 +121,6 @@ struct FundalmentalValue : FundalmentalValueBase {
     return data == 0;
   }
 
-  UConstantValue clone() const override {
-    return make_unique<FundalmentalValue<T>>(*this);
-  }
-
   std::vector<char> toBytes() const override { 
     std::vector<char> ret;
     auto buf = reinterpret_cast<const char*>(&data);
@@ -145,10 +141,6 @@ struct FundalmentalValue<std::nullptr_t> : ConstantValue {
   FundalmentalValue(EFundamentalType ft, std::nullptr_t d)
     : FundalmentalValue(std::make_shared<FundalmentalType>(ft), d) {
   }
-
-  UConstantValue clone() const override {
-    return make_unique<FundalmentalValue<std::nullptr_t>>(*this);
-  }
 };
 
 // TODO: remove these
@@ -157,38 +149,34 @@ struct FundalmentalValue<std::string> : ConstantValue {
   FundalmentalValue(SFundalmentalType type, std::string)
     : ConstantValue(type) {
   }
-
-  UConstantValue clone() const override {
-    return nullptr;
-  }
 };
 template<typename T>
 struct FundalmentalValue<std::vector<T>> : ConstantValue {
   FundalmentalValue(SFundalmentalType type, std::vector<T>)
     : ConstantValue(type) {
   }
-
-  UConstantValue clone() const override {
-    return nullptr;
-  }
 };
 
 template<typename T>
-UFundalmentalValue<T>
+SFundalmentalValue<T>
 ConstantValue::createFundalmentalValue(EFundamentalType ft, const T& d) {
-  return make_unique<FundalmentalValue<T>>(ft, d);
+  return std::make_shared<FundalmentalValue<T>>(ft, d);
 }
 
 template<typename T>
-UFundalmentalValue<T>
+SFundalmentalValue<T>
 ConstantValue::createFundalmentalValue(const T& d) {
-  return make_unique<FundalmentalValue<T>>(FundamentalTypeOf<T>(), d);
+  return std::make_shared<FundalmentalValue<T>>(FundamentalTypeOf<T>(), d);
 }
 
+struct ArrayValueBase : ConstantValue { 
+  using ConstantValue::ConstantValue;
+};
+
 template<typename T>
-struct ArrayValue : ConstantValue {
+struct ArrayValue : ArrayValueBase {
   ArrayValue(SArrayType type, const std::vector<T>& d)
-    : ConstantValue(type),
+    : ArrayValueBase(type),
       data(d) {
   }
 
@@ -201,37 +189,66 @@ struct ArrayValue : ConstantValue {
     return ret; 
   }
 
-  UConstantValue clone() const override {
-    return make_unique<ArrayValue<T>>(*this);
-  }
-
   std::vector<T> data;
 };
 
+struct LiteralExpression;
+using SLiteralExpression = std::shared_ptr<const LiteralExpression>;
+struct AddressValue : ConstantValue {
+  using ConstantValue::ConstantValue;
+
+  // whether the pointed-to is constant
+  virtual bool isConstant() const = 0;
+
+  // get-constant from the pointed-to
+  virtual SLiteralExpression toConstant() const = 0;
+};
+MakeShared(AddressValue);
+
 struct Member;
 using SMember = std::shared_ptr<Member>;
-struct MemberAddressValue : ConstantValue {
+struct MemberAddressValue : AddressValue {
+  // type is the type of the entity which represents this address
   MemberAddressValue(SType type, SMember m) 
-    : ConstantValue(type),
+    : AddressValue(type),
       member(m) { }
 
-  UConstantValue clone() const override {
-    return make_unique<MemberAddressValue>(*this);
-  }
+  bool isConstant() const override;
+  SLiteralExpression toConstant() const override;
 
   SMember member;
 };
 
-struct LiteralAddressValue : ConstantValue {
-  LiteralAddressValue(SType type, UConstantValue&& v) 
-    : ConstantValue(type),
-      literal(move(v)) { }
-  UConstantValue clone() const override {
-    auto copy = literal ? literal->clone() : nullptr;
-    return make_unique<LiteralAddressValue>(type, move(copy));
+struct LiteralAddressValue : AddressValue {
+  // type is the type of the entity which represents this address
+  LiteralAddressValue(SType type, SConstantValue v) 
+    : AddressValue(type),
+      literal(v) { 
   }
 
-  UConstantValue literal;
+  bool isConstant() const override {
+    return true;
+  }
+  SLiteralExpression toConstant() const override;
+
+  SConstantValue literal;
+};
+
+struct Expression;
+using SExpression = std::shared_ptr<const Expression>;
+struct VariableMember;
+using SVariableMember = std::shared_ptr<VariableMember>;
+struct TemporaryAddressValue : AddressValue {
+  // type is the type of the entity which represents this address
+  TemporaryAddressValue(SType type, 
+                        SType temporaryType, 
+                        SExpression initExpr);
+
+  bool isConstant() const override;
+  SLiteralExpression toConstant() const override;
+
+  // a member which does not belong to any namespace
+  SVariableMember member;
 };
 
 }

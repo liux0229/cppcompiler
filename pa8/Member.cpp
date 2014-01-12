@@ -6,7 +6,11 @@ namespace compiler {
 using namespace std;
 
 string Member::getQualifiedName() const {
-  return format("{}::{}", owner->getName(), name);
+  // for temporary variable members, owner can be nullptr
+  // we need to further refine this
+  return owner ? 
+           format("{}::{}", owner->getName(), name) :
+           name;
 }
 
 ostream& operator<<(ostream& out, MemberKind kind) {
@@ -38,7 +42,7 @@ ostream& operator<<(ostream& out, SMember m) {
 }
 
 void Member::output(std::ostream& out) const {
-  if (!owner->isGlobal()) {
+  if (owner && !owner->isGlobal()) {
     out << format("{}::", owner->getName());
   }
   out << format("{} => ", name);

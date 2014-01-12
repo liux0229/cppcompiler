@@ -32,24 +32,34 @@ class Linker {
 
   void genHeader();
   Address genFunction();
+  Address genVariable(SVariableMember m);
   Address genFundalmental(SVariableMember m);
   Address genArray(SVariableMember m);
   Address genPointer(SVariableMember m);
   Address genReference(SVariableMember m);
+  void update(Address target, const std::vector<char>& bytes);
 
-  std::vector<char> getAddress(SMember);
+  bool getAddress(SMember, std::vector<char>& ret);
   std::vector<char> getAddress(size_t addr);
 
-  // addr - address of the pointer we need to update later
+  // addr - address of the pointer/reference we need to update later
   void addLiteral(const ConstantValue* literal, Address addr = Address{});
+  void addTemporary(SVariableMember m, Address addr);
 
   std::vector<UTranslationUnit> units_;
   std::multimap<std::string, SMember> members_;
   Image image_;
   std::map<SMember, Address> memberAddress_;
+  // addresses that need to be updated after the member is laid down
+  std::map<SMember, std::vector<Address>> addressToMember_;
 
   std::vector<const ConstantValue*> literals_;
+  // addresses that need to be updated after the literal is laid down
   std::map<const ConstantValue*, std::vector<Address>> addressToLiteral_;
+
+  std::vector<SVariableMember> temporary_;
+  // addresses that need to be updated after the temporary is laid down
+  std::map<SVariableMember, std::vector<Address>> addressToTemporary_;
 };
 
 }

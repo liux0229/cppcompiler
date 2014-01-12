@@ -310,7 +310,7 @@ struct PostTokenLiteralBase : public PostToken
 
   virtual std::string toIntegralStr() const = 0;
 
-  virtual UConstantValue toConstantValue() const = 0;
+  virtual SConstantValue toConstantValue() const = 0;
 
   EFundamentalType type;
   std::string udSuffix;
@@ -460,16 +460,18 @@ struct PostTokenLiteral : public PostTokenLiteralBase
                   getDump());
   }
 
-  UConstantValue toConstantValue() const override {
+  SConstantValue toConstantValue() const override {
     CHECK(udSuffix.empty());
     LiteralTypeTraits<T> traits;
     auto type = traits.getType(data);
     if (type->isFundalmental()) {
-      return make_unique<FundalmentalValue<T>>(type->toFundalmental(), data); 
+      return std::make_shared<FundalmentalValue<T>>(
+               type->toFundalmental(), 
+               data); 
     } else {
       CHECK(type->isArray());
       using ET = typename LiteralTypeTraits<T>::TElement;
-      return make_unique<ArrayValue<ET>>(
+      return std::make_shared<ArrayValue<ET>>(
                type->toArray(), 
                traits.getArrayValue(data));
     }

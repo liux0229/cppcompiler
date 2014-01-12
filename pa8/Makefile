@@ -9,7 +9,7 @@ PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.
 PPTokenOBJs=pptoken.o $(PPTokenLib)
 
 PostTokenizers=CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o FloatLiteralPostTokenizer.o IntegerLiteralPostTokenizer.o
-PostTokenLib=PostTokenizer.o Utf16Encoder.o Type.o $(PostTokenizers)
+PostTokenLib=PostTokenizer.o Utf16Encoder.o Type.o ConstantValue.o $(PostTokenizers)
 PostTokenOBJs=posttoken.o $(PostTokenLib) $(PPTokenLib)
 
 CtrlExprOBJs=CtrlExprEval.o ctrlexpr.o $(PostTokenLib) $(PPTokenLib)

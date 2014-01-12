@@ -11,7 +11,7 @@ struct Expressions : virtual Base {
   }
 
   SExpression expression() override {
-    UConstantValue literal;
+    SConstantValue literal;
     if (tryAdvSimple(OP_LPAREN)) {
       return TR(EX(expression));
       expect(OP_RPAREN);
@@ -25,7 +25,7 @@ struct Expressions : virtual Base {
       literal = value->toConstantValue();
     }
     if (literal) {
-      return make_shared<LiteralExpression>(move(literal));
+      return make_shared<LiteralExpression>(literal);
     }
 
     auto id = TR(EXB(idExpression));

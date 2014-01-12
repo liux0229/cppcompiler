@@ -48,6 +48,12 @@ CompareResult compareVariable(SVariableMember e, SVariableMember m) {
 
 CompareResult compareFunction(SFunctionMember e, SFunctionMember m) {
   if (*e->type == *m->type) {
+    if (e->isInline ^ m->isInline) {
+      Throw("{} and {} are not both declared inline", *e, *m);
+    }
+    if (e->isInline) {
+      return Same;
+    }
     if (e->isDefined && m->isDefined) {
       return MultipleDefs;
     } else if (m->isDefined) {
@@ -80,6 +86,13 @@ void Linker::addTranslationUnit(UTranslationUnit&& unit) {
 }
 
 void Linker::addExternal(SMember m) {
+  if (m->isFunction()) {
+    auto func = m->toFunction();
+    if (func->isInline && !func->isDefined) {
+      Throw("{} not defined in its translation unit", *func);
+    }
+  }
+
   auto name = m->getQualifiedName();
   auto p = members_.equal_range(name);
   for (auto it = p.first; it != p.second; ++it) {

@@ -129,22 +129,33 @@ struct FunctionMember : Member {
                  const std::string& name, 
                  SFunctionType t,
                  Linkage link,
+                 bool _inline,
                  bool isDef) 
     : Member(owner, 
              name, 
              link,
              isDef), 
-      type(t) { }
+      type(t),
+      isInline(_inline) { }
   MemberKind getKind() const override { return MemberKind::Function; }
   void output(std::ostream& out) const override;
 
   SFunctionType type;
+  bool isInline;
 };
 
 struct NamespaceMember : Member {
-  NamespaceMember(Namespace* owner, const std::string& name, Namespace* n) 
-    : Member(owner, name, Linkage::External, true), ns(n) { }
+  NamespaceMember(Namespace* owner, 
+                  const std::string& name, 
+                  Linkage link,
+                  Namespace* n) 
+    : Member(owner, name, link, true), ns(n) { }
   MemberKind getKind() const override { return MemberKind::Namespace; }
+
+  // the member is found in the 'enclosing' namespace, with 'name'
+  bool isNamespaceAlias(Namespace* enclosing, 
+                        const std::string& memberName) const;
+
   void output(std::ostream& out) const override;
 
   Namespace* ns;

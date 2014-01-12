@@ -180,6 +180,17 @@ struct FundalmentalTypeConversion : ConversionExpression {
   SLiteralExpression toConstant() const override;
 };
 
+// Only covers the conversions not covered by FundalmentalTypeConversion
+struct BooleanConversion;
+MakeShared(BooleanConversion);
+struct BooleanConversion : ConversionExpression {
+  static SBooleanConversion create(SExpression e);
+  BooleanConversion(SExpression e)
+    : ConversionExpression("BooleanConversion", e) {
+  }
+  SLiteralExpression toConstant() const override;
+};
+
 struct PointerConversion : ConversionExpression {
   PointerConversion(SExpression e, SPointerType target) 
     : ConversionExpression("PointerConversion", e) {

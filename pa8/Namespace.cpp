@@ -13,10 +13,18 @@ Namespace::Namespace(const string& name,
   : name_(name),
     unnamed_(unnamed),
     inline_(isInline),
+    linkage_(Linkage::External),
     parent_(parent),
     unit_(unit) {
   if (unnamed_) {
     name_ = getUniqueName();
+  }
+
+  if (parent) {
+    // the global namespace has external linkage
+    if (unnamed || parent->linkage_ == Linkage::Internal) {
+      linkage_ = Linkage::Internal;
+    }
   }
 }
 
@@ -68,8 +76,7 @@ Namespace* Namespace::addNamespace(string name,
   if (member) {
     if (member->isNamespace()) {
       auto exist = member->toNamespace();
-      if (!exist->ownedBy(this)) {
-        // a namespace alias 
+      if (exist->isNamespaceAlias(this, name)) {
         Throw("namespace alias name redeclared to be namespace: {}", name);
       }
       if (isInline && !exist->ns->isInline()) {
@@ -86,7 +93,7 @@ Namespace* Namespace::addNamespace(string name,
     make_unique<Namespace>(name, unnamed, isInline, this, unit_));
 
   auto ns = namespaces_.back().get();
-  auto m = make_shared<NamespaceMember>(this, name, ns);
+  auto m = make_shared<NamespaceMember>(this, name, ns->getLinkage(), ns);
   members_.insert(make_pair(name, m));
   declarationOrder_.ns.push_back(m);
 
@@ -103,8 +110,8 @@ void Namespace::addFunction(const string& name,
                             bool isDef,
                             const DeclSpecifiers& declSpecifiers) {
   bool internalLinkage = 
-         declSpecifiers.getStorageClass() & StorageClass::Static ||
-         declSpecifiers.isInline();
+         linkage_ == Linkage::Internal ||
+         declSpecifiers.getStorageClass() & StorageClass::Static;
 
   MemberSet members;
   lookupMember(name, members);
@@ -135,6 +142,14 @@ void Namespace::addFunction(const string& name,
               Linkage::Internal);
       }
 
+      if (declSpecifiers.isInline()) {
+        if (func.isDefined && !func.isInline) {
+          Throw("function {} definition appears before the first inline "
+                "declaration");
+        }
+        func.isInline = true;
+      }
+
       if (isDef) {
         if (m->isDefined) {
           Throw("Multiple definitions of {}", *m);
@@ -163,6 +178,7 @@ void Namespace::addFunction(const string& name,
              name, 
              type, 
              internalLinkage ? Linkage::Internal : Linkage::External,
+             declSpecifiers.isInline(),
              isDef);
   members_.insert(make_pair(name, m));
   declarationOrder_.func.push_back(m);
@@ -176,8 +192,24 @@ void Namespace::checkInitializer(
                   SType& type, 
                   UInitializer& initializer,
                   bool isConstExpr) {
+  if (isConstExpr) {
+    auto cv = type->getCvQualifier().combine(CvQualifier::Const, false);
+    if (cv != type->getCvQualifier()) {
+      type = type->clone();
+      type->setCvQualifier(cv);
+    }
+  }
+
   if (!initializer) {
+    bool error = false;
     if (type->isConst() || type->isReference()) {
+      error = true;
+    }
+    if (type->isArray() && type->toArray()->getElementType()->isConst()) {
+      error = true;
+    }
+
+    if (error) {
       Throw("{} ({}) cannot be default initialized", name, *type);
     }
 
@@ -203,9 +235,12 @@ void Namespace::checkInitializer(
 
   if (type->isArray() && 
       expr->getType()->isArray()) {
-    auto ea = expr->getType()->toArray();
-    if (ea->addSizeTo(*type->toArray())) {
-      type = ea; 
+    // we already check the types are compatible
+    auto es = expr->getType()->toArray()->getArraySize();
+    auto ts = type->toArray()->getArraySize();
+    if (es && !ts) {
+      type = type->clone(); 
+      type->toArray()->setArraySize(es);
     }
   }
 
@@ -228,8 +263,8 @@ void Namespace::addVariable(const string& name,
   }
 
   bool internalLinkage = 
-         (storageClass & StorageClass::Static) ||
-         (type->isConst() && !(storageClass & StorageClass::Extern));
+         linkage_ == Linkage::Internal ||
+         (storageClass & StorageClass::Static);
   bool threadLocalStorage = storageClass & StorageClass::ThreadLocal;
 
   auto member = lookupMember(name);
@@ -293,6 +328,10 @@ void Namespace::addVariable(const string& name,
 
   if (requireDeclaration) {
     Throw("{} must be declared in {} first", name, getName());
+  }
+
+  if (type->isConst() && !(storageClass & StorageClass::Extern)) {
+    internalLinkage = true;
   }
 
   auto m = make_shared<VariableMember>(
@@ -431,7 +470,9 @@ void Namespace::addNamespaceAlias(const std::string& name,
                                   SNamespaceMember ns) {
   auto exist = lookupMember(name);
   if (exist) {
-    if (exist != ns) {
+    if (!exist->isNamespace() ||
+        !exist->toNamespace()->isNamespaceAlias(this, name) ||
+        exist != ns) {
       Throw("{} redeclared to be a namespace-alias; was {}", 
             name,
             *exist);

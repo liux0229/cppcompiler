@@ -11,8 +11,14 @@
 using namespace std;
 using namespace compiler;
 
+void newHandler() {
+  CHECK(false);
+}
+
 int main(int argc, char** argv)
 {
+  set_new_handler(newHandler);
+
   BuildEnv env;
 	try
 	{

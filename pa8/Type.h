@@ -253,8 +253,14 @@ class ArrayType : public DependentType {
   bool operator==(const Type& other) const override;
 
   size_t getArraySize() const { return size_; }
+  void setArraySize(size_t value) { size_ = value; }
   bool addSizeTo(const ArrayType& other) const;
   SPointerType toPointer() const; 
+
+  bool equals(const ArrayType& other,
+              std::function<bool (SType, SType b)> compareElement,
+              bool ignoreFirstDimension);
+  SType getElementType() const;
 
  protected:
   void checkDepended(SType depended) const override;

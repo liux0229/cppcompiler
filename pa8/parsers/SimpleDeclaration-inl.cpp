@@ -141,8 +141,10 @@ struct SimpleDeclaration : virtual Base {
   }
 
   void initDeclarator(const DeclSpecifiers& declSpecifiers) {
+    auto frame = translationUnit_->saveFrame();
     auto declarator = TR(EX(declarator), declSpecifiers);
     auto initializer = BT(EX(initializer));
+    translationUnit_->restoreFrame(frame);
 
     auto id = declarator->getId();
     if (declSpecifiers.isTypedef()) {
@@ -198,12 +200,8 @@ struct SimpleDeclaration : virtual Base {
 
   // TODO: noptr-declarator parameters-and-qualifiers trailing-return-type
   UDeclarator declarator(const DeclSpecifiers& declSpecifiers) {
-    auto frame = translationUnit_->saveFrame();
-
     auto declarator = TR(EX(ptrDeclarator));
     declarator->appendType(declSpecifiers.getType());
-    
-    translationUnit_->restoreFrame(frame);
     return declarator;
   }
 
@@ -432,7 +430,11 @@ struct SimpleDeclaration : virtual Base {
 
   void functionDefinition() override {
     DeclSpecifiers declSpecifiers = TR(EX(declSpecifierSeq));
+
+    auto frame = translationUnit_->saveFrame();
     UDeclarator declarator = TR(EX(declarator), declSpecifiers);
+    translationUnit_->restoreFrame(frame);
+
     TR(EX(functionBody));
     auto id = declarator->getId();
     if (declSpecifiers.isConstExpr()) {

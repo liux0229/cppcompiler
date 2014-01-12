@@ -7,35 +7,59 @@ using namespace std;
 
 SExpression Expression::assignableTo(SType target) const {
   auto expr = shared_from_this();
-  if (target->isFundalmental() && getType()->isFundalmental()) {
+  if (target->isFundalmental()) { 
+    auto tf = target->toFundalmental();
     if (!isPRValue()) {
       expr = make_shared<LValueToRValueConversion>(expr);
     }
-    if (expr->getType()->equalsIgnoreCv(*target)) {
-      return expr;
-    } else {
-      if (FundalmentalTypeConversion::allowed(
-            expr->getType()->toFundalmental(), 
-            target->toFundalmental())) {
-        return make_shared<FundalmentalTypeConversion>(
-                 expr,
-                 target->toFundalmental());
-      }
-    }
-  } else if (target->isArray()) {
-    if (getType()->isArray()) {
-      auto cur = getType()->toArray();
-      cout << format("target: {} from: {}", *target, *cur) << endl;
-      if (*cur == *target) {
+
+    if (expr->getType()->isFundalmental()) {
+      if (expr->getType()->equalsIgnoreCv(*target)) {
         return expr;
       } else {
-        auto ta = target->toArray();
-        if (cur->addSizeTo(*ta)) {
-          return expr;
-        } else {
-          if (ta->getArraySize() > cur->getArraySize()) {
-            return expr;
+        if (FundalmentalTypeConversion::allowed(
+              expr->getType()->toFundalmental(), 
+              tf)) {
+          return make_shared<FundalmentalTypeConversion>(
+                   expr,
+                   tf);
+        }
+      }
+    } else if (tf->getType() == FT_BOOL) {
+      return BooleanConversion::create(expr);
+    } else {
+      return nullptr;
+    }
+  } else if (target->isArray()) {
+    if (getType()->isArray() && 
+        valueCategory() == ValueCategory::PRValue) {
+      auto cur = getType()->toArray();
+      auto ta = target->toArray();
+      cout << format("target: {} from: {}", *ta, *cur) << endl;
+
+      auto compare = [](SType a, SType b) -> bool {
+        if (a->isFundalmental() && b->isFundalmental()) {
+          auto at = a->toFundalmental()->getType();
+          auto bt = b->toFundalmental()->getType();
+          auto narrow = [](EFundamentalType t) {
+            return t == FT_CHAR || 
+                   t == FT_SIGNED_CHAR || 
+                   t == FT_UNSIGNED_CHAR;
+          };
+          if (narrow(at) && narrow(bt)) {
+            return true;
           }
+        }
+
+        return a->equalsIgnoreCv(*b);
+      };
+      if (cur->equals(*ta, compare, true)) {
+        auto cs = cur->getArraySize();
+        auto ts = ta->getArraySize();
+        if (cs == ts ||
+            (cs && !ts) ||
+            ts > cs) {
+          return expr;
         }
       }
     }
@@ -183,6 +207,31 @@ SLiteralExpression FundalmentalTypeConversion::toConstant() const {
   return make_shared<LiteralExpression>(move(value)); 
 }
 
+SBooleanConversion BooleanConversion::create(SExpression expr) {
+  if (expr->valueCategory() != ValueCategory::PRValue) {
+    return nullptr;
+  }
+  if (expr->getType()->isPointer()) {
+    return make_shared<BooleanConversion>(expr);
+  }
+  return nullptr;
+}
+
+SLiteralExpression BooleanConversion::toConstant() const {
+  SConstantValue value;
+  auto literal = from->toConstant();
+  if (auto al = dynamic_cast<LiteralAddressValue*>(literal->value.get())) {
+    if (!al->literal) {
+      // ok: null ptr value
+      value = ConstantValue::createFundalmentalValue(false);
+    }
+  }
+  if (!value) {
+    value = ConstantValue::createFundalmentalValue(true);
+  }
+  return make_shared<LiteralExpression>(value);
+}
+
 SLiteralExpression ArrayToPointerConversion::toConstant() const {
   SConstantValue value;
   if (from->isConstant()) {
@@ -206,7 +255,6 @@ SLiteralExpression FunctionToPointerConversion::toConstant() const {
 }
 
 bool PointerConversion::allowed(SExpression from) {
-  cout << *from << endl;
   if (!from->isConstant()) {
     return false;
   }

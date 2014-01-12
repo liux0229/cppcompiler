@@ -64,7 +64,17 @@ void VariableMember::output(std::ostream& out) const {
 
 void FunctionMember::output(std::ostream& out) const {
   Member::output(out);
-  out << format("[{} {} {}]", getKind(), linkage, *type);
+  out << format("[{} {} {}{}]", 
+                getKind(), 
+                linkage, 
+                *type,
+                isInline ? " inline" : "");
+}
+
+bool NamespaceMember::isNamespaceAlias(Namespace* enclosing, 
+                                       const string& memberName) const {
+  // TODO: improve this check
+  return !ownedBy(enclosing) || memberName != name;
 }
 
 void NamespaceMember::output(std::ostream& out) const {

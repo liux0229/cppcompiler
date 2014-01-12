@@ -336,6 +336,33 @@ bool ArrayType::addSizeTo(const ArrayType& other) const {
   return size_ && !other.size_;
 }
 
+bool ArrayType::equals(const ArrayType& other,
+                       function<bool (SType, SType)> compareElement, 
+                       bool ignoreFirstDimension) {
+  if (!ignoreFirstDimension && size_ != other.size_) {
+    return false;
+  } 
+  if (depended_->isArray() ^ depended_->isArray()) {
+    return false;
+  }
+  if (depended_->isArray()) {
+    return depended_->toArray()->equals( 
+             *other.depended_->toArray(),
+             compareElement,
+             false);
+  } else {
+    return compareElement(depended_, other.depended_);
+  }
+}
+
+SType ArrayType::getElementType() const {
+  if (depended_->isArray()) {
+    return depended_->toArray()->getElementType();
+  } else {
+    return depended_;
+  }
+}
+
 FunctionType::FunctionType(std::vector<SType>&& params, bool hasVarArgs)
   : parameters_(std::move(params)),
     hasVarArgs_(hasVarArgs) {

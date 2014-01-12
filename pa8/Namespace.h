@@ -42,6 +42,7 @@ class Namespace {
   bool isInline() const { return inline_; }
   bool isGlobal() const { return !parent_; }
   bool enclosedBy(const Namespace* other) const;
+  Linkage getLinkage() const { return linkage_; }
   void output(std::ostream& out) const;
   STypedefMember lookupTypedef(const std::string& name, 
                                bool qualified) const;
@@ -89,6 +90,7 @@ class Namespace {
   std::string name_;
   bool unnamed_;
   bool inline_;
+  Linkage linkage_;
   const Namespace* parent_;
   TranslationUnit* unit_;
 

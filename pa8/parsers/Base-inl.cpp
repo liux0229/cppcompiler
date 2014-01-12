@@ -276,7 +276,7 @@ struct Base {
   virtual void functionDefinition() = 0;
   virtual void simpleDeclaration() = 0;
   virtual void aliasDeclaration() = 0;
-  virtual size_t constantExpression() = 0;
+  virtual SLiteralExpression constantExpression() = 0;
   virtual SExpression expression() = 0;
   virtual Namespace* nestedNameSpecifier() = 0;
   virtual UId idExpression() = 0;

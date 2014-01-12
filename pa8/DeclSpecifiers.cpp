@@ -5,10 +5,19 @@ namespace compiler {
 using namespace std;
 
 void DeclSpecifiers::setTypedef() {
-  if (type_ || storageClass_ != StorageClass::Unspecified) {
+  if (type_ || 
+      storageClass_ != StorageClass::Unspecified ||
+      isConstExpr_) {
     Throw("typedef must be the first declSpecifier in declSpecifierSeq");
   }
   isTypedef_ = true;
+}
+
+void DeclSpecifiers::setConstExpr() {
+  if (isTypedef_) {
+    Throw("unexpected constexpr in typedef");
+  }
+  isConstExpr_ = true;
 }
 
 void DeclSpecifiers::addStorageClass(StorageClass storage) {
@@ -59,6 +68,11 @@ void DeclSpecifiers::finalize() {
     // need to create a new type object
     type_ = type_->clone();
     type_->setCvQualifier(cv);
+  }
+
+  if (isConstExpr_) {
+    type_ = type_->clone();
+    type_->setCvQualifier(CvQualifier::Const);
   }
 
   finalized_ = true;

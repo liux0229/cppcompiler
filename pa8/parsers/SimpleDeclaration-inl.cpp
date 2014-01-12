@@ -30,6 +30,8 @@ struct SimpleDeclaration : virtual Base {
   void declSpecifier(DeclSpecifiers& declSpecifiers) {
     if (tryAdvSimple(KW_TYPEDEF)) {
       declSpecifiers.setTypedef();
+    } else if (tryAdvSimple(KW_CONSTEXPR)) {
+      declSpecifiers.setConstExpr();
     } else if (!BT(EX(storageClassSpecifier), declSpecifiers)) {
       TR(EX(typeSpecifier), declSpecifiers);
     }
@@ -260,7 +262,17 @@ struct SimpleDeclaration : virtual Base {
     expect(OP_LSQUARE);
     size_t size = 0;
     if (!isSimple(OP_RSQUARE)) {
-      size = TR(EXB(constantExpression));
+      auto literal = TR(EXB(constantExpression));
+      auto value = literal->value;
+      if (!value->type->isFundalmental() ||
+          !value->type->toFundalmental()->isIntegral()) {
+        Throw("expect integral expression: {}", *literal);
+      }
+      auto fundalmental = dynamic_cast<FundalmentalValueBase*>(value.get());
+      if (!fundalmental->isPositive()) {
+        Throw("expect positive value: {}", *literal);
+      }
+      size = fundalmental->getValue();
     }
     expect(OP_RSQUARE);
     auto arrayType = make_shared<ArrayType>(size);

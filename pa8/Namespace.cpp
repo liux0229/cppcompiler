@@ -173,7 +173,8 @@ void Namespace::addFunction(const string& name,
 void Namespace::checkInitializer(
                   const string& name, 
                   SType& type, 
-                  UInitializer& initializer) {
+                  UInitializer& initializer,
+                  bool isConstExpr) {
   if (!initializer) {
     if (type->isConst() || type->isReference()) {
       Throw("{} ({}) cannot be default initialized", name, *type);
@@ -193,6 +194,10 @@ void Namespace::checkInitializer(
   }
   if (expr->isConstant()) {
     expr = expr->toConstant();
+  } else {
+    if (isConstExpr) {
+      Throw("constexpr {} initializer is not constant: {}", name, *expr);
+    }
   }
 
   if (type->isArray() && 
@@ -218,7 +223,7 @@ void Namespace::addVariable(const string& name,
                  !initializer);
 
   if (isDef) {
-    checkInitializer(name, type, initializer);
+    checkInitializer(name, type, initializer, declSpecifiers.isConstExpr());
   }
 
   bool internalLinkage = 

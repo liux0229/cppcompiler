@@ -13,6 +13,7 @@ struct Declaration : virtual Base {
     BT(EX(usingDeclaration)) ||
     BT(EXB(aliasDeclaration)) ||
     BT(EXB(functionDefinition)) ||
+    BT(EX(staticAssertDeclaration)) ||
     TR(EXB(simpleDeclaration));
   }
 
@@ -143,6 +144,35 @@ struct Declaration : virtual Base {
   UId qualifiedId() {
     auto ns = TR(EXB(nestedNameSpecifier));
     return make_unique<Id>(TR(EX(unqualifiedId)), ns);
+  }
+
+  void staticAssertDeclaration() {
+    expect(KW_STATIC_ASSERT);
+    expect(OP_LPAREN);
+    auto literal = TR(EXB(constantExpression));
+    expect(OP_COMMA);
+    auto message = expectLiteral();
+    expect(OP_RPAREN);
+    expect(OP_SEMICOLON);
+
+    // TODO: abstract this; and we are using the rule for '=' (copy assignment)
+    // currently
+    auto expr = literal->assignableTo(make_shared<FundalmentalType>(FT_BOOL));
+    if (!expr) {
+      Throw("{} cannot be contextually converted to bool", *literal);
+    }
+    auto boolLiteral = expr->toConstant();
+    auto fund = dynamic_cast<FundalmentalValueBase*>(boolLiteral->value.get());
+    CHECK(fund);
+    
+    if (fund->isZero()) {
+      // directly terminate the program until we have better error reporting
+      // TODO: better message output
+      //       only-accept string-literal
+      cerr << format("static-assert failed: {}", message->source) 
+           << endl;
+      exit(1);
+    }
   }
 };
 

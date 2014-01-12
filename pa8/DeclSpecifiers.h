@@ -9,6 +9,7 @@ namespace compiler {
 class DeclSpecifiers {
  public:
   void setTypedef();
+  void setConstExpr();
   void addStorageClass(StorageClass storage);
   void addCvQualifier(CvQualifier cv);
   void addType(SType t, bool isTypeName);
@@ -19,6 +20,7 @@ class DeclSpecifiers {
     return type_;
   }
   bool isTypedef() const { return isTypedef_; }
+  bool isConstExpr() const { return isConstExpr_; }
   StorageClass getStorageClass() const { return storageClass_; }
 
  private:
@@ -26,6 +28,7 @@ class DeclSpecifiers {
   StorageClass storageClass_ { StorageClass::Unspecified };
   CvQualifier cvQualifier_;
   bool isTypedef_ = false;
+  bool isConstExpr_ = false;
   bool finalized_ = false;
   bool hasTypeName_ = false;
 };

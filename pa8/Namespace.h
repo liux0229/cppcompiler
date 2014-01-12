@@ -83,7 +83,8 @@ class Namespace {
 
   void checkInitializer(const std::string& name, 
                         SType& type, 
-                        UInitializer& initializer);
+                        UInitializer& initializer,
+                        bool isConstExpr);
 
   std::string name_;
   bool unnamed_;

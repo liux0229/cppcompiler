@@ -197,6 +197,21 @@ bool FundalmentalType::isInteger() const {
   return integerTypes.find(type_) != integerTypes.end();
 }
 
+bool FundalmentalType::isIntegral() const {
+  static set<EFundamentalType> extraTypes {
+      FT_SIGNED_CHAR,
+      FT_UNSIGNED_CHAR,
+      FT_WCHAR_T,
+      FT_CHAR,
+      FT_CHAR16_T,
+      FT_CHAR32_T,
+      FT_BOOL
+  };
+  return isInteger() ||
+         extraTypes.find(type_) != extraTypes.end();
+         
+}
+
 void FundalmentalType::output(ostream& out) const {
   outputCvQualifier(out);
   out << FundamentalTypeToStringMap.at(type_);
@@ -242,13 +257,17 @@ void ReferenceType::setDepended(SType depended) {
   if (!depended->isReference()) {
     DependentType::setDepended(depended);
   } else {
-    // TODO: T& & would crash
-
-    // Note that this implementation does not handle T&&& cases correctly
-    // To handle this case we need to pass in an additional flag indicating
-    // whether the setDepended operation is for a typedef'd type
-
     auto& ref = static_cast<ReferenceType&>(*depended);
+    if (!ref.depended_) {
+      // note: we use simple strategy that if ref.depended_ is nullptr,
+      // then this must be forming a reference through reference without
+      // going through typedef
+
+      // TODO: consider passing in an additional flag indicating
+      // whether the setDepended operation is for a typedef'd type
+      Throw("trying to form reference to: {}", *depended);
+    }
+
     Kind collapsed;
     if (kind_ == LValueRef || ref.kind_ == LValueRef) {
       collapsed = LValueRef;

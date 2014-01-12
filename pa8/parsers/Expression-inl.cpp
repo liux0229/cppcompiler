@@ -6,8 +6,12 @@ namespace SemanticParserImp {
 
 struct Expressions : virtual Base {
 
-  size_t constantExpression() override {
-    return expectLiteral()->toSigned64();
+  SLiteralExpression constantExpression() override {
+    auto expr = TR(EX(expression));
+    if (!expr->isConstant()) {
+      Throw("expect constant-expression: {}", *expr);
+    }
+    return expr->toConstant();
   }
 
   SExpression expression() override {

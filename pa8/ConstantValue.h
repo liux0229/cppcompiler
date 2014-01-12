@@ -35,6 +35,8 @@ struct ConstantValue {
 struct FundalmentalValueBase : ConstantValue {
   using ConstantValue::ConstantValue;
   virtual bool isZero() const = 0;
+  virtual bool isPositive() const = 0;
+  virtual unsigned long getValue() const = 0;
 };
 
 template<typename T>
@@ -119,6 +121,12 @@ struct FundalmentalValue : FundalmentalValueBase {
 
   bool isZero() const override {
     return data == 0;
+  }
+  bool isPositive() const override {
+    return data > 0;
+  }
+  unsigned long getValue() const override {
+    return data;
   }
 
   std::vector<char> toBytes() const override { 

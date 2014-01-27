@@ -1,2 +1,1 @@
 ERROR: trying to form reference to: lvalue-reference to <unknown>
-ERROR: [translationUnit] expect <eof>; got: simple typedef KW_TYPEDEF

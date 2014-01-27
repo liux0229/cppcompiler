@@ -1,0 +1,12 @@
+#!/bin/sh
+
+in=$(tempfile) || exit
+out=$(tempfile) || exit
+
+cat > $in
+
+./nsinit --print -o $out $in || exit
+
+echo
+xxd $out
+

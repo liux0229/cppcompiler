@@ -1,3 +1,37 @@
+/*
+ * Design notes:
+ *
+ * Semantics of disableBt()
+ * When the parsing procecure detects a pattern of terminals (which match
+ * a prefix of itself, that cannot match any other non-terminal, it can
+ * optionally call disableBt() to signal that information to the parsing
+ * framework, which can then disable backtracking on the corresponding path,
+ * because, since no other NT can match the terminal prefix, if the parsing
+ * procecure fails to parse the remaining terminals, no other NTs can parse
+ * the terminal string.
+ *
+ * This mechanism not only speeds up parsing but also provides much better
+ * error reporting.
+ * 
+ * Note that the currently implemented mechanism does not restrict itself
+ * to a one-level-down relationship only - a parsing procecure at level L might
+ * have the intelligence to determine that a failure of the above type at level
+ * L + x (x > 1) means the parsing at L must fail. The framework provides the
+ * basic support to express that in the forms of sharing the same BtControl,
+ * and it's not hard to extend the current mechanism to support this semantics
+ * if the current implementation is not powerful enough.
+ *
+ * This mechanism is a generalized FIRST set mechanism, and thus FIRST
+ * optimization can be implemented on top of this mechanism (e.g. by grouping
+ * parsing procecures sharing the same prefix into a single parsing procecure).
+ * However to automatic support every case of FIRST, we need an automatic FIRST
+ * / FOLLOW generation mechanism.
+ *
+ * It's not hard to imagine we can also incorporate FOLLOW into this mechanism,
+ * since FOLLOW is just a way of determining without backtracking the upper
+ * level cannot be successful if we followed an empty reduction.
+ * 
+ */
 #include "Declarator.h"
 #include "Expression.h"
 #include <type_traits>
@@ -135,6 +169,7 @@ struct Base {
     return false;
   }
 
+  // TODO: consistent naming (tryAdv vs. tryGet)
   const PostTokenSimple* tryAdvSimple(ETokenType type) {
     if (!isSimple(type)) {
       return nullptr;
@@ -205,14 +240,20 @@ struct Base {
     return cur().isEof();
   }
 
+  struct BtControl {
+    bool disableBt { false };
+    bool reportError { false };
+  };
+
   // traced call - f returns non-void
   template<typename F, typename... Args>
-  auto TR(const char* name, F f, Args&&... args) ->
+  auto TR(BtControl& btControl, const char* name, F f, Args&&... args) ->
        typename
        enable_if<
          !is_void<decltype(f(forward<Args>(args)...))>::value,
          decltype(f(forward<Args>(args)...))>
        ::type {
+    BtControlGuard guard(this, btControl);
     Trace trace(option_.isTrace, 
                 name, 
                 bind(&Base::cur, this), 
@@ -226,12 +267,13 @@ struct Base {
   // transform f into a function which returns true on the success path,
   // which makes the backtrack implementation easier
   template<typename F, typename... Args>
-  auto TR(const char* name, F f, Args&&... args) ->
+  auto TR(BtControl& btControl, const char* name, F f, Args&&... args) ->
        typename
        enable_if<
          is_void<decltype(f(forward<Args>(args)...))>::value,
          bool>
        ::type {
+    BtControlGuard guard(this, btControl);
     Trace trace(option_.isTrace, 
                 name, 
                 bind(&Base::cur, this), 
@@ -241,28 +283,79 @@ struct Base {
     return true;
   }
 
+  // traced call - provide stack frame's BtControl
+  template<typename F, typename... Args>
+  auto TR(const char* name, F f, Args&&... args) -> 
+       decltype(TR(*static_cast<BtControl*>(nullptr),
+                   name, 
+                   f, 
+                   forward<Args>(args)...)) {
+    BtControl btControl;
+    return TR(btControl, name, f, forward<Args>(args)...);
+  }
+
   // backtrack
   template<typename F, typename... Args>
-  auto BT(bool reportError, const char* name, F f, Args&&... args) ->
-       decltype(TR(name, f, forward<Args>(args)...)) {
-    using Ret = decltype(TR(name, f, forward<Args>(args)...));
+  auto BT(BtControl& btControl, const char* name, F f, Args&&... args) ->
+       decltype(TR(btControl, name, f, forward<Args>(args)...)) {
+    using Ret = decltype(TR(btControl, name, f, forward<Args>(args)...));
     ParserState state { index_ };
     try {
-      return TR(name, f, forward<Args>(args)...);
+      return TR(btControl, name, f, forward<Args>(args)...);
     } catch (const CompilerException& e) {
-      if (reportError) {
+      if (btControl.reportError) {
         cerr << "ERROR: " << e.what() << endl;
       }
+
+      if (btControl.disableBt) {
+        throw;
+      }
+
       reset(move(state));
       return Ret{};
     }
   }
 
+  // backtrack - provide stack frame's BtControl
   template<typename F, typename... Args>
   auto BT(const char* name, F f, Args&&... args) ->
        decltype(TR(name, f, forward<Args>(args)...)) {
-    return BT(false, name, f, forward<Args>(args)...);
+    BtControl btControl; 
+    return BT(btControl, name, f, forward<Args>(args)...);
   }
+
+  // TODO: assess the usability of this
+  template<typename F, typename... Args>
+  auto BT(bool reportError, const char* name, F f, Args&&... args) ->
+       decltype(TR(name, f, forward<Args>(args)...)) {
+    BtControl btControl; 
+    btControl.reportError = true;
+    return BT(btControl, name, f, forward<Args>(args)...);
+  }
+
+  void disableBt() {
+    CHECK(!btControlStack_.empty());
+    btControlStack_.back()->disableBt = true;
+  }
+
+  void addBtControl(BtControl& btControl) {
+    btControlStack_.push_back(&btControl);
+  }
+
+  void rmBtControl() {
+    CHECK(!btControlStack_.empty());
+    btControlStack_.pop_back();
+  }
+
+  struct BtControlGuard {
+    BtControlGuard(Base* base, BtControl& btControl) : base_(base) { 
+      base_->addBtControl(btControl);
+    }
+    ~BtControlGuard() {
+      base_->rmBtControl();
+    }
+    Base* base_;
+  };
 
   Namespace* curNamespace() const {
     return translationUnit_->curNamespace();
@@ -286,6 +379,8 @@ struct Base {
 
   ParserOption option_;
   int traceDepth_ { 0 };
+
+  vector<BtControl*> btControlStack_;
 
   UTranslationUnit translationUnit_;
 };

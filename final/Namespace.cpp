@@ -28,9 +28,9 @@ Namespace::Namespace(const string& name,
   }
 }
 
-string Namespace::getName() const {
+string Namespace::getName(bool useExplicitNameForGlobal) const {
   if (!parent_) {
-    return ""; 
+    return useExplicitNameForGlobal ? "[global]" : ""; 
   } else if (parent_->isGlobal()) {
     return name_;
   } else {
@@ -380,6 +380,8 @@ void Namespace::addUsingDirective(Namespace* ns) {
 }
 
 void Namespace::addUsingDeclaration(const MemberSet& ms) {
+  CHECK(!ms.empty());
+
   for (auto& m : ms) {
     // note that because of the "same member" check below, this should be
     // redundant; keep it here for now for clarity

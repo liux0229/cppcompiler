@@ -1,2 +1,1 @@
 ERROR: x cannot have type void
-ERROR: [translationUnit] expect <eof>; got: simple void KW_VOID

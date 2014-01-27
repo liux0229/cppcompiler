@@ -7,13 +7,10 @@ namespace SemanticParserImp {
 struct Declaration : virtual Base {
   void declaration() override {
     BT(EX(emptyDeclaration)) ||
-    BT(EX(namespaceDefinition)) ||
-    BT(EX(namespaceAliasDefinition)) ||
-    BT(EX(usingDirective)) ||
-    BT(EX(usingDeclaration)) ||
-    BT(EXB(aliasDeclaration)) ||
-    BT(EXB(functionDefinition)) ||
+    BT(EX(usingPrefixedDeclaration)) ||
+    BT(EX(namespacePrefixedDeclarations)) ||
     BT(EX(staticAssertDeclaration)) ||
+    BT(EXB(functionDefinition)) ||
     TR(EXB(simpleDeclaration));
   }
 
@@ -21,16 +18,27 @@ struct Declaration : virtual Base {
     expect(OP_SEMICOLON);
   }
 
+  void namespacePrefixedDeclarations() {
+    if (isSimple(KW_NAMESPACE) ||
+        (isSimple(KW_INLINE) && nextIsSimple(KW_NAMESPACE))) {
+      disableBt();
+    }
+
+    BT(EX(namespaceDefinition)) ||
+    TR(EX(namespaceAliasDefinition));
+  }
+
   void namespaceDefinition() {
     bool isInline = false;
-    if (isSimple(KW_INLINE) && nextIsSimple(KW_NAMESPACE)) {
+    if (tryAdvSimple(KW_INLINE)) {
       isInline = true;
-      adv();
     }
     expect(KW_NAMESPACE);
     string name;
     bool unnamed = !tryGetIdentifier(name);
+
     expect(OP_LBRACE);
+    disableBt();
 
     translationUnit_->openNamespace(
                        curNamespace()->addNamespace(name, unnamed, isInline));
@@ -42,13 +50,26 @@ struct Declaration : virtual Base {
   }
 
   void namespaceBody() {
-    while (BT(EX(declaration))) {
+    while (!isSimple(OP_RBRACE)) {
+      TR(EX(declaration));
     }
+  }
+
+  void usingPrefixedDeclaration() {
+    if (isSimple(KW_USING)) {
+      disableBt();
+    }
+
+    BT(EX(usingDirective)) ||
+    BT(EXB(aliasDeclaration)) ||
+    TR(EX(usingDeclaration));
   }
 
   void usingDirective() {
     expect(KW_USING);
     expect(KW_NAMESPACE);
+    disableBt();
+
     auto ns = BT(EX(nestedNameSpecifier));
     auto used = TR(EX(namespaceName), ns);
     curNamespace()->addUsingDirective(used->ns);
@@ -78,6 +99,11 @@ struct Declaration : virtual Base {
     expect(OP_SEMICOLON);
 
     auto members = ns->qualifiedLookup(name);
+    if (members.empty()) {
+      Throw("using-declaration: {} is not a member in {}", 
+            name,
+            ns->getName(true));
+    }
     curNamespace()->addUsingDeclaration(members);
   }
 
@@ -117,6 +143,8 @@ struct Declaration : virtual Base {
     expect(KW_NAMESPACE);
     auto name = expectIdentifier();
     expect(OP_ASS);
+    disableBt();
+
     auto ns = TR(EX(qualifiedNamespaceSpecifier));
     expect(OP_SEMICOLON);
 
@@ -148,6 +176,8 @@ struct Declaration : virtual Base {
 
   void staticAssertDeclaration() {
     expect(KW_STATIC_ASSERT);
+    disableBt();
+
     expect(OP_LPAREN);
     auto literal = TR(EXB(constantExpression));
     expect(OP_COMMA);

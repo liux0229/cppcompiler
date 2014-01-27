@@ -1,2 +1,1 @@
 ERROR: cannot have a pointer to a reference: lvalue-reference to <unknown>
-ERROR: [translationUnit] expect <eof>; got: simple typedef KW_TYPEDEF

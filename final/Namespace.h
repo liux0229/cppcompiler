@@ -38,7 +38,7 @@ class Namespace {
   void addUsingDeclaration(const MemberSet& members);
   void addNamespaceAlias(const std::string& name, SNamespaceMember ns);
 
-  std::string getName() const;
+  std::string getName(bool useExplicitNameForGlobal = false) const;
   bool isInline() const { return inline_; }
   bool isGlobal() const { return !parent_; }
   bool enclosedBy(const Namespace* other) const;

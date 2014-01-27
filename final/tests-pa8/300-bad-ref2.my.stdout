@@ -1,2 +1,1 @@
 ERROR: cannot have a reference to void
-ERROR: [translationUnit] expect <eof>; got: simple typedef KW_TYPEDEF

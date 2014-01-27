@@ -422,6 +422,8 @@ struct SimpleDeclaration : virtual Base {
     expect(KW_USING);
     auto name = expectIdentifier();
     expect(OP_ASS);
+    disableBt();
+
     auto type = TR(EX(typeId));
     expect(OP_SEMICOLON);
 
@@ -435,6 +437,7 @@ struct SimpleDeclaration : virtual Base {
     UDeclarator declarator = TR(EX(declarator), declSpecifiers);
     translationUnit_->restoreFrame(frame);
 
+    // TODO: implement disableBt in functionBody
     TR(EX(functionBody));
     auto id = declarator->getId();
     if (declSpecifiers.isConstExpr()) {

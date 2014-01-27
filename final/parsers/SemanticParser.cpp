@@ -49,13 +49,15 @@ public:
 private:
 
   void translationUnit() {
-    while (!isEof() && BT(true, EXB(declaration))) {
+    while (!isEof()) {
+      TR(EXB(declaration));
     }
+#if 0
     if (!isEof()) {
       BAD_EXPECT("<eof>");
     }
+#endif
   }
-
 };
 
 }

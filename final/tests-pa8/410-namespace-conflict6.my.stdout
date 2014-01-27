@@ -1,2 +1,1 @@
-ERROR: DeclSpecifiers do not have a type associated with it
-ERROR: [translationUnit] expect <eof>; got: simple namespace KW_NAMESPACE
+ERROR: x redeclared to be a namespace; was x => [variable [E] [S] int]

@@ -40,11 +40,25 @@ class Delegate {
   Func func_;
 };
 
+// verify by doing this I am forcing Args to also be able to take reference
 template<typename Obj, typename R, typename ...Args>
 auto make_delegate(R (Obj::*func)(Args...), Obj* obj) -> 
      Delegate<Obj, R, Args...> {
   return Delegate<Obj, R, Args...>(obj, func);
 }
+
+class ScopeGuard {
+ public:
+  ScopeGuard(std::function<void ()> action)
+    : action_(action) {
+  }
+  ~ScopeGuard() {
+    action_();
+  }
+
+ private:
+  std::function<void ()> action_;
+};
 
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)

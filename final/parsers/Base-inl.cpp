@@ -338,6 +338,11 @@ struct Base {
     btControlStack_.back()->disableBt = true;
   }
 
+  BtControl& curBtControl() const {
+    CHECK(!btControlStack_.empty());
+    return *btControlStack_.back();
+  }
+
   void addBtControl(BtControl& btControl) {
     btControlStack_.push_back(&btControl);
   }

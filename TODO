@@ -1,1 +1,31 @@
+= High level design notes and TODO =
+
+Language features
 * Point of declaration (after declarator but before initializer)
+
+* Clean-up of name lookup
+** What does it mean to lookup a namespace-name or an enum name? Should I do
+   a lookup of all names, then pick up namespace names, etc. in the final set
+   or the lookup is restrictive from the get-go?
+
+* Every expression should have two types of knowledge associated with it
+** How to generate the corresponding runtime code (internal representation which
+   is directly translatable to machine code)
+** How to evaluate the expression at compile time (operands must be
+   constant-expression)
+
+* Function parameter type declarations
+
+Infrastructure support
+* Better reporting of source file location upon error
+** Can consider whether tackle this before or after PA10
+
+* Literal design clean-up (on the high level, a Literal consits of a type and
+  value). Every value in the program (either compile time value or runtime 
+  value) should have a type.
+** Simplify the current design / implementation if we can
+** Consider migrate PostToken to use the Literal design (and rename PostToken to
+   Token)
+
+* What's semantic different about block-declarations compared to other
+  declarations - that only a block can contain them?

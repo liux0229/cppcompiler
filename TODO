@@ -16,6 +16,10 @@ Language features
 
 * Function parameter type declarations
 
+* Think more about context-free / context-dependent parsing as it relates to
+  C++ parsing. Is C++ parsing really context-depedent parsing - should be,
+  for example, prefer function declaration as opposed to object definition.
+
 Infrastructure support
 * Better reporting of source file location upon error
 ** Can consider whether tackle this before or after PA10
@@ -26,6 +30,12 @@ Infrastructure support
 ** Simplify the current design / implementation if we can
 ** Consider migrate PostToken to use the Literal design (and rename PostToken to
    Token)
+** Since PA9 uses PostToken, make sense to do this clean-up before and during
+   PA9
 
 * What's semantic different about block-declarations compared to other
   declarations - that only a block can contain them?
+
+= PA9 =
+* Error user-defined literal and C++ keywords (produce 1 exit code)
+* Bit-wise op vs. floating point?

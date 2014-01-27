@@ -1,0 +1,133 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  literal 2 int 02000000
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  postfix-root:
+|  |  |  |  |  KW_INT
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal 'a' char 61
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  literal 2 int 02000000
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  postfix-root:
+|  |  |  |  |  typename-specifier:
+|  |  |  |  |  |  KW_TYPENAME
+|  |  |  |  |  |  nested-name-specifier-root:
+|  |  |  |  |  |  |  identifier: Cfoo
+|  |  |  |  |  |  |  OP_COLON2
+|  |  |  |  |  |  identifier: bar
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal 123 int 7B000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  literal 2 int 02000000
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  postfix-root:
+|  |  |  |  |  KW_INT
+|  |  |  |  |  braced-init-list:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  initializer-list:
+|  |  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  literal 2 int 02000000
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  postfix-root:
+|  |  |  |  |  typename-specifier:
+|  |  |  |  |  |  KW_TYPENAME
+|  |  |  |  |  |  nested-name-specifier-root:
+|  |  |  |  |  |  |  OP_COLON2
+|  |  |  |  |  |  |  namespace-name: Nfoo
+|  |  |  |  |  |  |  OP_COLON2
+|  |  |  |  |  |  identifier: bar
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal "baz" array of 4 char 62617A00
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_DYNAMIC_CAST
+|  |  |  |  OP_LT
+|  |  |  |  type-id:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  OP_STAR
+|  |  |  |  OP_GT
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: q
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_STATIC_CAST
+|  |  |  |  OP_LT
+|  |  |  |  type-id:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  OP_STAR
+|  |  |  |  OP_GT
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: q
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_REINTERPET_CAST
+|  |  |  |  OP_LT
+|  |  |  |  type-id:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  OP_STAR
+|  |  |  |  OP_GT
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: q
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_CONST_CAST
+|  |  |  |  OP_LT
+|  |  |  |  type-id:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  OP_STAR
+|  |  |  |  OP_GT
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: q
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_TYPEID
+|  |  |  |  OP_LPAREN
+|  |  |  |  additive-expression:
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-root:
+|  |  |  |  KW_TYPEID
+|  |  |  |  OP_LPAREN
+|  |  |  |  KW_INT
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

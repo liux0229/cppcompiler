@@ -1,0 +1,59 @@
+template-declaration:
+|  KW_TEMPLATE
+|  OP_LT
+|  type-parameter:
+|  |  KW_TYPENAME
+|  |  identifier: Y
+|  OP_GT
+|  simple-declaration:
+|  |  class-specifier:
+|  |  |  class-head:
+|  |  |  |  class-key: KW_CLASS
+|  |  |  |  identifier: C
+|  |  |  OP_LBRACE
+|  |  |  member-declaration:
+|  |  |  |  KW_AUTO
+|  |  |  |  member-declarator:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  |  OP_ASS
+|  |  |  |  |  |  lambda-expression:
+|  |  |  |  |  |  |  lambda-introducer:
+|  |  |  |  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  |  |  |  capture-default: OP_AMP
+|  |  |  |  |  |  |  |  OP_RSQUARE
+|  |  |  |  |  |  |  lambda-declarator:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  parameter-declaration-list:
+|  |  |  |  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  |  |  |  decl-specifier-seq:
+|  |  |  |  |  |  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  |  |  |  |  |  |  identifier: C1
+|  |  |  |  |  |  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  |  |  |  |  identifier: c1
+|  |  |  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  |  |  |  decl-specifier-seq:
+|  |  |  |  |  |  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  |  |  |  |  |  |  identifier: C2
+|  |  |  |  |  |  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  |  |  |  |  identifier: c2
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  |  trailing-return-type:
+|  |  |  |  |  |  |  |  |  OP_ARROW
+|  |  |  |  |  |  |  |  |  identifier: C3
+|  |  |  |  |  |  |  compound-statement:
+|  |  |  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  |  |  jump-statement:
+|  |  |  |  |  |  |  |  |  KW_RETURN
+|  |  |  |  |  |  |  |  |  additive-expression:
+|  |  |  |  |  |  |  |  |  |  identifier: c1
+|  |  |  |  |  |  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  |  |  |  |  |  identifier: c2
+|  |  |  |  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  |  |  |  OP_RBRACE
+|  |  |  |  OP_SEMICOLON
+|  |  |  OP_RBRACE
+|  |  OP_SEMICOLON

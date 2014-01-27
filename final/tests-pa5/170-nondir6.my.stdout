@@ -1,0 +1,2 @@
+ERROR: parse or eval error `Trailing tokens: identifier bar...`
+ERROR: evaluate #if results in error

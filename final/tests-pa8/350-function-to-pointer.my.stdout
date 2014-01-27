@@ -1,0 +1,5 @@
+check(BF): p pointer to function of () returning void copy-initializer: IdExpression(f => [function [E] function of () returning void]) is-constant: 0
+check(AF): p pointer to function of () returning void copy-initializer: <LiteralExpression> is-constant: 1
+Linking: f => [function [E] function of () returning void]
+Linking: p => [variable [E] [S] pointer to function of () returning void] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

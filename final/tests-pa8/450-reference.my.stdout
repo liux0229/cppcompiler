@@ -1,0 +1,4 @@
+check(BF): i lvalue-reference to const int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): i lvalue-reference to const int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: i => [variable [E] [S] lvalue-reference to const int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

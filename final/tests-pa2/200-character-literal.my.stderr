@@ -1,0 +1,4 @@
+ERROR: 0x0001d11e is too large for char16_t from u'𝄞'
+ERROR: 0x0001d11e is too large for char16_t from u'𝄞'
+ERROR: 0x0001d11e is too large for char16_t from u'\x1D11E'
+ERROR: Multi-character literal not supported: 'abc'

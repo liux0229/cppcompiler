@@ -1,0 +1,3 @@
+Linking: f => [function [E] function of () returning void]
+Linking: p => [variable [E] [S] pointer to function of () returning void] default-initializer
+Linking: main => [function [E] function of () returning int]

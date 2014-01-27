@@ -1,0 +1,43 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  jump-statement:
+|  |  |  KW_BREAK
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_CONTINUE
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_RETURN
+|  |  |  additive-expression:
+|  |  |  |  literal 1 int 01000000
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  literal 2 int 02000000
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_RETURN
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_RETURN
+|  |  |  braced-init-list:
+|  |  |  |  OP_LBRACE
+|  |  |  |  initializer-list:
+|  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  OP_COMMA
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  OP_COMMA
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_GOTO
+|  |  |  identifier: foo
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

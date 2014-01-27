@@ -1,0 +1,2 @@
+Linking: x => [variable [E] [T] int] default-initializer
+Linking: main => [function [E] function of () returning int]

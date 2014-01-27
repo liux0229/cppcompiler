@@ -1,0 +1,51 @@
+check(BF): c char copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): c char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c16 char16_t copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): c16 char16_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c32 char32_t copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): c32 char32_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): cw wchar_t copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): cw wchar_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): sc signed char copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): sc signed char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): si short int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): si short int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): i int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): i int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): li long int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): li long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): lli long long int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): lli long long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): uc unsigned char copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): uc unsigned char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): usi unsigned short int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): usi unsigned short int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): ui unsigned int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): ui unsigned int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): uli unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): uli unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): ulli unsigned long long int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): ulli unsigned long long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): f float copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): f float copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): d double copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): d double copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c => [variable [E] [S] char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c16 => [variable [E] [S] char16_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c32 => [variable [E] [S] char32_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: cw => [variable [E] [S] wchar_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: sc => [variable [E] [S] signed char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: si => [variable [E] [S] short int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: i => [variable [E] [S] int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: li => [variable [E] [S] long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: lli => [variable [E] [S] long long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: uc => [variable [E] [S] unsigned char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: usi => [variable [E] [S] unsigned short int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: ui => [variable [E] [S] unsigned int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: uli => [variable [E] [S] unsigned long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: ulli => [variable [E] [S] unsigned long long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: f => [variable [E] [S] float] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: d => [variable [E] [S] double] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: ld => [variable [E] [S] long double] default-initializer
+Linking: p => [variable [E] [S] pointer to void] default-initializer
+Linking: main => [function [E] function of () returning int]

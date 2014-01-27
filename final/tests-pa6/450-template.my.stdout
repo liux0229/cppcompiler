@@ -1,0 +1,106 @@
+translation-unit:
+|  template-declaration:
+|  |  KW_TEMPLATE
+|  |  OP_LT
+|  |  template-parameter-list:
+|  |  |  parameter-declaration:
+|  |  |  |  KW_INT
+|  |  |  |  identifier: n
+|  |  |  OP_COMMA
+|  |  |  type-parameter:
+|  |  |  |  KW_CLASS
+|  |  |  |  identifier: C1
+|  |  OP_GT
+|  |  simple-declaration:
+|  |  |  class-specifier:
+|  |  |  |  class-head:
+|  |  |  |  |  class-key: KW_CLASS
+|  |  |  |  |  identifier: C2
+|  |  |  |  OP_LBRACE
+|  |  |  |  template-declaration:
+|  |  |  |  |  KW_TEMPLATE
+|  |  |  |  |  OP_LT
+|  |  |  |  |  template-parameter-list:
+|  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  |  identifier: m
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  type-parameter:
+|  |  |  |  |  |  |  KW_CLASS
+|  |  |  |  |  |  |  identifier: C3
+|  |  |  |  |  OP_GT
+|  |  |  |  |  function-definition:
+|  |  |  |  |  |  KW_VOID
+|  |  |  |  |  |  noptr-declarator:
+|  |  |  |  |  |  |  identifier: f
+|  |  |  |  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  |  |  identifier: C3
+|  |  |  |  |  |  |  |  |  identifier: c
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  compound-statement:
+|  |  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  |  jump-statement:
+|  |  |  |  |  |  |  |  KW_RETURN
+|  |  |  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  |  |  identifier: C2
+|  |  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  |  |  identifier: c
+|  |  |  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  |  |  OP_RBRACE
+|  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  explicit-specialization:
+|  |  KW_TEMPLATE
+|  |  OP_LT
+|  |  OP_GT
+|  |  simple-declaration:
+|  |  |  class-specifier:
+|  |  |  |  class-head:
+|  |  |  |  |  class-key: KW_CLASS
+|  |  |  |  |  simple-template-id:
+|  |  |  |  |  |  identifier: TC2
+|  |  |  |  |  |  OP_LT
+|  |  |  |  |  |  template-argument-list:
+|  |  |  |  |  |  |  identifier: n
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  identifier: C1
+|  |  |  |  |  |  OP_GT
+|  |  |  |  OP_LBRACE
+|  |  |  |  member-declaration:
+|  |  |  |  |  decl-specifier-seq:
+|  |  |  |  |  |  KW_TYPEDEF
+|  |  |  |  |  |  identifier: C4
+|  |  |  |  |  identifier: c
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  template-declaration:
+|  |  KW_TEMPLATE
+|  |  OP_LT
+|  |  type-parameter:
+|  |  |  KW_TYPENAME
+|  |  |  identifier: Y
+|  |  OP_GT
+|  |  function-definition:
+|  |  |  typedef-name: Y
+|  |  |  noptr-declarator:
+|  |  |  |  identifier: foo
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  compound-statement:
+|  |  |  |  OP_LBRACE
+|  |  |  |  jump-statement:
+|  |  |  |  |  KW_RETURN
+|  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  identifier: Y
+|  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  OP_RBRACE

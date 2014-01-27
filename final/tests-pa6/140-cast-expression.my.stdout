@@ -1,0 +1,37 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  cast-expression:
+|  |  |  |  cast-operator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  KW_INT
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  cast-expression:
+|  |  |  |  cast-operator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: C
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  cast-expression:
+|  |  |  |  cast-operator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  type-id:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

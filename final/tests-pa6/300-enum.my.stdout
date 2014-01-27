@@ -1,0 +1,14 @@
+simple-declaration:
+|  enum-specifier:
+|  |  enum-head:
+|  |  |  KW_ENUM
+|  |  |  identifier: E
+|  |  OP_LBRACE
+|  |  enumerator-list:
+|  |  |  identifier: e1
+|  |  |  OP_COMMA
+|  |  |  identifier: e2
+|  |  |  OP_COMMA
+|  |  |  identifier: e3
+|  |  OP_RBRACE
+|  OP_SEMICOLON

@@ -1,0 +1,131 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_DEC
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_INC
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_STAR
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_AMP
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_PLUS
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_MINUS
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_LNOT
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  unary-operator: OP_COMPL
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  KW_SIZEOF
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  KW_SIZEOF
+|  |  |  |  unary-expression:
+|  |  |  |  |  unary-operator: OP_LNOT
+|  |  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  KW_SIZEOF
+|  |  |  |  primary-expression:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: x
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  KW_SIZEOF
+|  |  |  |  OP_DOTS
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: x
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  unary-expression:
+|  |  |  |  KW_ALIGNOF
+|  |  |  |  type-id-in-paren:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  KW_INT
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  no-except-expression:
+|  |  |  |  KW_NOEXCEPT
+|  |  |  |  OP_LPAREN
+|  |  |  |  literal 3 int 03000000
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  new-expression:
+|  |  |  |  KW_NEW
+|  |  |  |  identifier: C
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  new-expression:
+|  |  |  |  OP_COLON2
+|  |  |  |  KW_NEW
+|  |  |  |  new-placement:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  initializer-list:
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  identifier: C
+|  |  |  |  braced-init-list:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  identifier: foo
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  delete-expression:
+|  |  |  |  KW_DELETE
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  delete-expression:
+|  |  |  |  OP_COLON2
+|  |  |  |  KW_DELETE
+|  |  |  |  OP_LSQUARE
+|  |  |  |  OP_RSQUARE
+|  |  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

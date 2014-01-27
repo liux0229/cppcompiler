@@ -1,0 +1,63 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  noptr-declarator:
+|  |  |  |  identifier: w
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  noptr-declarator-root:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  identifier: a
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  identifier: x
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  postfix-root:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  identifier: y
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  cast-expression:
+|  |  |  |  |  |  cast-operator:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  identifier: a
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  identifier: z
+|  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  OP_ASS
+|  |  |  |  |  postfix-root:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  identifier: a
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

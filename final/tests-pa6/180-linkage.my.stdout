@@ -1,0 +1,37 @@
+translation-unit:
+|  linkage-specification:
+|  |  KW_EXTERN
+|  |  literal "C" array of 2 char 4300
+|  |  simple-declaration:
+|  |  |  KW_VOID
+|  |  |  noptr-declarator:
+|  |  |  |  identifier: foo
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  linkage-specification:
+|  |  KW_EXTERN
+|  |  literal "D" array of 2 char 4400
+|  |  OP_LBRACE
+|  |  simple-declaration:
+|  |  |  KW_VOID
+|  |  |  noptr-declarator:
+|  |  |  |  identifier: bar
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  KW_VOID
+|  |  |  noptr-declarator:
+|  |  |  |  identifier: baz
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE
+|  empty-declaration: OP_SEMICOLON

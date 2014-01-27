@@ -1,0 +1,11 @@
+check(BF): v const unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): v const unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): x lvalue-reference to const unsigned long int copy-initializer: IdExpression(v => [variable [I] [S] const unsigned long int]) is-constant: 1
+check(AF): x lvalue-reference to const unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): y lvalue-reference to const unsigned long int copy-initializer: IdExpression(x => [variable [E] [S] lvalue-reference to const unsigned long int]) is-constant: 1
+check(AF): y lvalue-reference to const unsigned long int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: v => [variable [I] [S] const unsigned long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: x => [variable [E] [S] lvalue-reference to const unsigned long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: y => [variable [E] [S] lvalue-reference to const unsigned long int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: arr => [variable [E] [S] array of 42 pointer to unsigned short int] default-initializer
+Linking: main => [function [E] function of () returning int]

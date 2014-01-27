@@ -1,0 +1,54 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  conditional-expression:
+|  |  |  |  identifier: x
+|  |  |  |  OP_QMARK
+|  |  |  |  identifier: y
+|  |  |  |  OP_COLON
+|  |  |  |  identifier: z
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  conditional-expression:
+|  |  |  |  logical-or-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  OP_LOR
+|  |  |  |  |  identifier: y
+|  |  |  |  OP_QMARK
+|  |  |  |  additive-expression:
+|  |  |  |  |  identifier: z
+|  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  OP_COLON
+|  |  |  |  assignment-expression:
+|  |  |  |  |  identifier: w
+|  |  |  |  |  assignment-operator: OP_ASS
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  conditional-expression:
+|  |  |  |  literal 1 int 01000000
+|  |  |  |  OP_QMARK
+|  |  |  |  conditional-expression:
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  OP_QMARK
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  literal 4 int 04000000
+|  |  |  |  OP_COLON
+|  |  |  |  conditional-expression:
+|  |  |  |  |  literal 5 int 05000000
+|  |  |  |  |  OP_QMARK
+|  |  |  |  |  literal 6 int 06000000
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  literal 7 int 07000000
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

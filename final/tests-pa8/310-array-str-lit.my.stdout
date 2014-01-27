@@ -1,0 +1,33 @@
+check(BF): c array of unknown bound of char copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of char from: array of 5 const char
+check(AF): c array of 5 char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): sc array of unknown bound of signed char copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of signed char from: array of 12 const char
+check(AF): sc array of 12 signed char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): uc array of unknown bound of unsigned char copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of unsigned char from: array of 14 const char
+check(AF): uc array of 14 unsigned char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c16 array of unknown bound of char16_t copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of char16_t from: array of 9 const char16_t
+check(AF): c16 array of 9 char16_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c32 array of unknown bound of char32_t copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of char32_t from: array of 9 const char32_t
+check(AF): c32 array of 9 char32_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): w array of unknown bound of wchar_t copy-initializer: <LiteralExpression> is-constant: 1
+target: array of unknown bound of wchar_t from: array of 8 const wchar_t
+check(AF): w array of 8 wchar_t copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c10 array of 10 char copy-initializer: <LiteralExpression> is-constant: 1
+target: array of 10 char from: array of 4 const char
+check(AF): c10 array of 10 char copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): c32_10 array of 10 char32_t copy-initializer: <LiteralExpression> is-constant: 1
+target: array of 10 char32_t from: array of 4 const char32_t
+check(AF): c32_10 array of 10 char32_t copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c => [variable [E] [S] array of 5 char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: sc => [variable [E] [S] array of 12 signed char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: uc => [variable [E] [S] array of 14 unsigned char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c16 => [variable [E] [S] array of 9 char16_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c32 => [variable [E] [S] array of 9 char32_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: w => [variable [E] [S] array of 8 wchar_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c10 => [variable [E] [S] array of 10 char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: c32_10 => [variable [E] [S] array of 10 char32_t] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

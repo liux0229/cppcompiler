@@ -1,0 +1,108 @@
+ERROR: Bad pp-num: 2147483647l_ud1
+ERROR: Bad pp-num: 2147483647L_ud1
+ERROR: Bad pp-num: 2147483647ll_ud1
+ERROR: Bad pp-num: 2147483647LL_ud1
+ERROR: Bad pp-num: 2147483646l_ud1
+ERROR: Bad pp-num: 2147483646L_ud1
+ERROR: Bad pp-num: 2147483646ll_ud1
+ERROR: Bad pp-num: 2147483646LL_ud1
+ERROR: Bad pp-num: 2147483648l_ud1
+ERROR: Bad pp-num: 2147483648L_ud1
+ERROR: Bad pp-num: 2147483648ll_ud1
+ERROR: Bad pp-num: 2147483648LL_ud1
+ERROR: Bad pp-num: 4294967295l_ud1
+ERROR: Bad pp-num: 4294967295L_ud1
+ERROR: Bad pp-num: 4294967295ll_ud1
+ERROR: Bad pp-num: 4294967295LL_ud1
+ERROR: Bad pp-num: 4294967294l_ud1
+ERROR: Bad pp-num: 4294967294L_ud1
+ERROR: Bad pp-num: 4294967294ll_ud1
+ERROR: Bad pp-num: 4294967294LL_ud1
+ERROR: Bad pp-num: 4294967296l_ud1
+ERROR: Bad pp-num: 4294967296L_ud1
+ERROR: Bad pp-num: 4294967296ll_ud1
+ERROR: Bad pp-num: 4294967296LL_ud1
+ERROR: Bad pp-num: 9223372036854775807l_ud1
+ERROR: Bad pp-num: 9223372036854775807L_ud1
+ERROR: Bad pp-num: 9223372036854775807ll_ud1
+ERROR: Bad pp-num: 9223372036854775807LL_ud1
+ERROR: Bad pp-num: 9223372036854775806l_ud1
+ERROR: Bad pp-num: 9223372036854775806L_ud1
+ERROR: Bad pp-num: 9223372036854775806ll_ud1
+ERROR: Bad pp-num: 9223372036854775806LL_ud1
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<9223372036854775808>,<4>}
+ERROR: Bad pp-num: 9223372036854775808l_ud1
+ERROR: Bad pp-num: 9223372036854775808L_ud1
+ERROR: Bad pp-num: 9223372036854775808ll_ud1
+ERROR: Bad pp-num: 9223372036854775808LL_ud1
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551615>,<4>}
+ERROR: Bad pp-num: 18446744073709551615l_ud1
+ERROR: Bad pp-num: 18446744073709551615L_ud1
+ERROR: Bad pp-num: 18446744073709551615ll_ud1
+ERROR: Bad pp-num: 18446744073709551615LL_ud1
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Exeption `More arguments provided than needed: 4...` while formatting "ERROR: {} too large for its type" with {<18446744073709551614>,<4>}
+ERROR: Bad pp-num: 18446744073709551614l_ud1
+ERROR: Bad pp-num: 18446744073709551614L_ud1
+ERROR: Bad pp-num: 18446744073709551614ll_ud1
+ERROR: Bad pp-num: 18446744073709551614LL_ud1
+ERROR: Bad pp-num: 18446744073709551616
+ERROR: Bad pp-num: 18446744073709551616
+ERROR: Bad pp-num: 18446744073709551616l
+ERROR: Bad pp-num: 18446744073709551616l
+ERROR: Bad pp-num: 18446744073709551616L
+ERROR: Bad pp-num: 18446744073709551616L
+ERROR: Bad pp-num: 18446744073709551616ll
+ERROR: Bad pp-num: 18446744073709551616ll
+ERROR: Bad pp-num: 18446744073709551616LL
+ERROR: Bad pp-num: 18446744073709551616LL
+ERROR: Bad pp-num: 18446744073709551616u
+ERROR: Bad pp-num: 18446744073709551616u
+ERROR: Bad pp-num: 18446744073709551616ul
+ERROR: Bad pp-num: 18446744073709551616lu
+ERROR: Bad pp-num: 18446744073709551616uL
+ERROR: Bad pp-num: 18446744073709551616Lu
+ERROR: Bad pp-num: 18446744073709551616ull
+ERROR: Bad pp-num: 18446744073709551616llu
+ERROR: Bad pp-num: 18446744073709551616uLL
+ERROR: Bad pp-num: 18446744073709551616LLu
+ERROR: Bad pp-num: 18446744073709551616U
+ERROR: Bad pp-num: 18446744073709551616U
+ERROR: Bad pp-num: 18446744073709551616Ul
+ERROR: Bad pp-num: 18446744073709551616lU
+ERROR: Bad pp-num: 18446744073709551616UL
+ERROR: Bad pp-num: 18446744073709551616LU
+ERROR: Bad pp-num: 18446744073709551616Ull
+ERROR: Bad pp-num: 18446744073709551616llU
+ERROR: Bad pp-num: 18446744073709551616ULL
+ERROR: Bad pp-num: 18446744073709551616LLU
+ERROR: Bad pp-num: 18446744073709551616l_ud1
+ERROR: Bad pp-num: 18446744073709551616L_ud1
+ERROR: Bad pp-num: 18446744073709551616ll_ud1
+ERROR: Bad pp-num: 18446744073709551616LL_ud1

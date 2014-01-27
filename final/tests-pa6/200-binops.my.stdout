@@ -1,0 +1,177 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  mulplicative-expression:
+|  |  |  |  identifier: x
+|  |  |  |  mulplicative-operator: OP_STAR
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  mulplicative-expression:
+|  |  |  |  identifier: x
+|  |  |  |  mulplicative-operator: OP_MOD
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  mulplicative-expression:
+|  |  |  |  identifier: x
+|  |  |  |  mulplicative-operator: OP_DIV
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  identifier: x
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  identifier: x
+|  |  |  |  additive-operator: OP_MINUS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  additive-expression:
+|  |  |  |  identifier: x
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  mulplicative-expression:
+|  |  |  |  |  identifier: y
+|  |  |  |  |  mulplicative-operator: OP_STAR
+|  |  |  |  |  identifier: z
+|  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  identifier: w
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  mulplicative-expression:
+|  |  |  |  primary-expression:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  additive-expression:
+|  |  |  |  |  |  identifier: x
+|  |  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  |  identifier: y
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  mulplicative-operator: OP_STAR
+|  |  |  |  primary-expression:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  additive-expression:
+|  |  |  |  |  |  identifier: z
+|  |  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  |  identifier: w
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  shift-expression:
+|  |  |  |  identifier: x
+|  |  |  |  shift-operator: OP_LSHIFT
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  shift-expression:
+|  |  |  |  identifier: x
+|  |  |  |  shift-operator:
+|  |  |  |  |  OP_RSHIFT_1
+|  |  |  |  |  OP_RSHIFT_2
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  shift-expression:
+|  |  |  |  mulplicative-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  mulplicative-operator: OP_STAR
+|  |  |  |  |  identifier: y
+|  |  |  |  shift-operator: OP_LSHIFT
+|  |  |  |  identifier: z
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  relational-expression:
+|  |  |  |  identifier: x
+|  |  |  |  relational-operator: OP_LT
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  relational-expression:
+|  |  |  |  identifier: x
+|  |  |  |  relational-operator: OP_GT
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  relational-expression:
+|  |  |  |  identifier: x
+|  |  |  |  relational-operator: OP_LE
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  relational-expression:
+|  |  |  |  identifier: x
+|  |  |  |  relational-operator: OP_GE
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  relational-expression:
+|  |  |  |  additive-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  identifier: y
+|  |  |  |  relational-operator: OP_GT
+|  |  |  |  mulplicative-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  mulplicative-operator: OP_STAR
+|  |  |  |  |  identifier: z
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  equality-expression:
+|  |  |  |  identifier: x
+|  |  |  |  equality-operator: OP_EQ
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  equality-expression:
+|  |  |  |  identifier: x
+|  |  |  |  equality-operator: OP_NE
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  equality-expression:
+|  |  |  |  relational-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  relational-operator: OP_LE
+|  |  |  |  |  identifier: y
+|  |  |  |  equality-operator: OP_EQ
+|  |  |  |  identifier: z
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  inclusive-or-expression:
+|  |  |  |  exclusive-or-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  OP_XOR
+|  |  |  |  |  and-expression:
+|  |  |  |  |  |  identifier: y
+|  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  identifier: z
+|  |  |  |  OP_BOR
+|  |  |  |  identifier: w
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  logical-and-expression:
+|  |  |  |  exclusive-or-expression:
+|  |  |  |  |  identifier: x
+|  |  |  |  |  OP_XOR
+|  |  |  |  |  identifier: y
+|  |  |  |  OP_LAND
+|  |  |  |  identifier: z
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  logical-or-expression:
+|  |  |  |  identifier: x
+|  |  |  |  OP_LOR
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

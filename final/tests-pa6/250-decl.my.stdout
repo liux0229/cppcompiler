@@ -1,0 +1,56 @@
+translation-unit:
+|  simple-declaration:
+|  |  identifier: C
+|  |  identifier: c
+|  |  OP_SEMICOLON
+|  asm-definition:
+|  |  KW_ASM
+|  |  OP_LPAREN
+|  |  literal "foo" array of 4 char 666F6F00
+|  |  OP_RPAREN
+|  |  OP_SEMICOLON
+|  alias-declaration:
+|  |  KW_USING
+|  |  identifier: foo
+|  |  OP_ASS
+|  |  KW_INT
+|  |  OP_SEMICOLON
+|  namespace-definition:
+|  |  KW_NAMESPACE
+|  |  identifier: N
+|  |  OP_LBRACE
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  identifier: c
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE
+|  namespace-alias-definition:
+|  |  KW_NAMESPACE
+|  |  identifier: N3
+|  |  OP_ASS
+|  |  qualified-namespace-specifier:
+|  |  |  nested-name-specifier-root:
+|  |  |  |  OP_COLON2
+|  |  |  |  namespace-name: N1
+|  |  |  |  OP_COLON2
+|  |  |  namespace-name: N2
+|  |  OP_SEMICOLON
+|  template-declaration:
+|  |  KW_TEMPLATE
+|  |  OP_LT
+|  |  type-parameter:
+|  |  |  KW_TYPENAME
+|  |  |  identifier: C
+|  |  OP_GT
+|  |  simple-declaration:
+|  |  |  class-specifier:
+|  |  |  |  class-head:
+|  |  |  |  |  class-key: KW_CLASS
+|  |  |  |  |  identifier: TC
+|  |  |  |  OP_LBRACE
+|  |  |  |  member-declaration:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  identifier: c
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON

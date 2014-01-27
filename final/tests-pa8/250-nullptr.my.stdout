@@ -1,0 +1,4 @@
+check(BF): k pointer to int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): k pointer to int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: k => [variable [E] [S] pointer to int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

@@ -1,0 +1,2 @@
+ERROR: arr1 (array of 5 const char) cannot be default initialized
+ERROR: [translationUnit] expect <eof>; got: identifier CC

@@ -1,0 +1,5 @@
+preproc 1
+sof tests/600-line-macro.t
+literal 3 int 03000000
+literal 3 int 03000000
+eof

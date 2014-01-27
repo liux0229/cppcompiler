@@ -1,0 +1,2 @@
+ERROR: parse or eval error `Expected an integral literal, got `literal "foo" array of 4 char 666F6F00``
+ERROR: parse or eval error `Expected an integral literal, got `literal 3.2 double 9A99999999990940``

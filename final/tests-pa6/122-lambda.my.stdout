@@ -1,0 +1,143 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  capture-default: OP_ASS
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  capture-default: OP_AMP
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  capture-list:
+|  |  |  |  |  |  identifier: x
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  capture:
+|  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  identifier: y
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  lambda-capture:
+|  |  |  |  |  |  capture-default: OP_AMP
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  capture-list:
+|  |  |  |  |  |  |  identifier: x
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  capture:
+|  |  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  |  identifier: y
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  lambda-capture:
+|  |  |  |  |  |  capture-default: OP_AMP
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  capture-list:
+|  |  |  |  |  |  |  capture-list-atom:
+|  |  |  |  |  |  |  |  identifier: x
+|  |  |  |  |  |  |  |  OP_DOTS
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  capture-list-atom:
+|  |  |  |  |  |  |  |  capture:
+|  |  |  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  |  |  identifier: y
+|  |  |  |  |  |  |  |  OP_DOTS
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  KW_THIS
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  lambda-declarator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  lambda-declarator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  identifier: x
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  lambda-expression:
+|  |  |  |  lambda-introducer:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  OP_RSQUARE
+|  |  |  |  lambda-declarator:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  identifier: C
+|  |  |  |  |  |  |  identifier: y
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  OP_DOTS
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

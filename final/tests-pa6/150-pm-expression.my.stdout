@@ -1,0 +1,55 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  pm-expression:
+|  |  |  |  identifier: x
+|  |  |  |  pm-operator: OP_DOTSTAR
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  pm-expression:
+|  |  |  |  identifier: x
+|  |  |  |  pm-operator: OP_ARROWSTAR
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  pm-expression:
+|  |  |  |  cast-expression:
+|  |  |  |  |  cast-operator:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  identifier: x
+|  |  |  |  pm-operator: OP_DOTSTAR
+|  |  |  |  cast-expression:
+|  |  |  |  |  cast-operator:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  identifier: C
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  pm-expression:
+|  |  |  |  cast-expression:
+|  |  |  |  |  cast-operator:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  identifier: x
+|  |  |  |  pm-operator: OP_ARROWSTAR
+|  |  |  |  cast-expression:
+|  |  |  |  |  cast-operator:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  identifier: C
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

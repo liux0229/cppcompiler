@@ -1,0 +1,71 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_ASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_STARASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_DIVASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_PLUSASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_MINUSASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_RSHIFTASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_LSHIFTASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_BANDASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_XORASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  identifier: x
+|  |  |  |  assignment-operator: OP_BORASS
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

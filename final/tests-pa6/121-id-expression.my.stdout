@@ -1,0 +1,89 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  OP_LSHIFT
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  OP_MODASS
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  KW_NEW
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  OP_LSQUARE
+|  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  OP_LPAREN
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  KW_NEW
+|  |  |  |  OP_LSQUARE
+|  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  operator-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  KW_DELETE
+|  |  |  |  OP_LSQUARE
+|  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  conversion-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  identifier: C
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  conversion-function-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  KW_INT
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  literal-operator-id:
+|  |  |  |  KW_OPERATOR
+|  |  |  |  literal "" array of 1 char 00
+|  |  |  |  identifier: foo
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  qualified-id:
+|  |  |  |  nested-name-specifier-root:
+|  |  |  |  |  OP_COLON2
+|  |  |  |  |  namespace-name: Nx
+|  |  |  |  |  OP_COLON2
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  qualified-id:
+|  |  |  |  nested-name-specifier-root:
+|  |  |  |  |  typedef-name: Yx
+|  |  |  |  |  OP_COLON2
+|  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

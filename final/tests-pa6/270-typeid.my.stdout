@@ -1,0 +1,36 @@
+simple-declaration:
+|  class-specifier:
+|  |  class-head:
+|  |  |  class-key: KW_CLASS
+|  |  |  identifier: C
+|  |  OP_LBRACE
+|  |  member-declaration:
+|  |  |  decl-specifier-seq:
+|  |  |  |  function-specifier: KW_VIRTUAL
+|  |  |  |  KW_INT
+|  |  |  member-declarator:
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  noptr-declarator:
+|  |  |  |  |  |  identifier: foo
+|  |  |  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  parameter-declaration-list:
+|  |  |  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  |  |  |  identifier: x
+|  |  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  |  |  decl-specifier-seq:
+|  |  |  |  |  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  |  |  |  |  |  identifier: C
+|  |  |  |  |  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  |  |  |  |  OP_LAND
+|  |  |  |  |  |  |  |  |  |  identifier: y
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  OP_ASS
+|  |  |  |  |  literal 0 int 00000000
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE
+|  OP_SEMICOLON

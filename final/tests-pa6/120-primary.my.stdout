@@ -1,0 +1,35 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  KW_TRUE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  KW_FALSE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  KW_NULLPTR
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  KW_THIS
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  literal 3 int 03000000
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  primary-expression:
+|  |  |  |  OP_LPAREN
+|  |  |  |  additive-expression:
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

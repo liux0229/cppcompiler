@@ -1,0 +1,192 @@
+translation-unit:
+|  function-definition:
+|  |  KW_INT
+|  |  noptr-declarator:
+|  |  |  identifier: main
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration-clause:
+|  |  |  |  OP_RPAREN
+|  |  compound-statement:
+|  |  |  OP_LBRACE
+|  |  |  try-block:
+|  |  |  |  KW_TRY
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: f
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  throw-expression:
+|  |  |  |  |  |  |  KW_THROW
+|  |  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  |  identifier: exCeption
+|  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  |  literal "oh no" array of 6 char 6F68206E6F00
+|  |  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  OP_RBRACE
+|  |  |  |  handler:
+|  |  |  |  |  KW_CATCH
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  exception-declaration:
+|  |  |  |  |  |  identifier: exCeption
+|  |  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  identifier: e
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  |  compound-statement:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  expression-statement:
+|  |  |  |  |  |  |  shift-expression:
+|  |  |  |  |  |  |  |  identifier: cout
+|  |  |  |  |  |  |  |  shift-operator: OP_LSHIFT
+|  |  |  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  |  |  identifier: e
+|  |  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  |  OP_DOT
+|  |  |  |  |  |  |  |  |  |  identifier: what
+|  |  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  |  expression-statement:
+|  |  |  |  |  |  |  shift-expression:
+|  |  |  |  |  |  |  |  identifier: cin
+|  |  |  |  |  |  |  |  shift-operator:
+|  |  |  |  |  |  |  |  |  OP_RSHIFT_1
+|  |  |  |  |  |  |  |  |  OP_RSHIFT_2
+|  |  |  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  |  |  identifier: e
+|  |  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  |  OP_DOT
+|  |  |  |  |  |  |  |  |  |  identifier: what
+|  |  |  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  |  handler:
+|  |  |  |  |  KW_CATCH
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  OP_DOTS
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  |  compound-statement:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  OP_RBRACE
+|  function-definition:
+|  |  KW_VOID
+|  |  noptr-declarator:
+|  |  |  identifier: f
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration-clause:
+|  |  |  |  OP_RPAREN
+|  |  function-try-block:
+|  |  |  KW_TRY
+|  |  |  compound-statement:
+|  |  |  |  OP_LBRACE
+|  |  |  |  expression-statement:
+|  |  |  |  |  throw-expression:
+|  |  |  |  |  |  KW_THROW
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: C
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  OP_RBRACE
+|  |  |  handler:
+|  |  |  |  KW_CATCH
+|  |  |  |  OP_LPAREN
+|  |  |  |  exception-declaration:
+|  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  identifier: C
+|  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  identifier: c
+|  |  |  |  OP_RPAREN
+|  |  |  |  compound-statement:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  KW_THROW
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  |  OP_RBRACE
+|  simple-declaration:
+|  |  KW_VOID
+|  |  noptr-declarator:
+|  |  |  identifier: g
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration-clause:
+|  |  |  |  OP_RPAREN
+|  |  |  |  dynamic-exception-specification:
+|  |  |  |  |  KW_THROW
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  KW_INT
+|  |  |  |  |  OP_RPAREN
+|  |  OP_SEMICOLON
+|  simple-declaration:
+|  |  KW_VOID
+|  |  noptr-declarator:
+|  |  |  noptr-declarator-root:
+|  |  |  |  OP_LPAREN
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  identifier: fp
+|  |  |  |  OP_RPAREN
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration-clause:
+|  |  |  |  OP_RPAREN
+|  |  |  |  dynamic-exception-specification:
+|  |  |  |  |  KW_THROW
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  KW_INT
+|  |  |  |  |  OP_RPAREN
+|  |  OP_SEMICOLON
+|  simple-declaration:
+|  |  KW_VOID
+|  |  noptr-declarator:
+|  |  |  identifier: h
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration:
+|  |  |  |  |  KW_VOID
+|  |  |  |  |  noptr-declarator:
+|  |  |  |  |  |  identifier: pfa
+|  |  |  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  dynamic-exception-specification:
+|  |  |  |  |  |  |  |  KW_THROW
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_RPAREN
+|  |  OP_SEMICOLON
+|  simple-declaration:
+|  |  KW_VOID
+|  |  noptr-declarator:
+|  |  |  identifier: i
+|  |  |  parameters-and-qualifiers:
+|  |  |  |  OP_LPAREN
+|  |  |  |  parameter-declaration-clause:
+|  |  |  |  OP_RPAREN
+|  |  |  |  noexcept-specification:
+|  |  |  |  |  KW_NOEXCEPT
+|  |  |  |  |  noexcept-specification-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  additive-expression:
+|  |  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  OP_RPAREN
+|  |  OP_SEMICOLON

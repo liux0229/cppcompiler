@@ -1,0 +1,4 @@
+check(BF): x int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): x int copy-initializer: <LiteralExpression> is-constant: 1
+ERROR: DeclSpecifiers do not have a type associated with it
+ERROR: [translationUnit] expect <eof>; got: simple static_assert KW_STATIC_ASSERT

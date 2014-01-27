@@ -1,0 +1,2 @@
+ERROR: x (lvalue-reference to int) cannot be default initialized
+ERROR: [translationUnit] expect <eof>; got: simple int KW_INT

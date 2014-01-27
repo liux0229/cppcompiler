@@ -1,0 +1,112 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  braced-init-list:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  initializer-list:
+|  |  |  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 5 int 05000000
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 6 int 06000000
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  initializer-list:
+|  |  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_DOT
+|  |  |  |  |  pseudo-destructor-name:
+|  |  |  |  |  |  OP_COMPL
+|  |  |  |  |  |  identifier: C
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_DOT
+|  |  |  |  |  simple-template-id:
+|  |  |  |  |  |  identifier: T
+|  |  |  |  |  |  OP_LT
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  OP_GT
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_DOT
+|  |  |  |  |  KW_TEMPLATE
+|  |  |  |  |  simple-template-id:
+|  |  |  |  |  |  identifier: T
+|  |  |  |  |  |  OP_LT
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  OP_GT
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_ARROW
+|  |  |  |  |  pseudo-destructor-name:
+|  |  |  |  |  |  OP_COMPL
+|  |  |  |  |  |  identifier: C
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_ARROW
+|  |  |  |  |  identifier: y
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  OP_INC
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: x
+|  |  |  |  OP_DEC
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

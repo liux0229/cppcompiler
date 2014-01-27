@@ -1,0 +1,8 @@
+check(BF): y const int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): y const int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): x const int copy-initializer: IdExpression(A::y => [variable [I] [S] const int]) is-constant: 1
+check(AF): x const int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: A::x => [variable [E] [S] const int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: A::arr => [variable [E] [S] array of 3 int] default-initializer
+Linking: A::y => [variable [I] [S] const int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

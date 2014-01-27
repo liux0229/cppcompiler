@@ -1,0 +1,2 @@
+ERROR: DeclSpecifiers do not have a type associated with it
+ERROR: [translationUnit] expect <eof>; got: simple inline KW_INLINE

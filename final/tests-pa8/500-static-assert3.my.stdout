@@ -1,0 +1,5 @@
+check(BF): p const pointer to const char copy-initializer: IdExpression(a => [variable [E] [S] array of 3 char]) is-constant: 0
+check(AF): p const pointer to const char copy-initializer: <LiteralExpression> is-constant: 1
+Linking: a => [variable [E] [S] array of 3 char] default-initializer
+Linking: p => [variable [I] [S] const pointer to const char] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

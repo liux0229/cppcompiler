@@ -1,0 +1,86 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  simple-declaration:
+|  |  |  decl-specifier-seq:
+|  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  OP_AMP
+|  |  |  |  |  identifier: c
+|  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  OP_ASS
+|  |  |  |  |  additive-expression:
+|  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  OP_STAR
+|  |  |  |  |  identifier: p
+|  |  |  |  braced-init-list:
+|  |  |  |  |  OP_LBRACE
+|  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  KW_INT
+|  |  |  init-declarator:
+|  |  |  |  identifier: x
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  decl-specifier-seq:
+|  |  |  |  identifier: C
+|  |  |  |  cv-qualifier: KW_CONST
+|  |  |  init-declarator:
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  ptr-operator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  ptr-operator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  identifier: p
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  decl-specifier-seq:
+|  |  |  |  cv-qualifier: KW_VOLATILE
+|  |  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  ptr-declarator:
+|  |  |  |  |  ptr-operator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  |  cv-qualifier: KW_VOLATILE
+|  |  |  |  |  ptr-operator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  identifier: p
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  literal 4 int 04000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

@@ -1,0 +1,55 @@
+translation-unit:
+|  attribute-declaration:
+|  |  alignment-specifier:
+|  |  |  KW_ALIGNAS
+|  |  |  OP_LPAREN
+|  |  |  KW_INT
+|  |  |  OP_RPAREN
+|  |  OP_SEMICOLON
+|  attribute-declaration:
+|  |  attribute-specifier:
+|  |  |  OP_LSQUARE
+|  |  |  OP_LSQUARE
+|  |  |  identifier: foo
+|  |  |  OP_RSQUARE
+|  |  |  OP_RSQUARE
+|  |  OP_SEMICOLON
+|  attribute-declaration:
+|  |  attribute-specifier:
+|  |  |  OP_LSQUARE
+|  |  |  OP_LSQUARE
+|  |  |  attribute:
+|  |  |  |  identifier: foo
+|  |  |  |  attribute-argument-clause:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  bar
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_RSQUARE
+|  |  |  OP_RSQUARE
+|  |  OP_SEMICOLON
+|  attribute-declaration:
+|  |  attribute-specifier:
+|  |  |  OP_LSQUARE
+|  |  |  OP_LSQUARE
+|  |  |  attribute:
+|  |  |  |  identifier: foo
+|  |  |  |  attribute-argument-clause:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  bar
+|  |  |  |  |  balanced-token:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  |  |  balanced-token:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  balanced-token:
+|  |  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  |  balanced-token:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  foo
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_RSQUARE
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_RSQUARE
+|  |  |  OP_RSQUARE
+|  |  OP_SEMICOLON

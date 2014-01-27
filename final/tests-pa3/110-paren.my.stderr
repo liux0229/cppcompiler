@@ -1,0 +1,2 @@
+ERROR: parse or eval error `parse index 2 out of range: 2`
+ERROR: parse or eval error `Expected identifier, got `simple ) OP_RPAREN``

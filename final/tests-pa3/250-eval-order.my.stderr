@@ -1,0 +1,9 @@
+ERROR: parse or eval error `Divide by 0. LHS: 5, RHS: 0`
+ERROR: parse or eval error `Divide by 0. LHS: 5, RHS: 0`
+ERROR: parse or eval error `Divide by 0. LHS: 5, RHS: 0`
+ERROR: parse or eval error `Left/right shift RHS operand too large: 64`
+ERROR: parse or eval error `Left/right shift RHS operand too large: 64`
+ERROR: parse or eval error `Left/right shift RHS operand too large: 64`
+ERROR: parse or eval error `Trying to left/right shift by -1`
+ERROR: parse or eval error `Trying to left/right shift by -1`
+ERROR: parse or eval error `Trying to left/right shift by -1`

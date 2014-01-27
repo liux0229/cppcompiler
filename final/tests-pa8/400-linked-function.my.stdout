@@ -1,0 +1,4 @@
+Linking: f => [function [E] function of () returning void]
+Linking: main => [function [E] function of () returning int]
+Linking: f => [function [E] function of (int) returning void]
+Linking: f => [function [E] function of (double) returning void]

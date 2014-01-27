@@ -1,0 +1,69 @@
+template-declaration:
+|  KW_TEMPLATE
+|  OP_LT
+|  type-parameter:
+|  |  KW_CLASS
+|  |  type-parameter-suffix:
+|  |  |  OP_DOTS
+|  |  |  identifier: CMixins
+|  OP_GT
+|  simple-declaration:
+|  |  class-specifier:
+|  |  |  class-head:
+|  |  |  |  class-key: KW_CLASS
+|  |  |  |  identifier: CX
+|  |  |  |  base-clause:
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  base-specifier-dots:
+|  |  |  |  |  |  base-specifer:
+|  |  |  |  |  |  |  access-specifier: KW_PUBLIC
+|  |  |  |  |  |  |  identifier: CMixins
+|  |  |  |  |  |  OP_DOTS
+|  |  |  OP_LBRACE
+|  |  |  member-specification:
+|  |  |  |  access-specifier: KW_PUBLIC
+|  |  |  |  OP_COLON
+|  |  |  function-definition:
+|  |  |  |  KW_VOID
+|  |  |  |  noptr-declarator:
+|  |  |  |  |  identifier: constructor
+|  |  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  |  decl-specifier-seq:
+|  |  |  |  |  |  |  |  cv-qualifier: KW_CONST
+|  |  |  |  |  |  |  |  identifier: CMixins
+|  |  |  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  |  |  OP_AMP
+|  |  |  |  |  |  |  |  declarator-id:
+|  |  |  |  |  |  |  |  |  OP_DOTS
+|  |  |  |  |  |  |  |  |  identifier: mixins
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  function-body:
+|  |  |  |  |  ctor-initializer:
+|  |  |  |  |  |  OP_COLON
+|  |  |  |  |  |  mem-initialier-dots:
+|  |  |  |  |  |  |  mem-initialier:
+|  |  |  |  |  |  |  |  identifier: CMixins
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  identifier: mixins
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  |  OP_DOTS
+|  |  |  |  |  compound-statement:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  member-declaration:
+|  |  |  |  decl-specifier-seq:
+|  |  |  |  |  function-specifier: KW_VIRTUAL
+|  |  |  |  |  KW_VOID
+|  |  |  |  noptr-declarator:
+|  |  |  |  |  unqualified-id:
+|  |  |  |  |  |  OP_COMPL
+|  |  |  |  |  |  identifier: CX
+|  |  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  |  OP_RBRACE
+|  |  OP_SEMICOLON

@@ -1,0 +1,14 @@
+identifier preproc
+literal 1 int 01000000
+identifier sof
+identifier tests
+simple - OP_MINUS
+identifier pa5
+simple / OP_DIV
+literal 100 int 64000000
+simple - OP_MINUS
+identifier empty
+simple . OP_DOT
+identifier t
+identifier eof
+eof

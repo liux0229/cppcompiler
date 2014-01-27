@@ -1,0 +1,1 @@
+ERROR: use __VA_ARGS__ in replacement list of a macro which does not have the '...' parameter

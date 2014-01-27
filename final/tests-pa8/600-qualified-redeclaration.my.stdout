@@ -1,0 +1,4 @@
+check(BF): x const int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): x const int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: A::x => [variable [E] [S] const int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]

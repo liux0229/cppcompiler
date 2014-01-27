@@ -1,0 +1,212 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  compound-statement:
+|  |  |  OP_LBRACE
+|  |  |  expression-statement:
+|  |  |  |  additive-expression:
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  additive-operator: OP_PLUS
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  OP_SEMICOLON
+|  |  |  OP_RBRACE
+|  |  selection-statement:
+|  |  |  KW_IF
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: y
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  selection-statement:
+|  |  |  KW_IF
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: y
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  |  KW_ELSE
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: z
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  selection-statement:
+|  |  |  KW_IF
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  selection-statement:
+|  |  |  |  KW_IF
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: y
+|  |  |  |  OP_RPAREN
+|  |  |  |  expression-statement:
+|  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  identifier: z
+|  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  KW_ELSE
+|  |  |  |  expression-statement:
+|  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  identifier: w
+|  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_SEMICOLON
+|  |  selection-statement:
+|  |  |  KW_SWITCH
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  compound-statement:
+|  |  |  |  OP_LBRACE
+|  |  |  |  labeled-statement:
+|  |  |  |  |  KW_CASE
+|  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: f1
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  jump-statement:
+|  |  |  |  |  KW_BREAK
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  labeled-statement:
+|  |  |  |  |  KW_CASE
+|  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: f2
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  jump-statement:
+|  |  |  |  |  KW_BREAK
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  labeled-statement:
+|  |  |  |  |  KW_CASE
+|  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: f3
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  jump-statement:
+|  |  |  |  |  KW_BREAK
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  labeled-statement:
+|  |  |  |  |  KW_DEFAULT
+|  |  |  |  |  OP_COLON
+|  |  |  |  |  expression-statement:
+|  |  |  |  |  |  postfix-expression:
+|  |  |  |  |  |  |  identifier: g
+|  |  |  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  |  OP_SEMICOLON
+|  |  |  |  OP_RBRACE
+|  |  iteration-statement:
+|  |  |  KW_WHILE
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: f
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  iteration-statement:
+|  |  |  KW_DO
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: f
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  |  KW_WHILE
+|  |  |  OP_LPAREN
+|  |  |  identifier: x
+|  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  iteration-statement:
+|  |  |  KW_FOR
+|  |  |  OP_LPAREN
+|  |  |  for-traditional-specifier:
+|  |  |  |  simple-declaration:
+|  |  |  |  |  KW_INT
+|  |  |  |  |  init-declarator:
+|  |  |  |  |  |  identifier: i
+|  |  |  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  |  |  OP_ASS
+|  |  |  |  |  |  |  literal 0 int 00000000
+|  |  |  |  |  OP_SEMICOLON
+|  |  |  |  relational-expression:
+|  |  |  |  |  identifier: i
+|  |  |  |  |  relational-operator: OP_LT
+|  |  |  |  |  literal 10 int 0A000000
+|  |  |  |  OP_SEMICOLON
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: i
+|  |  |  |  |  OP_INC
+|  |  |  OP_RPAREN
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: f
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  iteration-statement:
+|  |  |  KW_FOR
+|  |  |  OP_LPAREN
+|  |  |  for-range-based-specifier:
+|  |  |  |  for-range-declaration:
+|  |  |  |  |  KW_AUTO
+|  |  |  |  |  identifier: x
+|  |  |  |  OP_COLON
+|  |  |  |  identifier: y
+|  |  |  OP_RPAREN
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: z
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_RETURN
+|  |  |  identifier: x
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

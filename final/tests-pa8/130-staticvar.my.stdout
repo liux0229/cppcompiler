@@ -1,0 +1,13 @@
+check(BF): x int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): x int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): y int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): y int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): x int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): x int copy-initializer: <LiteralExpression> is-constant: 1
+check(BF): y int copy-initializer: <LiteralExpression> is-constant: 1
+check(AF): y int copy-initializer: <LiteralExpression> is-constant: 1
+Linking: x => [variable [I] [S] int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: <unnamed>::y => [variable [I] [S] int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: main => [function [E] function of () returning int]
+Linking: x => [variable [I] [S] int] copy-initializer: <LiteralExpression> is-constant: 1
+Linking: <unnamed>::y => [variable [I] [S] int] copy-initializer: <LiteralExpression> is-constant: 1

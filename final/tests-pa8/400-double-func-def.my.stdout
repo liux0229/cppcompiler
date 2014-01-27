@@ -1,0 +1,2 @@
+ERROR: [simpleDeclaration] expect OP_SEMICOLON; got: simple { OP_LBRACE
+ERROR: [translationUnit] expect <eof>; got: simple void KW_VOID

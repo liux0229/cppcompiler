@@ -1,0 +1,252 @@
+ERROR: Bad pp-num: 0X
+ERROR: Bad pp-num: 0X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0lL
+ERROR: Bad pp-num: 0lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0lL
+ERROR: Bad pp-num: 0lL
+ERROR: Bad pp-num: 0uX
+ERROR: Bad pp-num: 0Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0ulL
+ERROR: Bad pp-num: 0ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0lLu
+ERROR: Bad pp-num: 0lLu
+ERROR: Bad pp-num: 0u_ud2
+ERROR: Bad pp-num: 0UX
+ERROR: Bad pp-num: 0XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0UlL
+ERROR: Bad pp-num: 0UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0lLU
+ERROR: Bad pp-num: 0lLU
+ERROR: Bad pp-num: 0U_ud2
+ERROR: Bad pp-num: 0W
+ERROR: Bad pp-num: 0W
+ERROR: Bad pp-num: 0Wl
+ERROR: Bad pp-num: 0lW
+ERROR: Bad pp-num: 0WL
+ERROR: Bad pp-num: 0LW
+ERROR: Bad pp-num: 0Wll
+ERROR: Bad pp-num: 0llW
+ERROR: Bad pp-num: 0WLL
+ERROR: Bad pp-num: 0LLW
+ERROR: Bad pp-num: 0WX
+ERROR: Bad pp-num: 0XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0WlL
+ERROR: Bad pp-num: 0WlL
+ERROR: Bad pp-num: 0lLW
+ERROR: Bad pp-num: 0W_ud2
+ERROR: Bad pp-num: 0l_ud1
+ERROR: Bad pp-num: 0L_ud1
+ERROR: Bad pp-num: 0ll_ud1
+ERROR: Bad pp-num: 0LL_ud1
+ERROR: Bad pp-num: 0X_ud1
+ERROR: Bad pp-num: 0lL_ud1
+ERROR: Bad pp-num: 0x0X
+ERROR: Bad pp-num: 0x0X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0lL
+ERROR: Bad pp-num: 0x0lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0lL
+ERROR: Bad pp-num: 0x0lL
+ERROR: Bad pp-num: 0x0uX
+ERROR: Bad pp-num: 0x0Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0ulL
+ERROR: Bad pp-num: 0x0ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0lLu
+ERROR: Bad pp-num: 0x0lLu
+ERROR: Bad pp-num: 0x0u_ud2
+ERROR: Bad pp-num: 0x0UX
+ERROR: Bad pp-num: 0x0XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0UlL
+ERROR: Bad pp-num: 0x0UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0lLU
+ERROR: Bad pp-num: 0x0lLU
+ERROR: Bad pp-num: 0x0U_ud2
+ERROR: Bad pp-num: 0x0W
+ERROR: Bad pp-num: 0x0W
+ERROR: Bad pp-num: 0x0Wl
+ERROR: Bad pp-num: 0x0lW
+ERROR: Bad pp-num: 0x0WL
+ERROR: Bad pp-num: 0x0LW
+ERROR: Bad pp-num: 0x0Wll
+ERROR: Bad pp-num: 0x0llW
+ERROR: Bad pp-num: 0x0WLL
+ERROR: Bad pp-num: 0x0LLW
+ERROR: Bad pp-num: 0x0WX
+ERROR: Bad pp-num: 0x0XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x0WlL
+ERROR: Bad pp-num: 0x0WlL
+ERROR: Bad pp-num: 0x0lLW
+ERROR: Bad pp-num: 0x0W_ud2
+ERROR: Bad pp-num: 0x0l_ud1
+ERROR: Bad pp-num: 0x0L_ud1
+ERROR: Bad pp-num: 0x0ll_ud1
+ERROR: Bad pp-num: 0x0LL_ud1
+ERROR: Bad pp-num: 0x0X_ud1
+ERROR: Bad pp-num: 0x0lL_ud1
+ERROR: Bad pp-num: 00X
+ERROR: Bad pp-num: 00X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00lL
+ERROR: Bad pp-num: 00lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00lL
+ERROR: Bad pp-num: 00lL
+ERROR: Bad pp-num: 00uX
+ERROR: Bad pp-num: 00Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00ulL
+ERROR: Bad pp-num: 00ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00lLu
+ERROR: Bad pp-num: 00lLu
+ERROR: Bad pp-num: 00u_ud2
+ERROR: Bad pp-num: 00UX
+ERROR: Bad pp-num: 00XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00UlL
+ERROR: Bad pp-num: 00UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00lLU
+ERROR: Bad pp-num: 00lLU
+ERROR: Bad pp-num: 00U_ud2
+ERROR: Bad pp-num: 00W
+ERROR: Bad pp-num: 00W
+ERROR: Bad pp-num: 00Wl
+ERROR: Bad pp-num: 00lW
+ERROR: Bad pp-num: 00WL
+ERROR: Bad pp-num: 00LW
+ERROR: Bad pp-num: 00Wll
+ERROR: Bad pp-num: 00llW
+ERROR: Bad pp-num: 00WLL
+ERROR: Bad pp-num: 00LLW
+ERROR: Bad pp-num: 00WX
+ERROR: Bad pp-num: 00XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 00WlL
+ERROR: Bad pp-num: 00WlL
+ERROR: Bad pp-num: 00lLW
+ERROR: Bad pp-num: 00W_ud2
+ERROR: Bad pp-num: 00l_ud1
+ERROR: Bad pp-num: 00L_ud1
+ERROR: Bad pp-num: 00ll_ud1
+ERROR: Bad pp-num: 00LL_ud1
+ERROR: Bad pp-num: 00X_ud1
+ERROR: Bad pp-num: 00lL_ud1
+ERROR: Bad pp-num: 123X
+ERROR: Bad pp-num: 123X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123lL
+ERROR: Bad pp-num: 123lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123lL
+ERROR: Bad pp-num: 123lL
+ERROR: Bad pp-num: 123uX
+ERROR: Bad pp-num: 123Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123ulL
+ERROR: Bad pp-num: 123ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123lLu
+ERROR: Bad pp-num: 123lLu
+ERROR: Bad pp-num: 123u_ud2
+ERROR: Bad pp-num: 123UX
+ERROR: Bad pp-num: 123XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123UlL
+ERROR: Bad pp-num: 123UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123lLU
+ERROR: Bad pp-num: 123lLU
+ERROR: Bad pp-num: 123U_ud2
+ERROR: Bad pp-num: 123W
+ERROR: Bad pp-num: 123W
+ERROR: Bad pp-num: 123Wl
+ERROR: Bad pp-num: 123lW
+ERROR: Bad pp-num: 123WL
+ERROR: Bad pp-num: 123LW
+ERROR: Bad pp-num: 123Wll
+ERROR: Bad pp-num: 123llW
+ERROR: Bad pp-num: 123WLL
+ERROR: Bad pp-num: 123LLW
+ERROR: Bad pp-num: 123WX
+ERROR: Bad pp-num: 123XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 123WlL
+ERROR: Bad pp-num: 123WlL
+ERROR: Bad pp-num: 123lLW
+ERROR: Bad pp-num: 123W_ud2
+ERROR: Bad pp-num: 123l_ud1
+ERROR: Bad pp-num: 123L_ud1
+ERROR: Bad pp-num: 123ll_ud1
+ERROR: Bad pp-num: 123LL_ud1
+ERROR: Bad pp-num: 123X_ud1
+ERROR: Bad pp-num: 123lL_ud1
+ERROR: Bad pp-num: 0x123X
+ERROR: Bad pp-num: 0x123X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123lL
+ERROR: Bad pp-num: 0x123lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123lL
+ERROR: Bad pp-num: 0x123lL
+ERROR: Bad pp-num: 0x123uX
+ERROR: Bad pp-num: 0x123Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123ulL
+ERROR: Bad pp-num: 0x123ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123lLu
+ERROR: Bad pp-num: 0x123lLu
+ERROR: Bad pp-num: 0x123u_ud2
+ERROR: Bad pp-num: 0x123UX
+ERROR: Bad pp-num: 0x123XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123UlL
+ERROR: Bad pp-num: 0x123UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123lLU
+ERROR: Bad pp-num: 0x123lLU
+ERROR: Bad pp-num: 0x123U_ud2
+ERROR: Bad pp-num: 0x123W
+ERROR: Bad pp-num: 0x123W
+ERROR: Bad pp-num: 0x123Wl
+ERROR: Bad pp-num: 0x123lW
+ERROR: Bad pp-num: 0x123WL
+ERROR: Bad pp-num: 0x123LW
+ERROR: Bad pp-num: 0x123Wll
+ERROR: Bad pp-num: 0x123llW
+ERROR: Bad pp-num: 0x123WLL
+ERROR: Bad pp-num: 0x123LLW
+ERROR: Bad pp-num: 0x123WX
+ERROR: Bad pp-num: 0x123XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0x123WlL
+ERROR: Bad pp-num: 0x123WlL
+ERROR: Bad pp-num: 0x123lLW
+ERROR: Bad pp-num: 0x123W_ud2
+ERROR: Bad pp-num: 0x123l_ud1
+ERROR: Bad pp-num: 0x123L_ud1
+ERROR: Bad pp-num: 0x123ll_ud1
+ERROR: Bad pp-num: 0x123LL_ud1
+ERROR: Bad pp-num: 0x123X_ud1
+ERROR: Bad pp-num: 0x123lL_ud1
+ERROR: Bad pp-num: 0123X
+ERROR: Bad pp-num: 0123X
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123lL
+ERROR: Bad pp-num: 0123lL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123lL
+ERROR: Bad pp-num: 0123lL
+ERROR: Bad pp-num: 0123uX
+ERROR: Bad pp-num: 0123Xu
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123ulL
+ERROR: Bad pp-num: 0123ulL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123lLu
+ERROR: Bad pp-num: 0123lLu
+ERROR: Bad pp-num: 0123u_ud2
+ERROR: Bad pp-num: 0123UX
+ERROR: Bad pp-num: 0123XU
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123UlL
+ERROR: Bad pp-num: 0123UlL
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123lLU
+ERROR: Bad pp-num: 0123lLU
+ERROR: Bad pp-num: 0123U_ud2
+ERROR: Bad pp-num: 0123W
+ERROR: Bad pp-num: 0123W
+ERROR: Bad pp-num: 0123Wl
+ERROR: Bad pp-num: 0123lW
+ERROR: Bad pp-num: 0123WL
+ERROR: Bad pp-num: 0123LW
+ERROR: Bad pp-num: 0123Wll
+ERROR: Bad pp-num: 0123llW
+ERROR: Bad pp-num: 0123WLL
+ERROR: Bad pp-num: 0123LLW
+ERROR: Bad pp-num: 0123WX
+ERROR: Bad pp-num: 0123XW
+ERROR: Integer suffix cannot have both `l' and `L` while parsing 0123WlL
+ERROR: Bad pp-num: 0123WlL
+ERROR: Bad pp-num: 0123lLW
+ERROR: Bad pp-num: 0123W_ud2
+ERROR: Bad pp-num: 0123l_ud1
+ERROR: Bad pp-num: 0123L_ud1
+ERROR: Bad pp-num: 0123ll_ud1
+ERROR: Bad pp-num: 0123LL_ud1
+ERROR: Bad pp-num: 0123X_ud1
+ERROR: Bad pp-num: 0123lL_ud1

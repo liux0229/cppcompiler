@@ -1,0 +1,174 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  assignment-expression:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  identifier: a
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_ARROW
+|  |  |  |  |  |  identifier: m
+|  |  |  |  assignment-operator: OP_ASS
+|  |  |  |  literal 7 int 07000000
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: C
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: a
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_INC
+|  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  shift-expression:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: C
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  initializer-list:
+|  |  |  |  |  |  |  identifier: a
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 5 int 05000000
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  shift-operator: OP_LSHIFT
+|  |  |  |  identifier: c
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  noptr-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  identifier: d
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration:
+|  |  |  |  |  |  KW_INT
+|  |  |  |  |  |  parameter-declaration-suffix:
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  noptr-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: e
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  noptr-declarator-suffix:
+|  |  |  |  |  OP_LSQUARE
+|  |  |  |  |  literal 5 int 05000000
+|  |  |  |  |  OP_RSQUARE
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: f
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  OP_ASS
+|  |  |  |  |  braced-init-list:
+|  |  |  |  |  |  OP_LBRACE
+|  |  |  |  |  |  initializer-list:
+|  |  |  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  |  OP_RBRACE
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  identifier: g
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  postfix-root:
+|  |  |  |  |  |  KW_DOUBLE
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  noptr-declarator-root:
+|  |  |  |  OP_LPAREN
+|  |  |  |  identifier: a
+|  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  noptr-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  ptr-declarator:
+|  |  |  |  |  |  OP_STAR
+|  |  |  |  |  |  identifier: b
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  parameters-and-qualifiers:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  parameter-declaration-clause:
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: c
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  OP_ASS
+|  |  |  |  |  literal 7 int 07000000
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator-list:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: d
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_COMMA
+|  |  |  |  identifier: e
+|  |  |  |  OP_COMMA
+|  |  |  |  init-declarator:
+|  |  |  |  |  identifier: f
+|  |  |  |  |  brace-or-equal-initializer:
+|  |  |  |  |  |  OP_ASS
+|  |  |  |  |  |  literal 3 int 03000000
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  identifier: C
+|  |  |  init-declarator:
+|  |  |  |  noptr-declarator-root:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  identifier: g
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  initializer:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  initializer-list:
+|  |  |  |  |  |  identifier: h
+|  |  |  |  |  |  OP_COMMA
+|  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

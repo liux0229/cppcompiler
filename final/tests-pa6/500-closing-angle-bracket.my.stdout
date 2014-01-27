@@ -1,0 +1,57 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  simple-declaration:
+|  |  |  simple-template-id:
+|  |  |  |  identifier: TC1
+|  |  |  |  OP_LT
+|  |  |  |  primary-expression:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  relational-expression:
+|  |  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  |  relational-operator: OP_GT
+|  |  |  |  |  |  literal 2 int 02000000
+|  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_GT
+|  |  |  identifier: x2
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  simple-template-id:
+|  |  |  |  identifier: TC1
+|  |  |  |  OP_LT
+|  |  |  |  simple-template-id:
+|  |  |  |  |  identifier: TC2
+|  |  |  |  |  OP_LT
+|  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  OP_RSHIFT_1
+|  |  |  |  OP_RSHIFT_2
+|  |  |  identifier: x3
+|  |  |  OP_SEMICOLON
+|  |  simple-declaration:
+|  |  |  simple-template-id:
+|  |  |  |  identifier: TC1
+|  |  |  |  OP_LT
+|  |  |  |  simple-template-id:
+|  |  |  |  |  identifier: TC2
+|  |  |  |  |  OP_LT
+|  |  |  |  |  primary-expression:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  shift-expression:
+|  |  |  |  |  |  |  literal 6 int 06000000
+|  |  |  |  |  |  |  shift-operator:
+|  |  |  |  |  |  |  |  OP_RSHIFT_1
+|  |  |  |  |  |  |  |  OP_RSHIFT_2
+|  |  |  |  |  |  |  literal 1 int 01000000
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  |  OP_RSHIFT_1
+|  |  |  |  OP_RSHIFT_2
+|  |  |  identifier: x5
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

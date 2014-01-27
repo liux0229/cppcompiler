@@ -1,0 +1,39 @@
+function-definition:
+|  KW_INT
+|  noptr-declarator:
+|  |  identifier: main
+|  |  parameters-and-qualifiers:
+|  |  |  OP_LPAREN
+|  |  |  parameter-declaration-clause:
+|  |  |  OP_RPAREN
+|  compound-statement:
+|  |  OP_LBRACE
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: f1
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  labeled-statement:
+|  |  |  identifier: l1
+|  |  |  OP_COLON
+|  |  |  expression-statement:
+|  |  |  |  postfix-expression:
+|  |  |  |  |  identifier: f2
+|  |  |  |  |  postfix-suffix:
+|  |  |  |  |  |  OP_LPAREN
+|  |  |  |  |  |  OP_RPAREN
+|  |  |  |  OP_SEMICOLON
+|  |  expression-statement:
+|  |  |  postfix-expression:
+|  |  |  |  identifier: f3
+|  |  |  |  postfix-suffix:
+|  |  |  |  |  OP_LPAREN
+|  |  |  |  |  OP_RPAREN
+|  |  |  OP_SEMICOLON
+|  |  jump-statement:
+|  |  |  KW_GOTO
+|  |  |  identifier: l1
+|  |  |  OP_SEMICOLON
+|  |  OP_RBRACE

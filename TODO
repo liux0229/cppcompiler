@@ -39,3 +39,7 @@ Infrastructure support
 = PA9 =
 * Error user-defined literal and C++ keywords (produce 1 exit code)
 * Bit-wise op vs. floating point?
+
+= Cases to think about =
+
+final/cases/103-constexpr.cpp: type of constexpr arrays

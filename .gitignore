@@ -1,8 +1,8 @@
 sync
 add
 *.o
-*.stdout
 .*.swp
+out
 
 nsinit-ref
 nsinit-ref-stdin

@@ -29,6 +29,9 @@ NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 NsInitLib=Linker.o
 NsInitOBJs=nsinit.o $(NsInitLib) $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
+Cy86Lib=Cy86Compiler.o Cy86Parser.o Cy86Instruction.o X86Instruction.o
+Cy86OBJs=cy86.o $(Cy86Lib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+
 all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
 
 pptoken: $(PPTokenOBJs)
@@ -55,10 +58,19 @@ nsdecl: $(NsDeclOBJs)
 nsinit: $(NsInitOBJs)
 	$(CXX) $(CPPFLAGS) -o nsinit $(NsInitOBJs)
 
+cy86: $(Cy86OBJs)
+	$(CXX) $(CPPFLAGS) -o cy86 $(Cy86OBJs)
+
 clean:
 	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
 
-tests: test8 test7 test6 test5 test4 test3 test2 test1
+tests: test9 test8 test7 test6 test5 test4 test3 test2 test1
+
+test9: clean cy86
+	rm -f tests
+	ln -s tests-pa9 tests
+	tests/scripts/run_all_tests.pl cy86 my
+	tests/scripts/compare_results.pl ref my
 
 test8: clean nsinit
 	rm -f tests

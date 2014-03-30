@@ -1,1 +1,4 @@
-aaa: syscall1 t64 60 127.2;
+syscall3 t64 1 1 0x400001 3;
+syscall3 t64 0 0 0x400000 3;
+syscall3 t64 1 1 0x400000 3;
+syscall1 t64 60 256;

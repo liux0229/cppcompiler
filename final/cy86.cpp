@@ -108,17 +108,17 @@ class ProgramGenerator {
   }
  private:
   void output(const vector<char>& code, const string& output) {
-    const char* rawData = "Assembly Programming Is Fun. LISP.\n";
-    vector<char> data(rawData, rawData + strlen(rawData));
+    // const char* rawData = "Assembly Programming Is Fun. LISP.\n";
+    // vector<unsigned char> data(rawData, rawData + strlen(rawData));
     ElfHeader elfHeader;
     ProgramSegmentHeader programSegmentHeader;
     elfHeader.entry = 0x400000 + 
                       sizeof(ElfHeader) + 
-                      sizeof(ProgramSegmentHeader) + 
-                      data.size();
+                      sizeof(ProgramSegmentHeader);
+                      // data.size();
     programSegmentHeader.filesz = sizeof(ElfHeader) + 
                                   sizeof(ProgramSegmentHeader) + 
-                                  data.size() + 
+                                  // data.size() + 
                                   code.size();
     programSegmentHeader.memsz = programSegmentHeader.filesz;
 
@@ -126,7 +126,7 @@ class ProgramGenerator {
       ofstream out(output);
       write(out, elfHeader);
       write(out, programSegmentHeader);
-      write(out, data);
+      // write(out, data);
       write(out, code);
     }
 

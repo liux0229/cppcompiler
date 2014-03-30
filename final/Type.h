@@ -146,6 +146,7 @@ class FundalmentalType : public Type {
   }
   bool isInteger() const;
   bool isIntegral() const;
+  bool isFloatingPoint() const;
   size_t getTypeSize() const override;
   bool operator==(const Type& rhs) const override {
     if (!Type::operator==(rhs)) {

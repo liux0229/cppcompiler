@@ -1,10 +1,10 @@
-#include "common.h"
 #include "Cy86Parser.h"
 
 #include <set>
 
 #define expect(type) expectSimpleFromFunc(type, __FUNCTION__)
 #define expectIdentifier() expectIdentifierFromFunc(__FUNCTION__)
+#define expectLiteral() expectLiteralFromFunc(__FUNCTION__)
 
 namespace compiler {
 
@@ -41,9 +41,9 @@ class Cy86ParserImp {
   }
 
   UOperand operand() {
-    UOperand ret = reg();
-    if (ret) {
-      return ret;
+    auto ret = reg();
+    if (!ret.empty()) {
+      return make_unique<Register>(ret);
     }
     if (isSimple(OP_LSQUARE)) {
       return memory();
@@ -52,7 +52,11 @@ class Cy86ParserImp {
     }
   }
 
-  UOperand reg() {
+  string reg() {
+    auto index = index_;
+    if (!isIdentifier()) {
+      return {};
+    }
     auto name = expectIdentifier();
     set<string> names {
       "sp", "bp", 
@@ -62,18 +66,23 @@ class Cy86ParserImp {
       "t8", "t16", "t32", "t64"
     };
     if (names.find(name) == names.end()) {
-      return nullptr;
+      index_ = index;
+      return {};
     }
-    return make_unique<Register>(name);
+    return name;
   }
 
   UOperand memory() {
-    return nullptr;
+    expect(OP_LSQUARE);
+    auto r = reg();
+    expect(OP_RSQUARE);
+    return make_unique<Memory>(make_unique<Register>(r),
+                               make_shared<FundalmentalValue<int>>(FT_INT, 0));
   }
 
   UOperand immediate() {
-    // figure out how to handle ints and floats
-    return nullptr;
+    auto literal = expectLiteral();
+    return make_unique<Immediate>(literal);
   }
 
   const PostToken& cur() const {
@@ -105,6 +114,10 @@ class Cy86ParserImp {
     return cur().isIdentifier();
   }
 
+  bool isLiteral() const {
+    return cur().isLiteral();
+  }
+
   void complainExpect(string&& expected, const char* func) const {
     Throw("[{}] expect {}; got: {}", 
           func,
@@ -126,8 +139,16 @@ class Cy86ParserImp {
     return getAdv().toSimpleStr();
   }
 
+  SConstantValue expectLiteralFromFunc(const char* func) {
+    if (!isLiteral()) {
+      complainExpect("literal", func);
+    }
+    // TODO: check for user defined literal and none integer/floats
+    return static_cast<const PostTokenLiteralBase&>(getAdv()).toConstantValue();
+  }
+
   vector<UToken> tokens_;
-  size_t index_;
+  size_t index_ { 0 };
 };
 
 vector<UCy86Instruction> Cy86Parser::parse(vector<UToken>&& tokens) {

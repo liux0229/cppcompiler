@@ -212,6 +212,16 @@ bool FundalmentalType::isIntegral() const {
          
 }
 
+bool FundalmentalType::isFloatingPoint() const {
+  static set<EFundamentalType> floatingPointTypes {
+    FT_FLOAT,
+    FT_DOUBLE,
+    FT_LONG_DOUBLE
+  };
+
+  return floatingPointTypes.find(type_) != floatingPointTypes.end();
+}
+
 void FundalmentalType::output(ostream& out) const {
   outputCvQualifier(out);
   out << FundamentalTypeToStringMap.at(type_);

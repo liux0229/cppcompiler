@@ -4,9 +4,10 @@
 namespace compiler {
 
 using namespace std;
+using namespace X86;
 
 #if 0
-  unsigned char code[] = {
+  unsigned unsigned char code[] = {
     // ==== write(stdout, "TODO\n") ====
     // mov rax, 1 ... system call `write`
     0x48, 0xc7, 0xc0, 0x01, 0x00, 0x00, 0x00,
@@ -40,7 +41,7 @@ using namespace std;
     0x0f, 0x05
       // =====================
   };
-  return vector<char>(code, code + sizeof(code));
+  return vector<unsigned char>(code, code + sizeof(code));
 #endif
 
 vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
@@ -55,7 +56,7 @@ vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
   }
   vector<char> code;
   for (auto& inst : x86Instructions) {
-    auto c = inst->assemble();
+    auto c = inst->assemble().toBytes();
     code.insert(code.end(), c.begin(), c.end());
   }
   return code;

@@ -72,6 +72,7 @@ struct LiteralExpression : Expression {
   }
 
   void output(std::ostream& out) const override {
+    // TODO: enhance this
     out << "<LiteralExpression>";
   }
 

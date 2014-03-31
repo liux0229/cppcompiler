@@ -261,7 +261,7 @@ class UnaryOperation : public Cy86Instruction {
     }
 
     // AX = op AX
-    add<X86::Not>(r, size(), Register::Ax(size())->toX86Operand(size()));
+    add<TX86Instruction>(r, size(), Register::Ax(size())->toX86Operand(size()));
 
     {
       auto inst = Mov(size(), move(operands()[0]), Register::Ax(size()))
@@ -278,6 +278,27 @@ class UnaryOperation : public Cy86Instruction {
     : Cy86Instruction(size, move(ops)) {
     checkOperandNumber(name, 2);
     checkWriteable(name);
+  }
+};
+
+class JMP : public Cy86Instruction {
+ public:
+  JMP(vector<UOperand>&& ops)
+    : Cy86Instruction(64, move(ops)) {
+    checkOperandNumber("JMP", 1);
+  }
+  vector<UX86Instruction> translate() override {
+    vector<UX86Instruction> r;
+    // move operand 0 into AX
+    {
+      auto inst = Mov(size(), Register::Ax(size()), move(operands()[0]))
+                    .translate();
+      add(r, move(inst));
+    }
+
+    add<X86::JMP>(r, 64, Register::Ax(64)->toX86Operand(64));
+
+    return r;
   }
 };
 
@@ -537,7 +558,10 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
     if (args < 0 || args > 6) {
       Throw("Bad opcode: {}", opcode);
     }
+    // TODO: maybe check # args here
     return make_unique<SysCall>(args, move(operands));
+  } else if (opcode == "jump") {
+    return make_unique<JMP>(move(operands));
   }
 
   UCy86Instruction ret;

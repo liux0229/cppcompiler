@@ -23,6 +23,8 @@ const Immediate& toImmediate(const Operand& operand) {
 
 } // unnamed
 
+const MachineInstruction::Rex MachineInstruction::RexN { false, false,
+                                                         false, false, };
 const MachineInstruction::Rex MachineInstruction::RexW { true, false,
                                                          false, false, };
 const MachineInstruction::Rex MachineInstruction::RexR { false, true,
@@ -32,6 +34,14 @@ const MachineInstruction::Rex MachineInstruction::RexX { false, false,
 const MachineInstruction::Rex MachineInstruction::RexB { false, false, 
                                                          false, true };
 
+void MachineInstruction::addSizePrefix(int size) {
+  if (size == 16) {
+    prefix = { 0x66 };
+  } else if (size == 64) {
+    addRex(MachineInstruction::RexW);
+  }
+}
+
 void MachineInstruction::addRex(Rex r) {
   if (rex.empty()) {
     rex.push_back(Rex{});
@@ -39,13 +49,10 @@ void MachineInstruction::addRex(Rex r) {
   rex[0] |= r;
 }
 
-void MachineInstruction::setModRmRegister(Register::Type type) {
+void MachineInstruction::setModRmRegister(const Register& reg) {
   initModRm();
   modRm[0].mod = 0x3;
-  modRm[0].rm = type % 0x8;
-  if (type >= Register::R8) {
-    rex[0].B = 1;
-  }
+  setRegInternal(modRm[0].rm, reg, RexB);
 }
 
 void MachineInstruction::setModRmMemory() {
@@ -55,11 +62,32 @@ void MachineInstruction::setModRmMemory() {
   modRm[0].rm = 0x7;
 }
 
-void MachineInstruction::setReg(Register::Type type) {
+void MachineInstruction::setReg(unsigned char value) {
   initModRm();
-  modRm[0].reg = type % 0x8;
+  modRm[0].reg = value;
+}
+
+void MachineInstruction::setReg(const Register& reg) {
+  initModRm();
+  setRegInternal(modRm[0].reg, reg, RexR);
+}
+
+void MachineInstruction::setRegInternal(int& target, 
+                                        const Register& reg, 
+                                        Rex extensionReg) {
+  auto type = reg.getType();
+  if (reg.hi8()) {
+    hi8 = true;
+    target = type + 0x4;
+  } else {
+    target = type % 0x8;
+  }
+  if (reg.size() == 8 && (type >= 4 && type < 8)) {
+    // SPL, BPL, SDI, DIL
+    addRex(RexN);
+  }
   if (type >= Register::R8) {
-    rex[0].R = 1;
+    addRex(extensionReg);
   }
 }
 
@@ -93,7 +121,13 @@ unsigned char MachineInstruction::ModRm::toByte() const {
 }
 
 vector<unsigned char> MachineInstruction::toBytes() const {
+  if (hi8 && !rex.empty()) {
+    Throw("AH/BH/CH/DH addressed in an instruction requiring REX");
+  }
   vector<unsigned char> r;
+  if (!prefix.empty()) {
+    r.push_back(prefix[0]);
+  }
   if (!rex.empty()) {
     r.push_back(rex[0].toByte());
   }
@@ -118,14 +152,12 @@ void X86Instruction::checkOperandSize(const Operand& a,
 MachineInstruction Mov::assemble() const {
   // TODO: handle 80 moves (can only use floating points)
   MachineInstruction r;
-  if (size() == 64) {
-    r.addRex(MachineInstruction::RexW);
-  }
+  r.addSizePrefix(size());
 
   if (to_->isRegister() && from_->isRegister()) {
     r.opcode = { size() == 8 ? 0x88 : 0x89 };
-    r.setModRmRegister(toRegister(*to_).getType());
-    r.setReg(toRegister(*from_).getType());
+    r.setModRmRegister(toRegister(*to_));
+    r.setReg(toRegister(*from_));
   } else if (to_->isRegister() && from_->isImmediate()) {
     auto type = toRegister(*to_).getType();
     r.opcode = { static_cast<unsigned char>(
@@ -138,16 +170,57 @@ MachineInstruction Mov::assemble() const {
     r.setImmediate(from.getLiteral());
   } else if (to_->isRegister() && from_->isMemory()) {
     r.opcode = { size() == 8 ? 0x8A : 0x8B };
-    r.setReg(toRegister(*to_).getType());
+    r.setReg(toRegister(*to_));
     r.setModRmMemory();
   } else if (to_->isMemory() && from_->isRegister()) {
     r.opcode = { size() == 8 ? 0x88 : 0x89 };
     r.setModRmMemory();
-    r.setReg(toRegister(*from_).getType());
+    r.setReg(toRegister(*from_));
   } else {
     MCHECK(false, "Mov: invalid operand combination");
   }
 
+  return r;
+}
+
+RegRegInstruction::RegRegInstruction(int size, UOperand to, UOperand from) 
+  : X86Instruction(size) {
+  if (!to->isRegister() || !from->isRegister()) {
+    Throw("RegRegInstruction requires operands to be registers");
+  }
+  to_ = URegister(static_cast<Register*>(to.release()));
+  from_ = URegister(static_cast<Register*>(from.release()));
+}
+
+MachineInstruction RegRegInstruction::assemble() const {
+  MachineInstruction r;
+  r.addSizePrefix(size());
+  auto opcode = getOpcode();
+  r.opcode.insert(r.opcode.end(), opcode.begin(), opcode.end());
+  r.setModRmRegister(*to_);
+  r.setReg(*from_);
+  return r;
+}
+
+RegInstruction::RegInstruction(int size, UOperand to, UOperand from) 
+  : X86Instruction(size) {
+  if (!to->isRegister() || !from->isRegister()) {
+    Throw("RegInstruction requires operands to be registers");
+  }
+  auto toReg = static_cast<Register*>(to.get());
+  if (toReg->getType() != Register::AX) {
+    Throw("To operand of RegInstruction must be AX, got {}", toReg->getType());
+  }
+  from_ = URegister(static_cast<Register*>(from.release()));
+}
+
+MachineInstruction RegInstruction::assemble() const {
+  MachineInstruction r;
+  r.addSizePrefix(size());
+  auto opcode = getOpcode();
+  r.opcode.insert(r.opcode.end(), opcode.begin(), opcode.end());
+  r.setModRmRegister(*from_);
+  r.setReg(getReg());
   return r;
 }
 

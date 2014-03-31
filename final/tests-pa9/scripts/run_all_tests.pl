@@ -11,7 +11,7 @@ if (scalar(@ARGV) != 2)
 my $app = $ARGV[0];
 my $suffix = $ARGV[1];
 
-my @tests = split(/\s+/, `find tests -type f`);
+my @tests = split(/\s+/, `find tests/ -type f`);
 
 for my $test (sort @tests)
 {
@@ -22,7 +22,7 @@ for my $test (sort @tests)
 	my $test_base = $test;
 	$test_base =~ s/\.t\.1$//;
 
-	my $command = "scripts/run_one_test.sh $app $suffix $test_base";
+	my $command = "tests/scripts/run_one_test.sh $app $suffix $test_base";
 
 	print "$command\n";
 	my $sys_ret = system($command);

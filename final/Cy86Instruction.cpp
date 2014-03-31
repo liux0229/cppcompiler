@@ -31,6 +31,44 @@ vector<UOperand> combine(UOperand&& a, UOperand&& b) {
   return r;
 }
 
+bool match(const string& opcode, 
+           const string& target, 
+           int maxSize, 
+           int& size) {
+  auto it = find_if(opcode.begin(), 
+                    opcode.end(), 
+                    [](char x) { return isdigit(x); });
+  if (it == opcode.end()) {
+    return false;
+  }
+  size = stoi(opcode.substr(it - opcode.begin()));
+
+  set<int> allowedSize {
+    8, 16, 32, 64
+  };
+  if (maxSize == 80) {
+    allowedSize.insert(80);
+  }
+  if (allowedSize.find(size) == allowedSize.end()) {
+    return false;
+  }
+
+  return target == opcode.substr(0, it - opcode.begin());
+}
+
+template<typename T>
+UCy86Instruction match(const string& opcode,
+                       vector<UOperand>&& operands,
+                       const string& target, 
+                       int maxSize) {
+  int size;
+  if (match(opcode, target, maxSize, size)) {
+    return make_unique<T>(size, move(operands));
+  } else {
+    return nullptr;
+  }
+}
+
 }
 
 Register::Register(const string& name) {
@@ -79,7 +117,7 @@ X86::UOperand Register::toX86Operand(int size) const {
     { r9, X86::Register::R9 },
     { r10, X86::Register::R10 }
   };
-  return make_unique<X86::Register>(m.at(type_), size_);
+  return make_unique<X86::Register>(m.at(type_), size_, hi8_);
 }
 
 void Register::output(std::ostream& out) const {
@@ -99,7 +137,7 @@ void Register::output(std::ostream& out) const {
     { r9, "R9" },
     { r10, "R10" }
   };
-  out << format("{}{}", m.at(type_), size_);
+  out << format("{}{} h8:{}", m.at(type_), size_, hi8_);
 }
 
 X86::UOperand Immediate::toX86Operand(int size) const {
@@ -171,6 +209,8 @@ class Mov : public Cy86Instruction {
       if (operands()[1]->isMemory()) {
         Memory* m = static_cast<Memory*>(operands()[1].get());
         // TODO: enhance this support after we have ADD
+        // TODO: In theory we could accept a sub-64 register operand;
+        // however this matches the reference implementation
         add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
         add<X86::Mov>(r, 
                       size(),
@@ -206,6 +246,134 @@ class Mov : public Cy86Instruction {
     return r;
   }
 };
+
+// TODO; note that the gcc compiler does not give very good error messages
+// if I omit "public" by mistake (the unique_ptr assignment will fail)
+template<typename TX86Instruction>
+class BinaryOperation : public Cy86Instruction {
+ public:
+  vector<UX86Instruction> translate() override {
+    vector<UX86Instruction> r;
+    // move operand 1 into AX
+    {
+      auto inst = Mov(size(), Register::Ax(size()), move(operands()[1]))
+                    .translate();
+      add(r, move(inst));
+    }
+    // move operand 2 into BX
+    {
+      auto inst = Mov(size(), Register::Bx(size()), move(operands()[2]))
+                    .translate();
+      add(r, move(inst));
+    }
+
+    // perform operation
+    addOperation(r);
+
+    // move result into operand 0
+    storeResult(r);
+
+    return r;
+  }
+ protected:
+  BinaryOperation(const string& name, 
+                  int size, 
+                  vector<UOperand>&& ops)
+    : Cy86Instruction(size, move(ops)) {
+    checkOperandNumber(name, 3);
+    checkWriteable(name);
+  }
+
+  virtual void addOperation(vector<UX86Instruction>& r) const {
+    // AX = AX op BX
+    add<TX86Instruction>(r, 
+                         size(),
+                         Register::Ax(size())->toX86Operand(size()), 
+                         Register::Bx(size())->toX86Operand(size()));
+  }
+
+  virtual void storeResult(vector<UX86Instruction>& r) {
+    auto inst = Mov(size(), move(operands()[0]), Register::Ax(size()))
+                  .translate();
+    add(r, move(inst));
+  }
+};
+
+template<typename TX86Instruction>
+class DivOperation : public BinaryOperation<TX86Instruction> {
+ public:
+  DivOperation(const string& name, int size, vector<UOperand>&& operands)
+    : BinaryOperation<TX86Instruction>(name,
+                                       size,
+                                       move(operands)) {
+  }
+ protected:
+  void addOperation(vector<UX86Instruction>& r) const override {
+    // This looks like a compiler bug
+    auto sz = Cy86Instruction::size();
+
+    // Clear AH/DX
+    auto reg = sz == 8 ? Register::Ah() : Register::Dx(sz);
+    add<X86::Xor>(r,
+                  sz,
+                  reg->toX86Operand(sz),
+                  reg->toX86Operand(sz));
+                                              
+    // AX = (DX:)AX div BX
+    add<TX86Instruction>(r,
+                         sz,
+                         Register::Ax(sz)->toX86Operand(sz),
+                         Register::Bx(sz)->toX86Operand(sz));
+  }
+};
+
+template<typename TX86Instruction>
+class ModOperation : public DivOperation<TX86Instruction> {
+ public:
+  ModOperation(const string& name, int size, vector<UOperand>&& operands)
+    : DivOperation<TX86Instruction>(name,
+                                    size,
+                                    move(operands)) {
+  }
+ protected:
+  void storeResult(vector<UX86Instruction>& r) override {
+    auto sz = Cy86Instruction::size();
+    auto& ops = Cy86Instruction::operands();
+
+    auto reg = sz == 8 ? Register::Ah() : Register::Dx(sz);
+    if (reg->hi8()) {
+      // add a shift operation
+      reg = reg->toLower();
+    }
+    {
+      auto inst = Mov(sz, move(ops[0]), move(reg)).translate();
+      add(r, move(inst));
+    }
+  }
+};
+
+#define GEN_BINARY_OP_WITH_BASE(name, base) \
+class name : public base<X86::name> { \
+ public: \
+  name(int size, vector<UOperand>&& operands) \
+    : base<X86::name>(#name, size, move(operands)) { \
+  } \
+};
+
+#define GEN_BINARY_OP(name) GEN_BINARY_OP_WITH_BASE(name, BinaryOperation)
+
+GEN_BINARY_OP(Add)
+GEN_BINARY_OP(Sub)
+GEN_BINARY_OP(UMul)
+GEN_BINARY_OP(SMul)
+
+GEN_BINARY_OP_WITH_BASE(UDiv, DivOperation)
+GEN_BINARY_OP_WITH_BASE(SDiv, DivOperation)
+GEN_BINARY_OP_WITH_BASE(UMod, ModOperation)
+GEN_BINARY_OP_WITH_BASE(SMod, ModOperation)
+
+#undef GEN_BINARY_OP
+#undef GEN_BINARY_OP_WITH_BASE
 
 class SysCall : public Cy86Instruction {
  public:
@@ -244,42 +412,31 @@ class SysCall : public Cy86Instruction {
   }
 };
 
-bool Cy86InstructionFactory::match(const string& target, 
-                                   const string& opcode, 
-                                   int& size) {
-  auto it = find_if(opcode.begin(), 
-                    opcode.end(), 
-                    [](char x) { return isdigit(x); });
-  if (it == opcode.end()) {
-    return false;
-  }
-  size = stoi(opcode.substr(it - opcode.begin()));
-
-  set<int> allowedSize {
-    8, 16, 32, 64, 80
-  };
-  if (allowedSize.find(size) == allowedSize.end()) {
-    return false;
-  }
-
-  return target == opcode.substr(0, it - opcode.begin());
-}
-
 UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
                                              vector<UOperand>&& operands) {
-  int size;
-  if (match("move", opcode, size)) {
-    return make_unique<Mov>(size, move(operands));
-  } else if (opcode.substr(0, opcode.size() - 1) == "syscall") {
+  if (opcode.substr(0, opcode.size() - 1) == "syscall") {
     int args = opcode[opcode.size() - 1] - '0';
     if (args < 0 || args > 6) {
       Throw("Bad opcode: {}", opcode);
     }
     return make_unique<SysCall>(args, move(operands));
-  } else {
-    Throw("Bad opcode: {}", opcode);
-    return nullptr;
   }
+
+  UCy86Instruction ret;
+  (ret = match<Mov>(opcode, move(operands), "move", 64)) ||
+  (ret = match<Add>(opcode, move(operands), "iadd", 64)) ||
+  (ret = match<Sub>(opcode, move(operands), "isub", 64)) ||
+  (ret = match<UMul>(opcode, move(operands), "umul", 64)) ||
+  (ret = match<SMul>(opcode, move(operands), "smul", 64)) ||
+  (ret = match<UDiv>(opcode, move(operands), "udiv", 64)) ||
+  (ret = match<SDiv>(opcode, move(operands), "sdiv", 64)) ||
+  (ret = match<UMod>(opcode, move(operands), "umod", 64)) ||
+  (ret = match<SMod>(opcode, move(operands), "smod", 64));
+
+  if (!ret) {
+    Throw("Bad opcode: {}", opcode);
+  }
+  return ret;
 }
 
 } // Cy86

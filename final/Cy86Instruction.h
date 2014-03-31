@@ -46,8 +46,16 @@ class Register : public Operand {
   static URegister Ax(int size) {
     return get(ax, size);
   }
+  static URegister Ah() {
+    auto r = get(ax, 8);
+    r->hi8_ = true;
+    return r;
+  }
   static URegister Bx(int size) {
     return get(bx, size);
+  }
+  static URegister Dx(int size) {
+    return get(dx, size);
   }
   static URegister Rax() {
     return get(ax, 64);
@@ -80,6 +88,11 @@ class Register : public Operand {
   bool writeable() const {
     return true;
   }
+  bool hi8() const { return hi8_; }
+  URegister toLower() const {
+    CHECK(hi8_);
+    return make_unique<Register>(type_, size_);
+  }
 
  private:
   static URegister get(Type type, int size) {
@@ -93,6 +106,7 @@ class Register : public Operand {
 
   Type type_;
   int size_; // # bits
+  bool hi8_ {false}; // Upper 8 bits of the 16 bit register
 };
 
 class Immediate : public Operand {
@@ -168,10 +182,6 @@ class Cy86InstructionFactory {
  public:
   static UCy86Instruction get(const std::string& opcode, 
                               std::vector<UOperand>&& operands);
- private:
-  static bool match(const std::string& target, 
-                    const std::string& opcode, 
-                    int& size);
 };
 
 } // namespace Cy86

@@ -1,3 +1,11 @@
+// Implementation plan:
+// All integer operations
+// Full memory addressing support
+// Label support
+// Enhance operand size/type check (for operand sign, can also allow
+//                                  "interpreting as unsigned, for example)
+// Floating point support
+
 #pragma once
 
 #include "common.h"
@@ -32,9 +40,15 @@ class Register : public Operand {
     R8, R9, R10, R11,
     R12, R13, R14, R15
   };
-  Register(Type type, int size)
+  Register(Type type, int size, bool hi8 = false)
     : type_(type),
-      size_(size) {
+      size_(size),
+      hi8_(hi8) {
+    if (hi8_) {
+      MCHECK(size_ == 8 && (type_ < 4), 
+             format("Invalid x86 register specifier: t:{} s:{} h8:{}",
+                    type_, size_, hi8_));
+    }
   }
 
   bool isRegister() const override { return true; }
@@ -44,9 +58,13 @@ class Register : public Operand {
   Type getType() const {
     return type_;
   }
+  bool hi8() const {
+    return hi8_;
+  }
  private:
   Type type_;
   int size_;
+  bool hi8_;
 };
 using URegister = std::unique_ptr<Register>;
 
@@ -112,6 +130,7 @@ struct MachineInstruction {
     bool X;
     bool B;
   };
+  static const Rex RexN; // none of WRXB bits set
   static const Rex RexW;
   static const Rex RexR;
   static const Rex RexX;
@@ -125,19 +144,25 @@ struct MachineInstruction {
     int rm {0};
   };
 
+  void addSizePrefix(int size);
   void addRex(Rex r);
-  void setModRmRegister(Register::Type reg);
+  void setModRmRegister(const Register& reg);
   void setModRmMemory();
-  void setReg(Register::Type reg);
+  void setReg(const Register& reg);
+  void setReg(unsigned char value);
   void setImmediate(SConstantValue imm);
   std::vector<unsigned char> toBytes() const;
 
   void initModRm();
+  // shared by setModRmRegister && setReg
+  void setRegInternal(int& target, const Register& reg, Rex extensionReg);
 
+  std::vector<int> prefix;
   std::vector<Rex> rex;
   std::vector<unsigned char> opcode;
   std::vector<ModRm> modRm;
   std::vector<unsigned char> immediate;
+  bool hi8 {false};
 };
 
 inline MachineInstruction::Rex operator|(MachineInstruction::Rex a,
@@ -145,14 +170,6 @@ inline MachineInstruction::Rex operator|(MachineInstruction::Rex a,
   a |= b;
   return a;
 }
-
-// Plan:
-// 1. implement syscall (basic version). so we can test read and write
-// 2. Expand that into memory version
-// 2.5 full move support
-// 3. Add arithmetic support
-// 4. Add label support
-// 5. Add floating support
 
 class X86Instruction {
  // TODO: base operand size?
@@ -186,6 +203,66 @@ class Mov : public X86Instruction {
   UOperand to_;
   UOperand from_;
 };
+
+class RegRegInstruction : public X86Instruction {
+ public:
+  // To be easily brought into the public section of its derived classes
+  RegRegInstruction(int size, UOperand to, UOperand from);
+  MachineInstruction assemble() const override;
+ protected:
+  virtual std::vector<int> getOpcode() const = 0;
+ private:
+  URegister to_;
+  URegister from_;
+};
+
+#define GEN_REG_REG_INST(name, op8, op32) \
+class name : public RegRegInstruction { \
+ public: \
+  using RegRegInstruction::RegRegInstruction; \
+  std::vector<int> getOpcode() const override { \
+    return { size() == 8 ? op8 : op32 }; \
+  } \
+};
+
+GEN_REG_REG_INST(Add, 0x0, 0x1)
+GEN_REG_REG_INST(Sub, 0x28, 0x29)
+GEN_REG_REG_INST(Xor, 0x30, 0x31)
+
+#undef GEN_REG_REG_INST
+
+class RegInstruction : public X86Instruction {
+ public:
+  RegInstruction(int size, UOperand to, UOperand from);
+  MachineInstruction assemble() const override;
+ protected:
+  virtual std::vector<int> getOpcode() const = 0;
+  virtual int getReg() const = 0; 
+ private:
+  URegister from_;
+};
+
+#define GEN_REG_INST(name, op8, op32, reg) \
+class name : public RegInstruction { \
+ public: \
+  using RegInstruction::RegInstruction; \
+ protected: \
+  std::vector<int> getOpcode() const override { \
+    return { size() == 8 ? op8 : op32 }; \
+  } \
+  int getReg() const override { \
+    return reg; \
+  } \
+};
+
+GEN_REG_INST(UMul, 0xF6, 0xF7, 0x4)
+GEN_REG_INST(SMul, 0xF6, 0xF7, 0x5)
+GEN_REG_INST(UDiv, 0xF6, 0xF7, 0x6)
+GEN_REG_INST(SDiv, 0xF6, 0xF7, 0x7)
+GEN_REG_INST(UMod, 0xF6, 0xF7, 0x6)
+GEN_REG_INST(SMod, 0xF6, 0xF7, 0x7)
+
+#undef GEN_REG_INST
 
 class SysCall : public X86Instruction {
  public:

@@ -11,7 +11,7 @@ if (scalar(@ARGV) != 2)
 my $ref_suffix = $ARGV[0];
 my $my_suffix = $ARGV[1];
 
-my @tests = split(/\s+/, `find tests -type f`);
+my @tests = split(/\s+/, `find tests/ -type f`);
 
 my $ntests = 0;
 my $npass = 0;

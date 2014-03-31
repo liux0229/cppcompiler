@@ -35,7 +35,7 @@ class Register : public Operand {
     X, Y, Z, T,
     // The following registers are only used internally for easier translation 
     // of cy86 instructions into x86 instructions
-    ax, bx, dx, di, si, r8, r9, r10
+    ax, bx, cx, dx, di, si, r8, r9, r10
   };
 
   Register(const std::string& name);
@@ -53,6 +53,9 @@ class Register : public Operand {
   }
   static URegister Bx(int size) {
     return get(bx, size);
+  }
+  static URegister Cx(int size) {
+    return get(cx, size);
   }
   static URegister Dx(int size) {
     return get(dx, size);

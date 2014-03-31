@@ -202,6 +202,14 @@ MachineInstruction RegRegInstruction::assemble() const {
   return r;
 }
 
+RegInstruction::RegInstruction(int size,UOperand reg)
+  : X86Instruction(size) {
+  if (!reg->isRegister()) {
+    Throw("RegInstruction requires operand to be register");
+  }
+  reg_ = URegister(static_cast<Register*>(reg.release()));
+}
+
 RegInstruction::RegInstruction(int size, UOperand to, UOperand from) 
   : X86Instruction(size) {
   if (!to->isRegister() || !from->isRegister()) {
@@ -211,7 +219,7 @@ RegInstruction::RegInstruction(int size, UOperand to, UOperand from)
   if (toReg->getType() != Register::AX) {
     Throw("To operand of RegInstruction must be AX, got {}", toReg->getType());
   }
-  from_ = URegister(static_cast<Register*>(from.release()));
+  reg_ = URegister(static_cast<Register*>(from.release()));
 }
 
 MachineInstruction RegInstruction::assemble() const {
@@ -219,7 +227,7 @@ MachineInstruction RegInstruction::assemble() const {
   r.addSizePrefix(size());
   auto opcode = getOpcode();
   r.opcode.insert(r.opcode.end(), opcode.begin(), opcode.end());
-  r.setModRmRegister(*from_);
+  r.setModRmRegister(*reg_);
   r.setReg(getReg());
   return r;
 }

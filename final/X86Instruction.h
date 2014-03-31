@@ -227,19 +227,25 @@ class name : public RegRegInstruction { \
 
 GEN_REG_REG_INST(Add, 0x0, 0x1)
 GEN_REG_REG_INST(Sub, 0x28, 0x29)
+GEN_REG_REG_INST(And, 0x20, 0x21)
+GEN_REG_REG_INST(Or, 0x08, 0x09)
 GEN_REG_REG_INST(Xor, 0x30, 0x31)
+GEN_REG_REG_INST(Cmp, 0x3A, 0x3B)
 
 #undef GEN_REG_REG_INST
 
 class RegInstruction : public X86Instruction {
  public:
+  // TODO: consider whether this two constructor form can be improved
+  RegInstruction(int size, UOperand reg);
   RegInstruction(int size, UOperand to, UOperand from);
+
   MachineInstruction assemble() const override;
  protected:
   virtual std::vector<int> getOpcode() const = 0;
   virtual int getReg() const = 0; 
  private:
-  URegister from_;
+  URegister reg_;
 };
 
 #define GEN_REG_INST(name, op8, op32, reg) \
@@ -255,12 +261,64 @@ class name : public RegInstruction { \
   } \
 };
 
+class SetInstruction : public RegInstruction {
+ public:
+  SetInstruction(UOperand reg)
+    : RegInstruction(8, move(reg)) {
+  }
+
+  // Needed because it's used in the addOperation virtual function of
+  // BinaryOperation; we could avoid this by moving its definition to a
+  // derived class.
+  SetInstruction(int size, UOperand to, UOperand from) 
+    : RegInstruction(size, std::move(to), std::move(from)) {
+    Throw("Not implemented");
+  }
+ protected:
+  std::vector<int> getOpcode() const override {
+    std::vector<int> opcode;
+    opcode.push_back(0x0F);
+    opcode.push_back(getOpcodeInternal());
+    return opcode;
+  }
+  virtual int getOpcodeInternal() const = 0;
+  int getReg() const override {
+    return 0;
+  }
+};
+
+
+#define GEN_SET_INST(name, op) \
+class name : public SetInstruction { \
+ public: \
+  using SetInstruction::SetInstruction; \
+ protected: \
+  int getOpcodeInternal() const override { \
+    return op; \
+  } \
+};
+
+GEN_REG_INST(Not,  0xF6, 0xF7, 0x2)
 GEN_REG_INST(UMul, 0xF6, 0xF7, 0x4)
 GEN_REG_INST(SMul, 0xF6, 0xF7, 0x5)
 GEN_REG_INST(UDiv, 0xF6, 0xF7, 0x6)
 GEN_REG_INST(SDiv, 0xF6, 0xF7, 0x7)
 GEN_REG_INST(UMod, 0xF6, 0xF7, 0x6)
 GEN_REG_INST(SMod, 0xF6, 0xF7, 0x7)
+GEN_REG_INST(SHL,  0xD2, 0xD3, 0x4)
+GEN_REG_INST(SHR,  0xD2, 0xD3, 0x5)
+GEN_REG_INST(SAR,  0xD2, 0xD3, 0x7)
+
+GEN_SET_INST(SETA, 0x97)
+GEN_SET_INST(SETAE, 0x93)
+GEN_SET_INST(SETB, 0x92)
+GEN_SET_INST(SETBE, 0x96)
+GEN_SET_INST(SETG, 0x9F)
+GEN_SET_INST(SETGE, 0x9D)
+GEN_SET_INST(SETL, 0x9C)
+GEN_SET_INST(SETLE, 0x9E)
+GEN_SET_INST(SETE, 0x94)
+GEN_SET_INST(SETNE, 0x95)
 
 #undef GEN_REG_INST
 

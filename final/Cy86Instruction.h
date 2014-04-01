@@ -114,8 +114,9 @@ class Register : public Operand {
 
 class Immediate : public Operand {
  public:
-  Immediate(SConstantValue literal) 
-    : literal_(literal) {
+  Immediate(const std::string& label, SConstantValue literal) 
+    : label_(label),
+      literal_(literal) {
   }
   X86::UOperand toX86Operand(int size) const override;
   void output(std::ostream& out) const override;
@@ -123,15 +124,20 @@ class Immediate : public Operand {
     return false;
   }
 
+  const std::string& label() const { return label_; }
+  SConstantValue literal() const { return literal_; }
+
  private:
+  const std::string label_;
   SConstantValue literal_;
 };
+using UImmediate = std::unique_ptr<Immediate>;
 
 class Memory : public Operand {
  public:
-  Memory(URegister reg, SConstantValue literal)
+  Memory(URegister reg, UImmediate imm)
     : reg_(std::move(reg)),
-      literal_(literal) {
+      imm_(std::move(imm)) {
   }
   bool isMemory() const override {
     return true;
@@ -147,12 +153,12 @@ class Memory : public Operand {
     return nullptr;
   }
 
-  Register* reg () { return reg_.get(); }
-  SConstantValue literal() { return literal_; }
+  const Register* reg () { return &*reg_; }
+  const Immediate* imm() { return &*imm_; }
 
  private:
   URegister reg_;
-  SConstantValue literal_;
+  UImmediate imm_;
 };
 
 class Cy86Instruction {
@@ -163,7 +169,14 @@ class Cy86Instruction {
   }
   virtual ~Cy86Instruction() { }
 
+  void addLabel(const std::string& label) {
+    label_.push_back(label);
+  }
+  const std::vector<std::string>& getLabel() const {
+    return label_;
+  }
   virtual std::vector<X86::UX86Instruction> translate() = 0;
+
  protected:
   void checkOperandNumber(const std::string& name, size_t n) const;
   void checkWriteable(const std::string& name) const;
@@ -177,6 +190,7 @@ class Cy86Instruction {
  private:
   int size_;
   std::vector<UOperand> operands_;
+  std::vector<std::string> label_;
 };
 
 using UCy86Instruction = std::unique_ptr<Cy86Instruction>;

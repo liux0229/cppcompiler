@@ -44,12 +44,22 @@ using namespace X86;
   return vector<unsigned char>(code, code + sizeof(code));
 #endif
 
+namespace {
+
+// TODO: pass this in as parameter
+constexpr size_t kStartAddress = 0x400078;
+
+}
+
 vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
+  map<string, size_t> labelToAddress;
+  vector<pair<const X86::Immediate*, size_t>> immToFix;
+
   auto cy86Instructions = Cy86Parser().parse(move(tokens));
-  // May need a semantic analysis pass (e.g. tigthen up label references)
   vector<UX86Instruction> x86Instructions;
   for (auto& inst : cy86Instructions) {
     auto x86Insts = inst->translate();
+    x86Insts[0]->setLabel(inst->getLabel());
     for (auto& x86Inst : x86Insts) {
       x86Instructions.push_back(move(x86Inst));
     }
@@ -57,8 +67,44 @@ vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
   vector<char> code;
   for (auto& inst : x86Instructions) {
     auto c = inst->assemble().toBytes();
+    for (auto& label : inst->getLabel()) {
+      auto ret = labelToAddress.insert(make_pair(label, code.size()));
+      if (!ret.second) {
+        Throw("Multiple label definition of {}", label);
+      }
+    }
     code.insert(code.end(), c.begin(), c.end());
+    if (auto imm = inst->getImmediateOperand()) {
+      if (!imm->label().empty()) {
+        immToFix.push_back(make_pair(imm, code.size() - imm->size()));
+      }
+    }
   }
+
+  for (auto& kv : immToFix) {
+    auto imm = kv.first;
+    auto loc = kv.second;
+    auto it = labelToAddress.find(imm->label());
+    if (it == labelToAddress.end()) {
+      Throw("label {} undefined", imm->label());
+    }
+
+    // get label value (plus base address)
+    long value = it->second + kStartAddress;
+
+    // apply arithmetic to label
+    auto literal = imm->getLiteral();
+    if (literal) {
+      value += static_cast<FundalmentalValueBase*>(
+                 literal->to(FT_LONG_INT).get())->getValue();
+    }
+    // TODO: is this the best usage?
+    auto bytes = FundalmentalValue<long>(FT_LONG_INT, value).toBytes();
+    for (int i = 0; i < imm->size(); ++i) {
+      code[loc + i] = bytes[i];
+    }
+  }
+
   return code;
 }
 

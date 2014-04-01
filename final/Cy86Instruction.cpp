@@ -164,16 +164,26 @@ X86::UOperand Immediate::toX86Operand(int size) const {
   } else {
     Throw("Unsupported target size: {}", size);
   }
-  return make_unique<X86::Immediate>(literal_->to(target));
+  return make_unique<X86::Immediate>(label_, literal_->to(target));
 }
 
 void Immediate::output(std::ostream& out) const {
   // TODO: better outputing for constant value
-  out << "<immediate>";
+  out << format("<{} {}>", label_, literal_ ? "immediate" : "");
 }
 
 void Memory::output(std::ostream& out) const {
-  out << format("[{} + <literal>]", *reg_);
+  out << "[";
+  if (reg_ && !imm_) {
+    out << format("{}", *reg_);
+  } else if (!reg_ && imm_) {
+    out << format("{}", *imm_);
+  } else if (reg_ && imm_) {
+    out << format("{} + {}", *reg_, *imm_);
+  } else {
+    CHECK(false);
+  }
+  out << "]";
 }
 
 void Cy86Instruction::checkWriteable(const string& name) const {
@@ -209,19 +219,13 @@ class Mov : public Cy86Instruction {
     vector<UX86Instruction> r;
     if (operands()[0]->isRegister() || operands()[1]->isRegister()) {
       if (operands()[1]->isMemory()) {
-        Memory* m = static_cast<Memory*>(operands()[1].get());
-        // TODO: enhance this support after we have ADD
-        // TODO: In theory we could accept a sub-64 register operand;
-        // however this matches the reference implementation
-        add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
+        setupMemoryOperand(r, static_cast<Memory*>(operands()[1].get()));
         add<X86::Mov>(r, 
                       size(),
                       operands()[0]->toX86Operand(size()), 
                       make_unique<X86::Memory>(size()));
       } else if (operands()[0]->isMemory()) {
-        Memory* m = static_cast<Memory*>(operands()[0].get());
-        // TODO: enhance this support after we have ADD
-        add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
+        setupMemoryOperand(r, static_cast<Memory*>(operands()[0].get()));
         add<X86::Mov>(r, 
                       size(),
                       make_unique<X86::Memory>(size()),
@@ -246,6 +250,22 @@ class Mov : public Cy86Instruction {
     }
 
     return r;
+  }
+ private:
+  void setupMemoryOperand(vector<UX86Instruction>& r, Memory* m) {
+    // TODO: In theory we could accept a sub-64 register operand;
+    // however this matches the reference implementation
+    if (m->reg()) {
+      add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
+    } else {
+      add<X86::Xor>(r, 64, X86::Rdi(), X86::Rdi());
+    }
+    if (m->imm()) {
+      add<X86::Mov>(r, 64, X86::Rsi(), m->imm()->toX86Operand(64));
+    } else {
+      add<X86::Xor>(r, 64, X86::Rsi(), X86::Rsi());
+    }
+    add<X86::Add>(r, 64, X86::Rdi(), X86::Rsi());
   }
 };
 
@@ -455,7 +475,8 @@ class ModOperation : public DivOperation<TX86Instruction> {
       add<X86::Mov>(r, 
                     8, 
                     Register::Cx(8)->toX86Operand(8), 
-                    Immediate(make_shared<FundalmentalValue<char>>(FT_CHAR, 8))
+                    Immediate("", 
+                              make_shared<FundalmentalValue<char>>(FT_CHAR, 8))
                       .toX86Operand(8));
       add<X86::SHR>(r, 16, Register::Ax(16)->toX86Operand(16));
       reg = reg->toLower();

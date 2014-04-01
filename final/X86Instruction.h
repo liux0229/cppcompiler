@@ -85,8 +85,9 @@ GEN_REG(R9, R9, 64)
 
 class Immediate : public Operand {
  public:
-  Immediate(SConstantValue literal) 
-    : literal_(literal) {
+  Immediate(const std::string& label, SConstantValue literal) 
+    : label_(label),
+      literal_(literal) {
   }
 
   bool isImmediate() const override { return true; }
@@ -99,7 +100,10 @@ class Immediate : public Operand {
     return literal_;
   }
 
+  const std::string& label() const { return label_; }
+
  private:
+  const std::string label_;
   SConstantValue literal_;
 };
 
@@ -150,7 +154,7 @@ struct MachineInstruction {
   void setModRmMemory();
   void setReg(const Register& reg);
   void setReg(unsigned char value);
-  void setImmediate(SConstantValue imm);
+  void setImmediate(const std::vector<char>& bytes);
   void setRel(unsigned char rel);
   std::vector<unsigned char> toBytes() const;
 
@@ -179,12 +183,21 @@ class X86Instruction {
     : size_(size) {
   }
   virtual ~X86Instruction() { }
+
+  void setLabel(const std::vector<std::string>& label) {
+    label_ = label;
+  }
+  const std::vector<std::string>& getLabel() const { return label_; }
+  // TODO: is this the best design?
+  virtual const Immediate* getImmediateOperand() const { return nullptr; }
+
   virtual MachineInstruction assemble() const = 0;
  protected:
   int size() const { return size_; }
   void checkOperandSize(const Operand& a, const Operand& b) const;
  private:
   int size_;
+  std::vector<std::string> label_;
 };
 
 using UX86Instruction = std::unique_ptr<X86Instruction>;
@@ -200,6 +213,7 @@ class Mov : public X86Instruction {
     checkOperandSize(*to_, *from_);
   }
   MachineInstruction assemble() const override;
+  const Immediate* getImmediateOperand() const override;
  private:
   UOperand to_;
   UOperand from_;

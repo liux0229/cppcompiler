@@ -91,9 +91,9 @@ void MachineInstruction::setRegInternal(int& target,
   }
 }
 
-void MachineInstruction::setImmediate(SConstantValue imm) {
-  auto b = imm->toBytes();
-  immediate.insert(immediate.end(), b.begin(), b.end());
+// TODO: tighten unsigned and signed char
+void MachineInstruction::setImmediate(const vector<char>& bytes) {
+  immediate.insert(immediate.end(), bytes.begin(), bytes.end());
 }
 
 void MachineInstruction::initModRm() {
@@ -154,6 +154,14 @@ void X86Instruction::checkOperandSize(const Operand& a,
                 b.size()));
 }
 
+const Immediate* Mov::getImmediateOperand() const {
+  if (from_->isImmediate()) {
+    return &toImmediate(*from_);
+  } else {
+    return nullptr;
+  }
+}
+
 // TODO: consider a design where opcode, mod/rm, reg fields are obtained
 // separately
 MachineInstruction Mov::assemble() const {
@@ -174,7 +182,16 @@ MachineInstruction Mov::assemble() const {
       r.addRex(MachineInstruction::RexB);
     }
     auto& from = toImmediate(*from_);
-    r.setImmediate(from.getLiteral());
+
+    // imm does not contain label reference, can directly generate
+    // machine code
+    if (from.label().empty()) {
+      r.setImmediate(from.getLiteral()->toBytes());
+    } else {
+      // generate place holder
+      r.setImmediate(vector<char>(size(), 0));
+    }
+
   } else if (to_->isRegister() && from_->isMemory()) {
     r.opcode = { size() == 8 ? 0x8A : 0x8B };
     r.setReg(toRegister(*to_));

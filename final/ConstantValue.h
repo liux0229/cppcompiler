@@ -32,11 +32,13 @@ struct ConstantValue {
   SType type;
 };
 
+// TODO: provide operators so we can use them truely like directly in C/C++?
 struct FundalmentalValueBase : ConstantValue {
   using ConstantValue::ConstantValue;
   virtual bool isZero() const = 0;
   virtual bool isPositive() const = 0;
   virtual unsigned long getValue() const = 0;
+  virtual std::shared_ptr<FundalmentalValueBase> negate() const = 0;
 };
 
 template<typename T>
@@ -127,6 +129,9 @@ struct FundalmentalValue : FundalmentalValueBase {
   }
   unsigned long getValue() const override {
     return data;
+  }
+  std::shared_ptr<FundalmentalValueBase> negate() const override {
+    return std::make_shared<FundalmentalValue<T>>(type, -data);
   }
 
   std::vector<char> toBytes() const override { 

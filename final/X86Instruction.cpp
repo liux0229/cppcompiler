@@ -102,6 +102,10 @@ void MachineInstruction::initModRm() {
   }
 }
 
+void MachineInstruction::setRel(unsigned char rel) {
+  relative = { rel };
+}
+
 unsigned char MachineInstruction::Rex::toByte() const {
   unsigned char r = 0;
   r |= 0x40;
@@ -132,6 +136,9 @@ vector<unsigned char> MachineInstruction::toBytes() const {
     r.push_back(rex[0].toByte());
   }
   r.insert(r.end(), opcode.begin(), opcode.end());
+  if (!relative.empty()) {
+    r.push_back(relative[0]);
+  }
   if (!modRm.empty()) {
     r.push_back(modRm[0].toByte());
   }
@@ -232,9 +239,10 @@ MachineInstruction RegInstruction::assemble() const {
   return r;
 }
 
-MachineInstruction SysCall::assemble() const {
+MachineInstruction JE8::assemble() const {
   MachineInstruction r;
-  r.opcode = { 0x0F, 0x05 };
+  r.opcode = {0x74};
+  r.setRel(relative_);
   return r;
 }
 

@@ -151,6 +151,7 @@ struct MachineInstruction {
   void setReg(const Register& reg);
   void setReg(unsigned char value);
   void setImmediate(SConstantValue imm);
+  void setRel(unsigned char rel);
   std::vector<unsigned char> toBytes() const;
 
   void initModRm();
@@ -160,6 +161,7 @@ struct MachineInstruction {
   std::vector<int> prefix;
   std::vector<Rex> rex;
   std::vector<unsigned char> opcode;
+  std::vector<unsigned char> relative;
   std::vector<ModRm> modRm;
   std::vector<unsigned char> immediate;
   bool hi8 {false};
@@ -172,7 +174,6 @@ inline MachineInstruction::Rex operator|(MachineInstruction::Rex a,
 }
 
 class X86Instruction {
- // TODO: base operand size?
  public:
   X86Instruction(int size)
     : size_(size) {
@@ -288,6 +289,17 @@ class SetInstruction : public RegInstruction {
   }
 };
 
+class JE8 : public X86Instruction {
+ public:
+  JE8(int relative) 
+    : X86Instruction(8),
+      relative_(relative) {
+  }
+  MachineInstruction assemble() const override;
+ private:
+  int relative_;
+};
+
 
 #define GEN_SET_INST(name, op) \
 class name : public SetInstruction { \
@@ -309,8 +321,9 @@ GEN_REG_INST(SMod, 0xF6, 0xF7, 0x7)
 GEN_REG_INST(SHL,  0xD2, 0xD3, 0x4)
 GEN_REG_INST(SHR,  0xD2, 0xD3, 0x5)
 GEN_REG_INST(SAR,  0xD2, 0xD3, 0x7)
-// TODO: we need to disable the 8 bit form for JMP
+// TODO: we need to disable the 8 bit form for JMP / CALL
 GEN_REG_INST(JMP,  0xFF, 0xFF, 0x4)
+GEN_REG_INST(CALL,  0xFF, 0xFF, 0x2)
 
 GEN_SET_INST(SETA, 0x97)
 GEN_SET_INST(SETAE, 0x93)
@@ -325,11 +338,29 @@ GEN_SET_INST(SETNE, 0x95)
 
 #undef GEN_REG_INST
 
-class SysCall : public X86Instruction {
+class OpcodeInstruction : public X86Instruction {
  public:
-  SysCall() : X86Instruction(64) { }
-  MachineInstruction assemble() const override;
+  OpcodeInstruction(const std::vector<unsigned char>& opcode)
+    : X86Instruction(64),
+      opcode_(opcode) {
+  }
+  MachineInstruction assemble() const override {
+    MachineInstruction r;
+    r.opcode = opcode_;
+    return r;
+  }
+ private:
+  const std::vector<unsigned char> opcode_;
 };
+
+#define GEN_OPCODE_INST(name, ...) \
+class name : public OpcodeInstruction { \
+ public: \
+  name() : OpcodeInstruction(__VA_ARGS__) { } \
+};
+
+GEN_OPCODE_INST(SysCall, { 0x0F, 0x05 })
+GEN_OPCODE_INST(RET, { 0xC3 })
 
 }
 

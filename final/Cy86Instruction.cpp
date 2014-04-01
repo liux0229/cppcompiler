@@ -281,11 +281,12 @@ class UnaryOperation : public Cy86Instruction {
   }
 };
 
-class JMP : public Cy86Instruction {
+template<typename TX86Instruction>
+class ControlTransferInstruction : public Cy86Instruction {
  public:
-  JMP(vector<UOperand>&& ops)
+  ControlTransferInstruction(const string& name, vector<UOperand>&& ops)
     : Cy86Instruction(64, move(ops)) {
-    checkOperandNumber("JMP", 1);
+    checkOperandNumber(name, 1);
   }
   vector<UX86Instruction> translate() override {
     vector<UX86Instruction> r;
@@ -296,7 +297,58 @@ class JMP : public Cy86Instruction {
       add(r, move(inst));
     }
 
-    add<X86::JMP>(r, 64, Register::Ax(64)->toX86Operand(64));
+    add<TX86Instruction>(r, 64, Register::Ax(64)->toX86Operand(64));
+
+    return r;
+  }
+};
+
+#define GEN_CONTROL_TRANSFER_OP(name) \
+class name : public ControlTransferInstruction<X86::name> { \
+ public: \
+  name(vector<UOperand>&& ops) \
+    : ControlTransferInstruction(#name, move(ops)) { \
+  } \
+};
+
+GEN_CONTROL_TRANSFER_OP(JMP)
+GEN_CONTROL_TRANSFER_OP(CALL)
+
+#undef GEN_CONTROL_TRANSFER_OP
+
+class JumpIf : public Cy86Instruction {
+ public:
+  JumpIf(vector<UOperand>&& ops)
+    : Cy86Instruction(64, move(ops)) {
+    checkOperandNumber("JumpIf", 2);
+  }
+  vector<UX86Instruction> translate() override {
+    vector<UX86Instruction> r;
+    // move operand 1 into RBX
+    {
+      auto inst = Mov(64, Register::Rbx(), move(operands()[1])).translate();
+      add(r, move(inst));
+    }
+    // move operand 0 into AL
+    {
+      auto inst = Mov(8, Register::Ax(8), move(operands()[0])).translate();
+      add(r, move(inst));
+    }
+    // Test AL
+    add<X86::Test>(r,
+                   8, 
+                   Register::Ax(8)->toX86Operand(8),
+                   Register::Ax(8)->toX86Operand(8));
+
+    // actual JMP
+    auto jmp = make_unique<X86::JMP>(64, Register::Rbx()->toX86Operand(64));
+    unsigned char jmpSize = jmp->assemble().toBytes().size();
+
+    // if the !operand(0), then do not perform (skip) the actual JMP
+    add<X86::JE8>(r, jmpSize);
+
+    // add JMP to the instruction stream
+    r.push_back(move(jmp));
 
     return r;
   }
@@ -562,6 +614,8 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
     return make_unique<SysCall>(args, move(operands));
   } else if (opcode == "jump") {
     return make_unique<JMP>(move(operands));
+  } else if (opcode == "jumpif") {
+    return make_unique<JumpIf>(move(operands));
   }
 
   UCy86Instruction ret;

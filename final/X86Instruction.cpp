@@ -15,8 +15,14 @@ const Register& toRegister(const Operand& operand) {
   return *p;
 }
 
+// TODO: could we merge these two?
 const Immediate& toImmediate(const Operand& operand) {
   auto p = dynamic_cast<const Immediate*>(&operand);
+  MCHECK(p, "register operand expected");
+  return *p;
+}
+Immediate& toImmediate(Operand& operand) {
+  auto p = dynamic_cast<Immediate*>(&operand);
   MCHECK(p, "register operand expected");
   return *p;
 }
@@ -154,12 +160,24 @@ void X86Instruction::checkOperandSize(const Operand& a,
                 b.size()));
 }
 
-const Immediate* Mov::getImmediateOperand() const {
+Immediate* Mov::getImmediateOperand() const {
   if (from_->isImmediate()) {
     return &toImmediate(*from_);
   } else {
     return nullptr;
   }
+}
+
+Mov::Mov(int size, UOperand to, UOperand from)
+  : X86Instruction(size),
+    to_(std::move(to)),
+    from_(std::move(from)) {
+  auto imm = getImmediateOperand();
+  if (imm && !imm->label().empty()) {
+    imm->setSize(size);
+  }
+
+  checkOperandSize(*to_, *from_);
 }
 
 // TODO: consider a design where opcode, mod/rm, reg fields are obtained
@@ -189,7 +207,9 @@ MachineInstruction Mov::assemble() const {
       r.setImmediate(from.getLiteral()->toBytes());
     } else {
       // generate place holder
-      r.setImmediate(vector<char>(size(), 0));
+      // TODO: figure out a better way to represent size
+      // # of bits vs. # of bytes
+      r.setImmediate(vector<char>(size() / 8, 0));
     }
 
   } else if (to_->isRegister() && from_->isMemory()) {

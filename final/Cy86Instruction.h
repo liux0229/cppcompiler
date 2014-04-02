@@ -117,6 +117,7 @@ class Immediate : public Operand {
   Immediate(const std::string& label, SConstantValue literal) 
     : label_(label),
       literal_(literal) {
+    CHECK(!label_.empty() || literal_);
   }
   X86::UOperand toX86Operand(int size) const override;
   void output(std::ostream& out) const override;

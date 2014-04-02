@@ -76,7 +76,7 @@ vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
     code.insert(code.end(), c.begin(), c.end());
     if (auto imm = inst->getImmediateOperand()) {
       if (!imm->label().empty()) {
-        immToFix.push_back(make_pair(imm, code.size() - imm->size()));
+        immToFix.push_back(make_pair(imm, code.size() - imm->size() / 8));
       }
     }
   }
@@ -100,7 +100,7 @@ vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
     }
     // TODO: is this the best usage?
     auto bytes = FundalmentalValue<long>(FT_LONG_INT, value).toBytes();
-    for (int i = 0; i < imm->size(); ++i) {
+    for (int i = 0; i < imm->size() / 8; ++i) {
       code[loc + i] = bytes[i];
     }
   }

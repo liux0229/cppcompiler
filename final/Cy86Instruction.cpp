@@ -143,6 +143,10 @@ void Register::output(std::ostream& out) const {
 }
 
 X86::UOperand Immediate::toX86Operand(int size) const {
+  if (!literal_) {
+    return make_unique<X86::Immediate>(label_, nullptr);
+  }
+
   auto type = literal_->type;
   if (!type->isFundalmental()) {
     Throw("Literal type not supported yet: {}", type);
@@ -164,6 +168,7 @@ X86::UOperand Immediate::toX86Operand(int size) const {
   } else {
     Throw("Unsupported target size: {}", size);
   }
+
   return make_unique<X86::Immediate>(label_, literal_->to(target));
 }
 
@@ -319,6 +324,19 @@ class ControlTransferInstruction : public Cy86Instruction {
 
     add<TX86Instruction>(r, 64, Register::Ax(64)->toX86Operand(64));
 
+    return r;
+  }
+};
+
+class RET : public Cy86Instruction {
+ public:
+  RET(vector<UOperand>&& ops) 
+    : Cy86Instruction(64, move(ops)) {
+    checkOperandNumber("RET", 0);
+  }
+  vector<UX86Instruction> translate() override {
+    vector<UX86Instruction> r;
+    add<X86::RET>(r);
     return r;
   }
 };
@@ -525,6 +543,11 @@ class CompareOperation : public BinaryOperation<TX86Instruction> {
                   Register::Ax(sz)->toX86Operand(sz));
     add<TX86Instruction>(r, Register::Ax(8)->toX86Operand(8));
   }
+  void storeResult(vector<UX86Instruction>& r) override {
+    auto inst = Mov(8, move(Cy86Instruction::operands()[0]), Register::Ax(8))
+                  .translate();
+    add(r, move(inst));
+  }
 };
 
 #define GEN_UNARY_OP(name) \
@@ -637,6 +660,10 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
     return make_unique<JMP>(move(operands));
   } else if (opcode == "jumpif") {
     return make_unique<JumpIf>(move(operands));
+  } else if (opcode == "call") {
+    return make_unique<CALL>(move(operands));
+  } else if (opcode == "ret") {
+    return make_unique<RET>(move(operands));
   }
 
   UCy86Instruction ret;

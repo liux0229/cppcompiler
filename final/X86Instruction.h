@@ -88,12 +88,14 @@ class Immediate : public Operand {
   Immediate(const std::string& label, SConstantValue literal) 
     : label_(label),
       literal_(literal) {
+    CHECK(!label_.empty() || literal_);
   }
 
   bool isImmediate() const override { return true; }
 
   int size() const override {
-    return literal_->type->getTypeSize() * 8;
+    CHECK(label_.empty() || size_ > 0);
+    return size_ ? size_ : literal_->type->getTypeSize() * 8;
   }
 
   SConstantValue getLiteral() const {
@@ -102,9 +104,18 @@ class Immediate : public Operand {
 
   const std::string& label() const { return label_; }
 
+  void setSize(int size) {
+    size_ = size;
+  }
+
  private:
   const std::string label_;
   SConstantValue literal_;
+  // if this immediate contains a label, then we must supply its
+  // size directly (in MOV)
+  // TODO: consider a better design where this information is better
+  // flowed
+  int size_ = 0;
 };
 
 // Assume always use [RDI]; will enhance in the future if necessary
@@ -189,7 +200,7 @@ class X86Instruction {
   }
   const std::vector<std::string>& getLabel() const { return label_; }
   // TODO: is this the best design?
-  virtual const Immediate* getImmediateOperand() const { return nullptr; }
+  virtual Immediate* getImmediateOperand() const { return nullptr; }
 
   virtual MachineInstruction assemble() const = 0;
  protected:
@@ -206,14 +217,9 @@ using UX86Instruction = std::unique_ptr<X86Instruction>;
 // there are different types / forms of MOV
 class Mov : public X86Instruction {
  public:
-  Mov(int size, UOperand to, UOperand from)
-    : X86Instruction(size),
-      to_(std::move(to)),
-      from_(std::move(from)) {
-    checkOperandSize(*to_, *from_);
-  }
+  Mov(int size, UOperand to, UOperand from);
   MachineInstruction assemble() const override;
-  const Immediate* getImmediateOperand() const override;
+  Immediate* getImmediateOperand() const override;
  private:
   UOperand to_;
   UOperand from_;

@@ -69,6 +69,10 @@ UCy86Instruction match(const string& opcode,
   }
 }
 
+Register* toRegister(const UOperand& op) {
+  return static_cast<Register*>(op.get());
+}
+
 }
 
 Register::Register(const string& name) {
@@ -116,7 +120,8 @@ X86::UOperand Register::toX86Operand(int size) const {
     { si, X86::Register::SI },
     { r8, X86::Register::R8 },
     { r9, X86::Register::R9 },
-    { r10, X86::Register::R10 }
+    { r10, X86::Register::R10 },
+    { r11, X86::Register::R11 }
   };
   return make_unique<X86::Register>(m.at(type_), size_, hi8_);
 }
@@ -137,23 +142,30 @@ void Register::output(std::ostream& out) const {
     { si, "SI" },
     { r8, "R8" },
     { r9, "R9" },
-    { r10, "R10" }
+    { r10, "R10" },
+    { r11, "R11" }
   };
   out << format("{}{} h8:{}", m.at(type_), size_, hi8_);
 }
 
+// TODO: handle right most bytes truncation
+// This should be type free and only care about operand size
+// That way we could support 400
 X86::UOperand Immediate::toX86Operand(int size) const {
   if (!literal_) {
     return make_unique<X86::Immediate>(label_, nullptr);
   }
+  if (size == -1) {
+    return make_unique<X86::Immediate>(label_, literal_);
+  }
 
   auto type = literal_->type;
   if (!type->isFundalmental()) {
-    Throw("Literal type not supported yet: {}", type);
+    Throw("Literal type not supported yet: {}", *type);
   }
   auto ftype = type->toFundalmental();
   if (!ftype->isIntegral()) {
-    Throw("Literal type not supported yet: {}", ftype);
+    Throw("Literal type not supported yet: {}", *ftype);
   }
 
   EFundamentalType target;
@@ -610,6 +622,20 @@ GEN_COMPARE_OP(NE)
 #undef GEN_BINARY_OP
 #undef GEN_BINARY_OP_WITH_BASE
 
+class Data : public Cy86Instruction {
+ public:
+  Data(int size, vector<UOperand>&& ops) 
+    : Cy86Instruction(size, move(ops)) {
+    checkOperandNumber("data", 1);
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    add<X86::Data>(r, operands()[0]->toX86Operand(size()));
+    return r;
+  }
+};
+
+
 class SysCall : public Cy86Instruction {
  public:
   SysCall(size_t args, vector<UOperand>&& ops)
@@ -626,8 +652,13 @@ class SysCall : public Cy86Instruction {
     }
 
     vector<UOperand> args;
-    args.push_back(Register::Rdi());
-    args.push_back(Register::Rsi());
+    // Note: Rdi / Rsi need to be specially handled since they are used 
+    // in [memory] addressing (so they could be clobbered)
+    // The plan is to first move operand 2 & 3 to R11 and RCX
+    // Then after all the operands are moved move R11/RCX to Rdi/Rsi 
+    args.push_back(Register::R11());
+    args.push_back(Register::Rcx());
+
     args.push_back(Register::Rdx());
     args.push_back(Register::R10());
     args.push_back(Register::R8());
@@ -637,6 +668,16 @@ class SysCall : public Cy86Instruction {
       auto inst = Mov(64, move(args[i - 2]), move(operands()[i])).translate();
       add(r, move(inst));
     }
+
+    {
+      auto inst = Mov(64, Register::Rdi(), Register::R11()).translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = Mov(64, Register::Rsi(), Register::Rcx()).translate();
+      add(r, move(inst));
+    }
+
     add<X86::SysCall>(r);
     {
       auto inst = Mov(64, move(operands()[0]), Register::Rax()).translate();
@@ -664,6 +705,8 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
     return make_unique<CALL>(move(operands));
   } else if (opcode == "ret") {
     return make_unique<RET>(move(operands));
+  } else if (opcode == "datax") {
+    return make_unique<Data>(-1, move(operands));
   }
 
   UCy86Instruction ret;
@@ -692,7 +735,8 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
   (ret = match<CMPLE>(opcode, move(operands), "sle", 64)) ||
   (ret = match<CMPBE>(opcode, move(operands), "ule", 64)) ||
   (ret = match<CMPGE>(opcode, move(operands), "sge", 64)) ||
-  (ret = match<CMPAE>(opcode, move(operands), "uge", 64));
+  (ret = match<CMPAE>(opcode, move(operands), "uge", 64)) ||
+  (ret = match<Data>(opcode, move(operands), "data", 64));
 
   if (!ret) {
     Throw("Bad opcode: {}", opcode);

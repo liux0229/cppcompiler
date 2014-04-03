@@ -51,7 +51,8 @@ constexpr size_t kStartAddress = 0x400078;
 
 }
 
-vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
+std::pair<vector<char>, size_t>
+Cy86Compiler::compile(vector<UToken>&& tokens) {
   map<string, size_t> labelToAddress;
   vector<pair<const X86::Immediate*, size_t>> immToFix;
 
@@ -105,7 +106,12 @@ vector<char> Cy86Compiler::compile(vector<UToken>&& tokens) {
     }
   }
 
-  return code;
+  // TODO: will this perform move?
+  auto itStart = labelToAddress.find("start");
+  if (itStart != labelToAddress.end()) {
+    cout << "start: " << itStart->second + kStartAddress << endl;
+  }
+  return make_pair(code, itStart == labelToAddress.end() ? 0 : itStart->second);
 }
 
 }

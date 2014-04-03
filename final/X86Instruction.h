@@ -118,6 +118,8 @@ class Immediate : public Operand {
   int size_ = 0;
 };
 
+using UImmediate = std::unique_ptr<Immediate>;
+
 // Assume always use [RDI]; will enhance in the future if necessary
 class Memory : public Operand {
  public:
@@ -382,6 +384,25 @@ class name : public OpcodeInstruction { \
 GEN_OPCODE_INST(SysCall, { 0x0F, 0x05 })
 GEN_OPCODE_INST(RET, { 0xC3 })
 
-}
+#undef GEN_OPCODE_INST
 
-}
+class Data : public X86Instruction {
+ public:
+  Data(UOperand&& imm)
+    // TODO: size not real
+    : X86Instruction(64),
+      imm_(&dynamic_cast<Immediate&>(*imm.release())) {
+    CHECK(imm_->getLiteral() && imm_->label().empty());
+  }
+  MachineInstruction assemble() const override {
+    MachineInstruction r;
+    r.setImmediate(imm_->getLiteral()->toBytes());
+    return r;
+  }
+ private:
+  UImmediate imm_;
+};
+
+} // X86
+
+} // compiler

@@ -42,6 +42,23 @@ class Cy86ParserImp {
       auto stm = statement();
       stm->addLabel(lab);
       return stm;
+    } else if (isLiteral() || isSimple(OP_MINUS)) {
+      bool neg = false;
+      if (isSimple(OP_MINUS)) {
+        neg = true;
+        adv();
+      }
+      auto literal = expectLiteral();
+      if (neg) {
+        if (!literal->type->isFundalmental()) {
+          Throw("negation of literal of type {}", *literal->type);
+        }
+        auto f = static_cast<FundalmentalValueBase*>(literal.get());
+        literal = f->negate();
+      }
+      vector<UOperand> operands;
+      operands.push_back(make_unique<Immediate>("", literal));
+      return Cy86InstructionFactory::get("datax", move(operands));
     } else {
       string op = opcode();
       vector<UOperand> operands;
@@ -115,6 +132,7 @@ class Cy86ParserImp {
     if (isIdentifier()) {
       lab = expectIdentifier();
     } else if (isSimple(OP_LPAREN)) {
+      adv();
       if (isSimple(OP_MINUS)) {
         adv();
         literal = negate(expectLiteral());

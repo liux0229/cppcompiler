@@ -103,18 +103,21 @@ class ProgramGenerator {
       });
       processor.process();
     }
-    auto code = Cy86Compiler().compile(move(tokens));
-    output(code, output_);
+    vector<char> code;
+    size_t start;
+    tie(code, start) = Cy86Compiler().compile(move(tokens));
+    output(code, start, output_);
   }
  private:
-  void output(const vector<char>& code, const string& output) {
+  void output(const vector<char>& code, size_t start, const string& output) {
     // const char* rawData = "Assembly Programming Is Fun. LISP.\n";
     // vector<unsigned char> data(rawData, rawData + strlen(rawData));
     ElfHeader elfHeader;
     ProgramSegmentHeader programSegmentHeader;
     elfHeader.entry = 0x400000 + 
                       sizeof(ElfHeader) + 
-                      sizeof(ProgramSegmentHeader);
+                      sizeof(ProgramSegmentHeader) +
+                      start;
                       // data.size();
     programSegmentHeader.filesz = sizeof(ElfHeader) + 
                                   sizeof(ProgramSegmentHeader) + 

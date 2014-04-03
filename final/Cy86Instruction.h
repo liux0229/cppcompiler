@@ -35,7 +35,7 @@ class Register : public Operand {
     X, Y, Z, T,
     // The following registers are only used internally for easier translation 
     // of cy86 instructions into x86 instructions
-    ax, bx, cx, dx, di, si, r8, r9, r10
+    ax, bx, cx, dx, di, si, r8, r9, r10, r11
   };
 
   Register(const std::string& name);
@@ -66,6 +66,9 @@ class Register : public Operand {
   static URegister Rbx() {
     return get(bx, 64);
   }
+  static URegister Rcx() {
+    return get(cx, 64);
+  }
   static URegister Rdx() {
     return get(dx, 64);
   }
@@ -84,6 +87,9 @@ class Register : public Operand {
   static URegister R10() {
     return get(r10, 64);
   }
+  static URegister R11() {
+    return get(r11, 64);
+  }
 
   X86::UOperand toX86Operand(int size) const override;
   void output(std::ostream& out) const override;
@@ -96,6 +102,8 @@ class Register : public Operand {
     CHECK(hi8_);
     return make_unique<Register>(type_, size_);
   }
+
+  bool isR11() const { return type_ == r11; }
 
  private:
   static URegister get(Type type, int size) {

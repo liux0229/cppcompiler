@@ -172,11 +172,6 @@ Mov::Mov(int size, UOperand to, UOperand from)
   : X86Instruction(size),
     to_(std::move(to)),
     from_(std::move(from)) {
-  auto imm = getImmediateOperand();
-  if (imm && !imm->label().empty()) {
-    imm->setSize(size);
-  }
-
   checkOperandSize(*to_, *from_);
 }
 
@@ -201,17 +196,7 @@ MachineInstruction Mov::assemble() const {
     }
     auto& from = toImmediate(*from_);
 
-    // imm does not contain label reference, can directly generate
-    // machine code
-    if (from.label().empty()) {
-      r.setImmediate(from.getLiteral()->toBytes());
-    } else {
-      // generate place holder
-      // TODO: figure out a better way to represent size
-      // # of bits vs. # of bytes
-      r.setImmediate(vector<char>(size() / 8, 0));
-    }
-
+    r.setImmediate(from.getBytes());
   } else if (to_->isRegister() && from_->isMemory()) {
     r.opcode = { size() == 8 ? 0x8A : 0x8B };
     r.setReg(toRegister(*to_));

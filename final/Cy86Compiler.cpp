@@ -76,7 +76,7 @@ Cy86Compiler::compile(vector<UToken>&& tokens) {
     }
     code.insert(code.end(), c.begin(), c.end());
     if (auto imm = inst->getImmediateOperand()) {
-      if (!imm->label().empty()) {
+      if (!imm->getLabel().empty()) {
         immToFix.push_back(make_pair(imm, code.size() - imm->size() / 8));
       }
     }
@@ -85,22 +85,21 @@ Cy86Compiler::compile(vector<UToken>&& tokens) {
   for (auto& kv : immToFix) {
     auto imm = kv.first;
     auto loc = kv.second;
-    auto it = labelToAddress.find(imm->label());
+    auto it = labelToAddress.find(imm->getLabel());
     if (it == labelToAddress.end()) {
-      Throw("label {} undefined", imm->label());
+      Throw("label {} undefined", imm->getLabel());
     }
 
     // get label value (plus base address)
     long value = it->second + kStartAddress;
+    // apply constant offset
+    value += imm->getConstant();
 
-    // apply arithmetic to label
-    auto literal = imm->getLiteral();
-    if (literal) {
-      value += static_cast<FundalmentalValueBase*>(
-                 literal->to(FT_LONG_INT).get())->getValue();
-    }
     // TODO: is this the best usage?
-    auto bytes = FundalmentalValue<long>(FT_LONG_INT, value).toBytes();
+    auto bytes = FundalmentalValue<uint64_t>(FT_UNSIGNED_LONG_INT, value)
+                   .toBytes();
+    // if the bytes is too long then the rightmost bytes are automatically
+    // truncated as desired.
     for (int i = 0; i < imm->size() / 8; ++i) {
       code[loc + i] = bytes[i];
     }

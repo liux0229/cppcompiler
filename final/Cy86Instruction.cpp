@@ -1,3 +1,4 @@
+// TODO: register + literal (literal must be constant)
 #include "Cy86Instruction.h"
 #include <cctype>
 #include <algorithm>
@@ -71,6 +72,30 @@ UCy86Instruction match(const string& opcode,
 
 Register* toRegister(const UOperand& op) {
   return static_cast<Register*>(op.get());
+}
+
+vector<char> truncateOrExtend(SConstantValue literal, 
+                              int desiredSizeInBits) {
+  auto bytes = literal->toBytes();
+  int actualSize = bytes.size();
+  int desiredSize = desiredSizeInBits / 8;
+  if (actualSize >= desiredSize) {
+    bytes = vector<char>(bytes.begin(), bytes.begin() + desiredSize);
+  } else {
+    // only sign extend if the literal is a integral signed type
+    auto type = literal->type;
+    bool extend = type->isFundalmental() && 
+                  type->toFundalmental()->isIntegral() &&
+                  static_cast<FundalmentalValueBase*>(literal.get())
+                    ->isSigned();
+    char extendByte = extend && ((bytes.back() & 0x80) > 0) ? 
+                        0xFF :
+                        0x00;
+    for (int i = 0; i < desiredSize - actualSize; ++i) {
+      bytes.push_back(extendByte);
+    }
+  }
+  return bytes;
 }
 
 }
@@ -152,36 +177,35 @@ void Register::output(std::ostream& out) const {
 // This should be type free and only care about operand size
 // That way we could support 400
 X86::UOperand Immediate::toX86Operand(int size) const {
+  // no literal, must be plain label
   if (!literal_) {
-    return make_unique<X86::Immediate>(label_, nullptr);
+    CHECK(!label_.empty());
+    return make_unique<X86::Immediate>(label_, 0, size);
   }
+
+  // immediate with no size restriction
+  // pass verbatim
   if (size == -1) {
-    return make_unique<X86::Immediate>(label_, literal_);
+    return make_unique<X86::Immediate>(literal_->toBytes());
   }
 
-  auto type = literal_->type;
-  if (!type->isFundalmental()) {
-    Throw("Literal type not supported yet: {}", *type);
-  }
-  auto ftype = type->toFundalmental();
-  if (!ftype->isIntegral()) {
-    Throw("Literal type not supported yet: {}", *ftype);
-  }
-
-  EFundamentalType target;
-  if (size == 8) {
-    target = FT_CHAR;
-  } else if (size == 16) {
-    target = FT_SHORT_INT;
-  } else if (size == 32) {
-    target = FT_INT;
-  } else if (size == 64) {
-    target = FT_LONG_INT;
-  } else {
-    Throw("Unsupported target size: {}", size);
+  if (!label_.empty()) {
+    auto type = literal_->type;
+    bool isIntegral = type->isFundalmental() &&
+                      type->toFundalmental()->isIntegral();
+    if (!isIntegral) {
+      Throw("Immediate with label {} but constant type is not integral: {}",
+            label_,
+            *type);
+    }
+    auto bytes = truncateOrExtend(literal_, 64);
+    CHECK(bytes.size() == 8);
+    // TODO: abstract this
+    auto constant = *reinterpret_cast<int64_t *>(bytes.data());
+    return make_unique<X86::Immediate>(label_, constant, size);
   }
 
-  return make_unique<X86::Immediate>(label_, literal_->to(target));
+  return make_unique<X86::Immediate>(truncateOrExtend(literal_, size));
 }
 
 void Immediate::output(std::ostream& out) const {
@@ -462,37 +486,55 @@ class BinaryOperation : public Cy86Instruction {
 template<typename TX86Instruction>
 class DivOperation : public BinaryOperation<TX86Instruction> {
  protected:
-  DivOperation(const string& name, int size, vector<UOperand>&& operands)
+  DivOperation(const string& name, 
+               int size, 
+               vector<UOperand>&& operands, 
+               bool isSigned)
     : BinaryOperation<TX86Instruction>(name,
                                        size,
-                                       move(operands)) {
+                                       move(operands)),
+      isSigned_(isSigned) {
   }
   void addOperation(vector<UX86Instruction>& r) const override {
     // This looks like a compiler bug
     auto sz = Cy86Instruction::size();
 
-    // Clear AH/DX
-    auto reg = sz == 8 ? Register::Ah() : Register::Dx(sz);
-    add<X86::Xor>(r,
-                  sz,
-                  reg->toX86Operand(sz),
-                  reg->toX86Operand(sz));
-                                              
+    if (isSigned_) {
+      // Sign extend to AX / DX
+      if (sz == 8) {
+        add<X86::CBW>(r);
+      } else {
+        add<X86::SignExtend>(r, sz);
+      }
+    } else {
+      auto reg = sz == 8 ? Register::Ah() : Register::Dx(sz);
+      add<X86::Xor>(r,
+          sz,
+          reg->toX86Operand(sz),
+          reg->toX86Operand(sz));
+    }
+
     // AX = (DX:)AX div BX
     add<TX86Instruction>(r,
                          sz,
                          Register::Ax(sz)->toX86Operand(sz),
                          Register::Bx(sz)->toX86Operand(sz));
   }
+ private:
+  bool isSigned_;
 };
 
 template<typename TX86Instruction>
 class ModOperation : public DivOperation<TX86Instruction> {
  protected:
-  ModOperation(const string& name, int size, vector<UOperand>&& operands)
+  ModOperation(const string& name, 
+               int size, 
+               vector<UOperand>&& operands, 
+               bool isSigned)
     : DivOperation<TX86Instruction>(name,
                                     size,
-                                    move(operands)) {
+                                    move(operands),
+                                    isSigned) {
   }
   void storeResult(vector<UX86Instruction>& r) override {
     auto sz = Cy86Instruction::size();
@@ -578,6 +620,14 @@ class name : public base<X86::name> { \
   } \
 };
 
+#define GEN_BINARY_OP_WITH_BASE_SIGN(name, base, isSigned) \
+class name : public base<X86::name> { \
+ public: \
+  name(int size, vector<UOperand>&& operands) \
+    : base<X86::name>(#name, size, move(operands), isSigned) { \
+  } \
+};
+
 #define GEN_COMPARE_OP(name) \
 class CMP ## name : public CompareOperation<X86::SET ## name> { \
  public: \
@@ -598,14 +648,14 @@ GEN_BINARY_OP(And)
 GEN_BINARY_OP(Or)
 GEN_BINARY_OP(Xor)
 
-GEN_BINARY_OP_WITH_BASE(UDiv, DivOperation)
-GEN_BINARY_OP_WITH_BASE(SDiv, DivOperation)
-GEN_BINARY_OP_WITH_BASE(UMod, ModOperation)
-GEN_BINARY_OP_WITH_BASE(SMod, ModOperation)
-
 GEN_BINARY_OP_WITH_BASE(SHL, ShiftOperation)
 GEN_BINARY_OP_WITH_BASE(SAR, ShiftOperation)
 GEN_BINARY_OP_WITH_BASE(SHR, ShiftOperation)
+
+GEN_BINARY_OP_WITH_BASE_SIGN(UDiv, DivOperation, false)
+GEN_BINARY_OP_WITH_BASE_SIGN(SDiv, DivOperation, true)
+GEN_BINARY_OP_WITH_BASE_SIGN(UMod, ModOperation, false)
+GEN_BINARY_OP_WITH_BASE_SIGN(SMod, ModOperation, true)
 
 GEN_COMPARE_OP(A)
 GEN_COMPARE_OP(AE)
@@ -620,6 +670,7 @@ GEN_COMPARE_OP(NE)
 
 #undef GEN_COMPARE_OP
 #undef GEN_BINARY_OP
+#undef GEN_BINARY_OP_WITH_BASE_SIGN
 #undef GEN_BINARY_OP_WITH_BASE
 
 class Data : public Cy86Instruction {

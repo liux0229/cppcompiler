@@ -2,6 +2,8 @@
 #include "Type.h"
 #include "PostTokenUtils.h"
 
+#include <type_traits>
+
 namespace compiler {
 
 template<typename T> struct FundalmentalValue;
@@ -37,6 +39,7 @@ struct FundalmentalValueBase : ConstantValue {
   using ConstantValue::ConstantValue;
   virtual bool isZero() const = 0;
   virtual bool isPositive() const = 0;
+  virtual bool isSigned() const = 0;
   virtual unsigned long getValue() const = 0;
   virtual std::shared_ptr<FundalmentalValueBase> negate() const = 0;
 };
@@ -126,6 +129,9 @@ struct FundalmentalValue : FundalmentalValueBase {
   }
   bool isPositive() const override {
     return data > 0;
+  }
+  bool isSigned() const override {
+    return std::is_signed<T>::value;
   }
   unsigned long getValue() const override {
     return data;

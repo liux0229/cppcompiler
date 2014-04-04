@@ -83,39 +83,47 @@ GEN_REG(R9, R9, 64)
 
 #undef GEN_REG
 
+// An immediate can be constructed in two ways
+// 1) A list of bytes. This will be used verbatim to form the immediate of
+//    the instruction.
+// 2) Label + constant + size. The actual content of the immediate is only
+//    known after the 1st pass of assembly. Thus size number of zero bytes 
+//    are preallocated. (label + constant) computation will be done in the
+//    64bit space and potentially truncated to size.
 class Immediate : public Operand {
  public:
-  Immediate(const std::string& label, SConstantValue literal) 
+  Immediate(const std::vector<char> bytes)
+    : bytes_(bytes) {
+    CHECK(!bytes_.empty());
+  }
+  Immediate(const std::string& label, int64_t constant, int size) 
     : label_(label),
-      literal_(literal) {
-    CHECK(!label_.empty() || literal_);
+      constant_(constant),
+      size_(size) {
+    CHECK(!label_.empty() && size > 0);
   }
 
   bool isImmediate() const override { return true; }
 
+  // TODO: figure out a better way to represent size
+  // # of bits vs. # of bytes
   int size() const override {
-    CHECK(label_.empty() || size_ > 0);
-    return size_ ? size_ : literal_->type->getTypeSize() * 8;
+    return !bytes_.empty() ? bytes_.size() * 8 : size_;
   }
 
-  SConstantValue getLiteral() const {
-    return literal_;
+  std::vector<char> getBytes() const {
+    return !bytes_.empty() ? bytes_ : std::vector<char>(size_ / 8, 0);
   }
 
-  const std::string& label() const { return label_; }
-
-  void setSize(int size) {
-    size_ = size;
-  }
+  const std::string& getLabel() const { return label_; }
+  int64_t getConstant() const { return constant_; }
 
  private:
+  const std::vector<char> bytes_;
+
   const std::string label_;
-  SConstantValue literal_;
-  // if this immediate contains a label, then we must supply its
-  // size directly (in MOV)
-  // TODO: consider a better design where this information is better
-  // flowed
-  int size_ = 0;
+  int64_t constant_ {0};
+  int size_ {0};
 };
 
 using UImmediate = std::unique_ptr<Immediate>;
@@ -346,6 +354,7 @@ GEN_REG_INST(SAR,  0xD2, 0xD3, 0x7)
 // TODO: we need to disable the 8 bit form for JMP / CALL
 GEN_REG_INST(JMP,  0xFF, 0xFF, 0x4)
 GEN_REG_INST(CALL,  0xFF, 0xFF, 0x2)
+GEN_REG_INST(NEG,  0xF6, 0xF7, 0x3)
 
 GEN_SET_INST(SETA, 0x97)
 GEN_SET_INST(SETAE, 0x93)
@@ -360,9 +369,9 @@ GEN_SET_INST(SETNE, 0x95)
 
 #undef GEN_REG_INST
 
-class OpcodeInstruction : public X86Instruction {
+class SingleOpcodeInstruction : public X86Instruction {
  public:
-  OpcodeInstruction(const std::vector<unsigned char>& opcode)
+  SingleOpcodeInstruction(const std::vector<unsigned char>& opcode)
     : X86Instruction(64),
       opcode_(opcode) {
   }
@@ -375,16 +384,56 @@ class OpcodeInstruction : public X86Instruction {
   const std::vector<unsigned char> opcode_;
 };
 
-#define GEN_OPCODE_INST(name, ...) \
-class name : public OpcodeInstruction { \
+#define GEN_SINGLE_OPCODE_INST(name, ...) \
+class name : public SingleOpcodeInstruction { \
  public: \
-  name() : OpcodeInstruction(__VA_ARGS__) { } \
+  name() : SingleOpcodeInstruction(__VA_ARGS__) { } \
 };
 
-GEN_OPCODE_INST(SysCall, { 0x0F, 0x05 })
-GEN_OPCODE_INST(RET, { 0xC3 })
+GEN_SINGLE_OPCODE_INST(SysCall, { 0x0F, 0x05 })
+GEN_SINGLE_OPCODE_INST(RET, { 0xC3 })
 
-#undef GEN_OPCODE_INST
+#undef GEN_SINGLE_OPCODE_INST
+
+class SizedOpcodeInstruction : public X86Instruction {
+ public:
+  SizedOpcodeInstruction(unsigned char opcode, int size)
+    : X86Instruction(size),
+      opcode_(opcode),
+      size_(size) {
+  }
+  MachineInstruction assemble() const override {
+    MachineInstruction r;
+    r.addSizePrefix(size_);
+    r.opcode = { opcode_ };
+    return r;
+  }
+ private:
+  unsigned char opcode_;
+  int size_;
+};
+
+#define GEN_SIZED_OPCODE_INST(name, opcode, size) \
+class name : public SizedOpcodeInstruction { \
+ public: \
+  name() : SizedOpcodeInstruction(opcode, size) { } \
+};
+
+
+// Sign extend from AX to DX
+class SignExtend : public SizedOpcodeInstruction {
+ public:
+  SignExtend(int size) : SizedOpcodeInstruction(0x99, size) { }
+};
+
+GEN_SIZED_OPCODE_INST(CBW, 0x98, 16)
+GEN_SIZED_OPCODE_INST(CWDE, 0x98, 32)
+GEN_SIZED_OPCODE_INST(CDQE, 0x98, 64)
+GEN_SIZED_OPCODE_INST(CWD, 0x99, 16)
+GEN_SIZED_OPCODE_INST(CDQ, 0x99, 32)
+GEN_SIZED_OPCODE_INST(CQO, 0x99, 64)
+
+#undef GEN_SIZED_OPCODE_INST
 
 class Data : public X86Instruction {
  public:
@@ -392,11 +441,11 @@ class Data : public X86Instruction {
     // TODO: size not real
     : X86Instruction(64),
       imm_(&dynamic_cast<Immediate&>(*imm.release())) {
-    CHECK(imm_->getLiteral() && imm_->label().empty());
+    CHECK(imm_->getLabel().empty());
   }
   MachineInstruction assemble() const override {
     MachineInstruction r;
-    r.setImmediate(imm_->getLiteral()->toBytes());
+    r.setImmediate(imm_->getBytes());
     return r;
   }
  private:

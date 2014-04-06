@@ -81,6 +81,9 @@ GEN_REG(Rdx, DX, 64)
 GEN_REG(R8, R8, 64)
 GEN_REG(R9, R9, 64)
 
+GEN_REG(Rbx, BX, 64)
+GEN_REG(Rcx, CX, 64)
+
 #undef GEN_REG
 
 // An immediate can be constructed in two ways
@@ -361,6 +364,7 @@ class SetInstruction : public RegInstruction {
   }
 };
 
+// TODO: generalize
 class JE8 : public X86Instruction {
  public:
   JE8(int relative) 
@@ -372,6 +376,21 @@ class JE8 : public X86Instruction {
   int relative_;
 };
 
+class JBE8 : public X86Instruction {
+ public:
+  JBE8(int relative) 
+    : X86Instruction(8),
+      relative_(relative) {
+  }
+  MachineInstruction assemble() const override {
+    MachineInstruction r;
+    r.opcode = {0x76};
+    r.setRel(relative_);
+    return r;
+  }
+ private:
+  int relative_;
+};
 
 #define GEN_SET_INST(name, op) \
 class name : public SetInstruction { \
@@ -524,7 +543,7 @@ class name : public FLDSTInstruction { \
     FLDSTInstruction(size,  \
                      std::move(memory),  \
                      size1, size2, size3, \
-                     op1, op2, op3,  \
+                     op1, op2, op3, \
                      reg1, reg2, reg3) { \
   } \
 };

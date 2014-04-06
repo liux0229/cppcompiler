@@ -41,23 +41,18 @@ vector<UOperand> combine(T... op) {
   return r;
 }
 
-bool match(const string& opcode, 
-           const string& target, 
+bool match(const string& opcode,
+           const string& targetPattern, 
            const set<int>& allowedSize, 
            int& size) {
-  auto it = find_if(opcode.begin(), 
-                    opcode.end(), 
-                    [](char x) { return isdigit(x); });
-  if (it == opcode.end()) {
-    return false;
+  for (auto s : allowedSize) {
+    // TODO: fix this
+    if (format(targetPattern.c_str(), s) == opcode) {
+      size = s;
+      return true;
+    }
   }
-  size = stoi(opcode.substr(it - opcode.begin()));
-
-  if (allowedSize.find(size) == allowedSize.end()) {
-    return false;
-  }
-
-  return target == opcode.substr(0, it - opcode.begin());
+  return false;
 }
 
 template<typename T>
@@ -133,6 +128,21 @@ void moveImmediateToRspMemory(vector<UX86Instruction>& r,
                 size,
                 X86::Memory::getRspAddressing(size, rspDisp),
                 Register::Ax(size)->toX86Operand(size));
+}
+
+SConstantValue getConvOffset(int size) {
+  long offset = 1L << (size - 1);
+  if (size == 8) {
+    return ConstantValue::createFundalmentalValue(static_cast<char>(offset));
+  } else if (size == 16) {
+    return ConstantValue::createFundalmentalValue(static_cast<short>(offset));
+  } else if (size == 32) {
+    return ConstantValue::createFundalmentalValue(static_cast<int>(offset));
+  } else if (size == 64) {
+    return ConstantValue::createFundalmentalValue(offset);
+  }
+  CHECK(false);
+  return nullptr;
 }
 
 }
@@ -295,7 +305,9 @@ class FLD : public Cy86Instruction {
                     size(), 
                     X86::Memory::getRspAddressing(size(), -16),
                     op->toX86Operand(size()));
-      add<X86::FLD>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+      add<X86::FLD>(r, 
+                    size(), 
+                    X86::Memory::getRspAddressing(size(), -16));
     } else {
       CHECK(op->isImmediate());
       // imm. For size 32 and 64, move it to RSP - 16 and FLD.
@@ -341,7 +353,9 @@ class FLD : public Cy86Instruction {
                                  make_unique<X86::Immediate>(higherBytes));
       }
       
-      add<X86::FLD>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+      add<X86::FLD>(r, 
+                    size(), 
+                    X86::Memory::getRspAddressing(size(), -16));
     }
     
     return r;
@@ -352,7 +366,7 @@ class FST : public Cy86Instruction {
  public:
   FST(int size, UOperand operand) 
     : Cy86Instruction(size, combine(move(operand))) {
-    checkWriteable("FST");
+    checkWriteable("FSTInstruction");
   }
   vector<UX86Instruction> translate() {
     vector<UX86Instruction> r;
@@ -362,7 +376,9 @@ class FST : public Cy86Instruction {
       add<X86::FSTP>(r, size(), X86::Memory::getRdiAddressing(size()));
     } else if (op->isRegister()) {
       // FST to [RSP - 16] and then to register
-      add<X86::FSTP>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+      add<X86::FSTP>(r, 
+                     size(), 
+                     X86::Memory::getRspAddressing(size(), -16));
       add<X86::Mov>(r, 
                     size(), 
                     op->toX86Operand(size()),
@@ -371,7 +387,6 @@ class FST : public Cy86Instruction {
     return r;
   }
 };
-
 
 class Mov : public Cy86Instruction {
  public:
@@ -432,9 +447,6 @@ class Mov : public Cy86Instruction {
   vector<UX86Instruction> largeSizeMove() {
     auto& to = operands()[0];
     auto& from = operands()[1];
-    if (to->isRegister() || from->isRegister()) {
-      Throw("move80 cannot have register operands: {} {}", *to, *from);
-    }
 
     vector<UX86Instruction> r;
     {
@@ -953,6 +965,9 @@ class FCompareOperation : public Cy86Instruction {
       add(r, move(inst));
     }
 
+    // pop the FPU stack
+    add<X86::FSTP>(r, 64, X86::Memory::getRspAddressing(64, -16));
+
     return r;
   }
 };
@@ -976,7 +991,202 @@ GEN_FCMP_OP(NE)
 
 #undef GEN_FCMP_OP
 
+template<bool IsSigned>
+class FILDInstruction : public Cy86Instruction {
+ public:
+  FILDInstruction(int size, UOperand operand) 
+    : Cy86Instruction(size, combine(move(operand))) {
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
 
+    // because we need to support 8 bit source, we need to first move the source
+    // into AX, then [RSP - 16], then FILD
+    {
+      auto inst = Mov(size(), Register::Ax(size()), move(operands()[0]))
+             .translate();
+      add(r, move(inst));
+    }
+    if (size() == 8) {
+      if (IsSigned) {
+        // Sign extend to AX
+        add<X86::CBW>(r);
+      } else {
+        add<X86::Xor>(
+            r, 
+            8, 
+            Register::Ah()->toX86Operand(8),
+            Register::Ah()->toX86Operand(8));
+      }
+    }
+    int actualSize = max(16, size());
+    add<X86::Mov>(r, 
+                  actualSize, 
+                  X86::Memory::getRspAddressing(actualSize, -16),
+                  Register::Ax(actualSize)->toX86Operand(actualSize));
+    add<X86::FILD>(r,  
+                   actualSize, 
+                   X86::Memory::getRspAddressing(actualSize, -16));
+    
+    return r;
+  }
+};
+
+using FULD = FILDInstruction<false>;
+using FSLD = FILDInstruction<true>;
+
+class FIST : public Cy86Instruction {
+ public:
+  FIST(int size, UOperand operand) 
+    : Cy86Instruction(size, combine(move(operand))) {
+    checkWriteable("FIST");
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+
+    // FIST to [RSP - 16], move (truncate) to Ax, and then to the dest
+    add<X86::FISTP>(r, 64, X86::Memory::getRspAddressing(64, -16));
+    add<X86::Mov>(r, 
+                  size(),
+                  Register::Ax(size())->toX86Operand(size()), 
+                  X86::Memory::getRspAddressing(size(), -16));
+    {
+      auto inst = Mov(size(), move(operands()[0]), Register::Ax(size()))
+                    .translate();
+      add(r, move(inst));
+    }
+
+    return r;
+  }
+};
+
+template<typename TFLD, typename TFST, bool IFrom80>
+class ConvOperation : public Cy86Instruction {
+ public:
+  ConvOperation(int size, vector<UOperand>&& operands)
+    : Cy86Instruction(size, move(operands)) {
+    checkOperandNumber("ConvOperation", 2);
+    checkWriteable("ConvOperation");
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    {
+      auto inst = TFLD(IFrom80 ? 80 : size(), move(operands()[1])).translate();
+      add(r, move(inst));
+    }
+    {
+      bool to80 = !IFrom80;
+      auto inst = TFST(to80 ? 80 : size(), move(operands()[0])).translate();
+      add(r, move(inst));
+    }
+    return r;
+  }
+};
+
+using ConvF80F = ConvOperation<FLD, FST, true>;
+using ConvFF80 = ConvOperation<FLD, FST, false>;
+using ConvF80S = ConvOperation<FLD, FIST, true>;
+using ConvSF80 = ConvOperation<FSLD, FST, false>;
+
+// TODO: alternative memory management for operands
+class ConvUF80 : public Cy86Instruction {
+ public:
+  ConvUF80(int size, vector<UOperand>&& operands) 
+    : Cy86Instruction(size, move(operands)) {
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+
+    add<X86::Xor>(r, 64, X86::Rcx(), X86::Rcx());
+    {
+      auto inst = Mov(size(), Register::Cx(size()), move(operands()[1]))
+                    .translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = FULD(64, Register::Rcx()).translate();
+      add(r, move(inst));
+    }
+    {
+      auto constant = ConstantValue::createFundalmentalValue(1L << 63);
+      auto inst = Mov(64, 
+                      Register::Rbx(), 
+                      make_unique<Immediate>("", constant)).translate();
+      add(r, move(inst));
+    }
+    add<X86::Cmp>(r, 64, X86::Rbx(), X86::Rcx());
+
+    size_t start = r.size();
+
+    // Now we lay out the instructions to adjust the final result
+    {
+      auto constant 
+             = ConstantValue::createFundalmentalValue(18446744073709551616.0);
+      auto inst = FLD(64, make_unique<Immediate>("", constant)).translate();
+      add(r, move(inst));
+    }
+    add<X86::FADDP>(r);
+
+    // Now generate the jump
+    int offset = 0;
+    for (size_t i = start; i < r.size(); ++i) {
+      offset += r[i]->assemble().toBytes().size();
+    }
+    CHECK(offset < 127);
+
+    auto jmp = make_unique<X86::JBE8>(offset);
+    r.insert(r.begin() + start, move(jmp));
+
+    // finally, the store
+    {
+      auto inst = FST(80, move(operands()[0])).translate();
+      add(r, move(inst));
+    }
+
+    return r;
+  }
+};
+
+class ConvF80U : public Cy86Instruction {
+ public:
+  ConvF80U(int size, vector<UOperand>&& operands) 
+    : Cy86Instruction(size, move(operands)) {
+  }
+
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    auto constant = ConstantValue::createFundalmentalValue(1L << 63);
+
+    {
+      auto inst = FLD(80, move(operands()[1])).translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = FSLD(64, make_unique<Immediate>("", constant)).translate();
+      add(r, move(inst));
+    }
+    add<X86::FADDP>(r);
+
+    {
+      auto inst = FIST(64, Register::Rcx()).translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = Mov(64, Register::Rbx(), make_unique<Immediate>("", constant))
+                    .translate();
+      add(r, move(inst));
+    }
+    add<X86::Add>(r, 64, X86::Rcx(), X86::Rbx());
+
+    {
+      auto inst = Mov(size(), move(operands()[0]), Register::Cx(size()))
+                    .translate();
+      add(r, move(inst));
+    }
+
+    return r;
+  }
+};
 
 UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
                                              vector<UOperand>&& operands) {
@@ -1000,43 +1210,49 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
   }
 
   UCy86Instruction ret;
-  (ret = match<Mov>(opcode, move(operands), "move", {8,16,32,64, 80})) ||
-  (ret = match<Add>(opcode, move(operands), "iadd", {8,16,32,64})) ||
-  (ret = match<Sub>(opcode, move(operands), "isub", {8,16,32,64})) ||
-  (ret = match<UMul>(opcode, move(operands), "umul", {8,16,32,64})) ||
-  (ret = match<SMul>(opcode, move(operands), "smul", {8,16,32,64})) ||
-  (ret = match<UDiv>(opcode, move(operands), "udiv", {8,16,32,64})) ||
-  (ret = match<SDiv>(opcode, move(operands), "sdiv", {8,16,32,64})) ||
-  (ret = match<UMod>(opcode, move(operands), "umod", {8,16,32,64})) ||
-  (ret = match<SMod>(opcode, move(operands), "smod", {8,16,32,64})) ||
-  (ret = match<Not>(opcode, move(operands), "not", {8,16,32,64})) ||
-  (ret = match<And>(opcode, move(operands), "and", {8,16,32,64})) ||
-  (ret = match<Or>(opcode, move(operands), "or", {8,16,32,64})) ||
-  (ret = match<Xor>(opcode, move(operands), "xor", {8,16,32,64})) ||
-  (ret = match<SHL>(opcode, move(operands), "lshift", {8,16,32,64})) ||
-  (ret = match<SAR>(opcode, move(operands), "srshift", {8,16,32,64})) ||
-  (ret = match<SHR>(opcode, move(operands), "urshift", {8,16,32,64})) ||
-  (ret = match<CMPE>(opcode, move(operands), "ieq", {8,16,32,64})) ||
-  (ret = match<CMPNE>(opcode, move(operands), "ine", {8,16,32,64})) ||
-  (ret = match<CMPL>(opcode, move(operands), "slt", {8,16,32,64})) ||
-  (ret = match<CMPB>(opcode, move(operands), "ult", {8,16,32,64})) ||
-  (ret = match<CMPG>(opcode, move(operands), "sgt", {8,16,32,64})) ||
-  (ret = match<CMPA>(opcode, move(operands), "ugt", {8,16,32,64})) ||
-  (ret = match<CMPLE>(opcode, move(operands), "sle", {8,16,32,64})) ||
-  (ret = match<CMPBE>(opcode, move(operands), "ule", {8,16,32,64})) ||
-  (ret = match<CMPGE>(opcode, move(operands), "sge", {8,16,32,64})) ||
-  (ret = match<CMPAE>(opcode, move(operands), "uge", {8,16,32,64})) ||
-  (ret = match<Data>(opcode, move(operands), "data", {8,16,32,64})) ||
-  (ret = match<FADD>(opcode, move(operands), "fadd", {32,64,80})) ||
-  (ret = match<FSUB>(opcode, move(operands), "fsub", {32,64,80})) ||
-  (ret = match<FMUL>(opcode, move(operands), "fmul", {32,64,80})) ||
-  (ret = match<FDIV>(opcode, move(operands), "fdiv", {32,64,80})) ||
-  (ret = match<FCMPE>(opcode, move(operands), "feq", {32,64,80})) ||
-  (ret = match<FCMPNE>(opcode, move(operands), "fne", {32,64,80})) ||
-  (ret = match<FCMPB>(opcode, move(operands), "flt", {32,64,80})) ||
-  (ret = match<FCMPBE>(opcode, move(operands), "fle", {32,64,80})) ||
-  (ret = match<FCMPA>(opcode, move(operands), "fgt", {32,64,80})) ||
-  (ret = match<FCMPAE>(opcode, move(operands), "fge", {32,64,80}));
+  (ret = match<Mov>(opcode, move(operands), "move{}", {8,16,32,64, 80})) ||
+  (ret = match<Add>(opcode, move(operands), "iadd{}", {8,16,32,64})) ||
+  (ret = match<Sub>(opcode, move(operands), "isub{}", {8,16,32,64})) ||
+  (ret = match<UMul>(opcode, move(operands), "umul{}", {8,16,32,64})) ||
+  (ret = match<SMul>(opcode, move(operands), "smul{}", {8,16,32,64})) ||
+  (ret = match<UDiv>(opcode, move(operands), "udiv{}", {8,16,32,64})) ||
+  (ret = match<SDiv>(opcode, move(operands), "sdiv{}", {8,16,32,64})) ||
+  (ret = match<UMod>(opcode, move(operands), "umod{}", {8,16,32,64})) ||
+  (ret = match<SMod>(opcode, move(operands), "smod{}", {8,16,32,64})) ||
+  (ret = match<Not>(opcode, move(operands), "not{}", {8,16,32,64})) ||
+  (ret = match<And>(opcode, move(operands), "and{}", {8,16,32,64})) ||
+  (ret = match<Or>(opcode, move(operands), "or{}", {8,16,32,64})) ||
+  (ret = match<Xor>(opcode, move(operands), "xor{}", {8,16,32,64})) ||
+  (ret = match<SHL>(opcode, move(operands), "lshift{}", {8,16,32,64})) ||
+  (ret = match<SAR>(opcode, move(operands), "srshift{}", {8,16,32,64})) ||
+  (ret = match<SHR>(opcode, move(operands), "urshift{}", {8,16,32,64})) ||
+  (ret = match<CMPE>(opcode, move(operands), "ieq{}", {8,16,32,64})) ||
+  (ret = match<CMPNE>(opcode, move(operands), "ine{}", {8,16,32,64})) ||
+  (ret = match<CMPL>(opcode, move(operands), "slt{}", {8,16,32,64})) ||
+  (ret = match<CMPB>(opcode, move(operands), "ult{}", {8,16,32,64})) ||
+  (ret = match<CMPG>(opcode, move(operands), "sgt{}", {8,16,32,64})) ||
+  (ret = match<CMPA>(opcode, move(operands), "ugt{}", {8,16,32,64})) ||
+  (ret = match<CMPLE>(opcode, move(operands), "sle{}", {8,16,32,64})) ||
+  (ret = match<CMPBE>(opcode, move(operands), "ule{}", {8,16,32,64})) ||
+  (ret = match<CMPGE>(opcode, move(operands), "sge{}", {8,16,32,64})) ||
+  (ret = match<CMPAE>(opcode, move(operands), "uge{}", {8,16,32,64})) ||
+  (ret = match<Data>(opcode, move(operands), "data{}", {8,16,32,64})) ||
+  (ret = match<FADD>(opcode, move(operands), "fadd{}", {32,64,80})) ||
+  (ret = match<FSUB>(opcode, move(operands), "fsub{}", {32,64,80})) ||
+  (ret = match<FMUL>(opcode, move(operands), "fmul{}", {32,64,80})) ||
+  (ret = match<FDIV>(opcode, move(operands), "fdiv{}", {32,64,80})) ||
+  (ret = match<FCMPE>(opcode, move(operands), "feq{}", {32,64,80})) ||
+  (ret = match<FCMPNE>(opcode, move(operands), "fne{}", {32,64,80})) ||
+  (ret = match<FCMPB>(opcode, move(operands), "flt{}", {32,64,80})) ||
+  (ret = match<FCMPBE>(opcode, move(operands), "fle{}", {32,64,80})) ||
+  (ret = match<FCMPA>(opcode, move(operands), "fgt{}", {32,64,80})) ||
+  (ret = match<FCMPAE>(opcode, move(operands), "fge{}", {32,64,80})) ||
+  (ret = match<ConvF80S>(opcode, move(operands), "f80convs{}", {8,16,32,64})) ||
+  (ret = match<ConvF80U>(opcode, move(operands), "f80convu{}", {8,16,32,64})) ||
+  (ret = match<ConvF80F>(opcode, move(operands), "f80convf{}", {32,64})) ||
+  (ret = match<ConvSF80>(opcode, move(operands), "s{}convf80", {8,16,32,64})) ||
+  (ret = match<ConvUF80>(opcode, move(operands), "u{}convf80", {8,16,32,64})) ||
+  (ret = match<ConvFF80>(opcode, move(operands), "f{}convf80", {32,64}));
 
   if (!ret) {
     Throw("Bad opcode: {}", opcode);

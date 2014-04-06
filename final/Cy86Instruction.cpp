@@ -3,6 +3,7 @@
 #include <cctype>
 #include <algorithm>
 #include <utility>
+#include <set>
 
 namespace compiler {
 
@@ -24,17 +25,25 @@ void add(vector<UX86Instruction>& r, vector<UX86Instruction>&& from) {
   }
 }
 
-// TODO; consider supporting a variadic template form
-vector<UOperand> combine(UOperand&& a, UOperand&& b) {
+void combineInternal(vector<UOperand>& r) {
+}
+
+template<typename... T>
+void combineInternal(vector<UOperand>& r, UOperand car, T... cdr) {
+  r.push_back(move(car));
+  combineInternal(r, move(cdr)...);
+}
+
+template<typename... T>
+vector<UOperand> combine(T... op) {
   vector<UOperand> r;
-  r.push_back(move(a));
-  r.push_back(move(b));
+  combineInternal(r, move(op)...);
   return r;
 }
 
 bool match(const string& opcode, 
            const string& target, 
-           int maxSize, 
+           const set<int>& allowedSize, 
            int& size) {
   auto it = find_if(opcode.begin(), 
                     opcode.end(), 
@@ -44,12 +53,6 @@ bool match(const string& opcode,
   }
   size = stoi(opcode.substr(it - opcode.begin()));
 
-  set<int> allowedSize {
-    8, 16, 32, 64
-  };
-  if (maxSize == 80) {
-    allowedSize.insert(80);
-  }
   if (allowedSize.find(size) == allowedSize.end()) {
     return false;
   }
@@ -61,9 +64,9 @@ template<typename T>
 UCy86Instruction match(const string& opcode,
                        vector<UOperand>&& operands,
                        const string& target, 
-                       int maxSize) {
+                       const set<int>& allowedSize) {
   int size;
-  if (match(opcode, target, maxSize, size)) {
+  if (match(opcode, target, allowedSize, size)) {
     return make_unique<T>(size, move(operands));
   } else {
     return nullptr;
@@ -72,6 +75,10 @@ UCy86Instruction match(const string& opcode,
 
 Register* toRegister(const UOperand& op) {
   return static_cast<Register*>(op.get());
+}
+
+Memory* toMemory(const UOperand& op) {
+  return static_cast<Memory*>(op.get());
 }
 
 vector<char> truncateOrExtend(SConstantValue literal, 
@@ -96,6 +103,36 @@ vector<char> truncateOrExtend(SConstantValue literal,
     }
   }
   return bytes;
+}
+
+void setupMemoryOperand(vector<UX86Instruction>& r, Memory* m) {
+  // note: we require registers to be 64
+  if (m->reg()) {
+    add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
+  } else {
+    add<X86::Xor>(r, 64, X86::Rdi(), X86::Rdi());
+  }
+  if (m->imm()) {
+    add<X86::Mov>(r, 64, X86::Rsi(), m->imm()->toX86Operand(64));
+  } else {
+    add<X86::Xor>(r, 64, X86::Rsi(), X86::Rsi());
+  }
+  add<X86::Add>(r, 64, X86::Rdi(), X86::Rsi());
+}
+
+void moveImmediateToRspMemory(vector<UX86Instruction>& r,
+                              int size,
+                              char rspDisp,
+                              X86::UImmediate&& imm) {
+  add<X86::Mov>(r, 
+                size,
+                // TODO: this is a bit cumbersome
+                Register::Ax(size)->toX86Operand(size),
+                move(imm));
+  add<X86::Mov>(r, 
+                size,
+                X86::Memory::getRspAddressing(size, rspDisp),
+                Register::Ax(size)->toX86Operand(size));
 }
 
 }
@@ -173,9 +210,6 @@ void Register::output(std::ostream& out) const {
   out << format("{}{} h8:{}", m.at(type_), size_, hi8_);
 }
 
-// TODO: handle right most bytes truncation
-// This should be type free and only care about operand size
-// That way we could support 400
 X86::UOperand Immediate::toX86Operand(int size) const {
   // no literal, must be plain label
   if (!literal_) {
@@ -203,9 +237,9 @@ X86::UOperand Immediate::toX86Operand(int size) const {
     // TODO: abstract this
     auto constant = *reinterpret_cast<int64_t *>(bytes.data());
     return make_unique<X86::Immediate>(label_, constant, size);
+  } else {
+    return make_unique<X86::Immediate>(truncateOrExtend(literal_, size));
   }
-
-  return make_unique<X86::Immediate>(truncateOrExtend(literal_, size));
 }
 
 void Immediate::output(std::ostream& out) const {
@@ -244,6 +278,101 @@ void Cy86Instruction::checkOperandNumber(const string& name, size_t n) const {
   }
 }
 
+class FLD : public Cy86Instruction {
+ public:
+  FLD(int size, UOperand operand) 
+    : Cy86Instruction(size, combine(move(operand))) {
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    auto& op = operands()[0];
+    if (op->isMemory()) {
+      setupMemoryOperand(r, toMemory(op));
+      add<X86::FLD>(r, size(), X86::Memory::getRdiAddressing(size()));
+    } else if (op->isRegister()) {
+      // move register to [RSP - 16] and then FLD
+      add<X86::Mov>(r, 
+                    size(), 
+                    X86::Memory::getRspAddressing(size(), -16),
+                    op->toX86Operand(size()));
+      add<X86::FLD>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+    } else {
+      CHECK(op->isImmediate());
+      // imm. For size 32 and 64, move it to RSP - 16 and FLD.
+      //      For size 80, move lower 64 to RSP - 16, higher 16 to RSP - 8,
+      //                   and FLD.
+      //      If there is a label involved, then the label always goes 
+      //      with the lower bytes, since the higher 16 bytes (if applicable)
+      //      would always be 0.
+      // note we are hand crafting the X86 instructions instead of using
+      // cy86 intermediate since we don't have enough machinary to express
+      // RSP addressing and the bytes <-> immediate conversion is also
+      // cumbersome. can consider redesign.
+      auto x86Imm = X86::UImmediate(
+                      static_cast<X86::Immediate*>(
+                        op->toX86Operand(size()).release()));
+      int lowerSize = min(64, size());
+      X86::UImmediate lowerImm;
+      if (!x86Imm->getLabel().empty()) {
+        lowerImm = make_unique<X86::Immediate>(
+                     x86Imm->getLabel(),
+                     x86Imm->getConstant(), 
+                     lowerSize);
+      } else {
+        auto bytes = x86Imm->getBytes();
+        lowerImm = make_unique<X86::Immediate>(
+                     vector<char>(bytes.begin(), 
+                                  bytes.begin() + lowerSize / 8));
+      }
+      moveImmediateToRspMemory(r, lowerSize, -16, move(lowerImm));
+
+      if (size() == 80) {
+        vector<char> higherBytes;
+        if (!x86Imm->getLabel().empty()) {
+          higherBytes = vector<char>(2, 0x0);
+        } else {
+          auto bytes = x86Imm->getBytes();
+          CHECK(bytes.size() == 10);
+          higherBytes = vector<char>(bytes.begin() + 8, bytes.end());
+        }
+        moveImmediateToRspMemory(r, 
+                                 16, 
+                                 -8,
+                                 make_unique<X86::Immediate>(higherBytes));
+      }
+      
+      add<X86::FLD>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+    }
+    
+    return r;
+  }
+};
+
+class FST : public Cy86Instruction {
+ public:
+  FST(int size, UOperand operand) 
+    : Cy86Instruction(size, combine(move(operand))) {
+    checkWriteable("FST");
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    auto& op = operands()[0];
+    if (op->isMemory()) {
+      setupMemoryOperand(r, toMemory(op));
+      add<X86::FSTP>(r, size(), X86::Memory::getRdiAddressing(size()));
+    } else if (op->isRegister()) {
+      // FST to [RSP - 16] and then to register
+      add<X86::FSTP>(r, size(), X86::Memory::getRspAddressing(size(), -16));
+      add<X86::Mov>(r, 
+                    size(), 
+                    op->toX86Operand(size()),
+                    X86::Memory::getRspAddressing(size(), -16));
+    }
+    return r;
+  }
+};
+
+
 class Mov : public Cy86Instruction {
  public:
   Mov(int size, vector<UOperand>&& ops)
@@ -256,20 +385,27 @@ class Mov : public Cy86Instruction {
   }
 
   vector<UX86Instruction> translate() {
-    // TODO: handle size-80
+    if (size() < 80) {
+      return smallSizeMove();
+    } else {
+      return largeSizeMove();
+    }
+  }
+
+  vector<UX86Instruction> smallSizeMove() {
     vector<UX86Instruction> r;
     if (operands()[0]->isRegister() || operands()[1]->isRegister()) {
       if (operands()[1]->isMemory()) {
-        setupMemoryOperand(r, static_cast<Memory*>(operands()[1].get()));
+        setupMemoryOperand(r, toMemory(operands()[1]));
         add<X86::Mov>(r, 
                       size(),
                       operands()[0]->toX86Operand(size()), 
-                      make_unique<X86::Memory>(size()));
+                      X86::Memory::getRdiAddressing(size()));
       } else if (operands()[0]->isMemory()) {
-        setupMemoryOperand(r, static_cast<Memory*>(operands()[0].get()));
+        setupMemoryOperand(r, toMemory(operands()[0]));
         add<X86::Mov>(r, 
                       size(),
-                      make_unique<X86::Memory>(size()),
+                      X86::Memory::getRdiAddressing(size()),
                       operands()[1]->toX86Operand(size()));
       } else {
         add<X86::Mov>(r, 
@@ -292,21 +428,24 @@ class Mov : public Cy86Instruction {
 
     return r;
   }
- private:
-  void setupMemoryOperand(vector<UX86Instruction>& r, Memory* m) {
-    // TODO: In theory we could accept a sub-64 register operand;
-    // however this matches the reference implementation
-    if (m->reg()) {
-      add<X86::Mov>(r, 64, X86::Rdi(), m->reg()->toX86Operand(64));
-    } else {
-      add<X86::Xor>(r, 64, X86::Rdi(), X86::Rdi());
+
+  vector<UX86Instruction> largeSizeMove() {
+    auto& to = operands()[0];
+    auto& from = operands()[1];
+    if (to->isRegister() || from->isRegister()) {
+      Throw("move80 cannot have register operands: {} {}", *to, *from);
     }
-    if (m->imm()) {
-      add<X86::Mov>(r, 64, X86::Rsi(), m->imm()->toX86Operand(64));
-    } else {
-      add<X86::Xor>(r, 64, X86::Rsi(), X86::Rsi());
+
+    vector<UX86Instruction> r;
+    {
+      auto inst = FLD(80, move(from)).translate();
+      add(r, move(inst));
     }
-    add<X86::Add>(r, 64, X86::Rdi(), X86::Rsi());
+    {
+      auto inst = FST(80, move(to)).translate();
+      add(r, move(inst));
+    }
+    return r;
   }
 };
 
@@ -739,6 +878,106 @@ class SysCall : public Cy86Instruction {
   }
 };
 
+template<typename TX86Instruction>
+class FArithmeticOperation : public Cy86Instruction {
+ public:
+  // TODO: consider variadic template parameter?
+  FArithmeticOperation(const string& name, 
+                         int size, 
+                         vector<UOperand>&& operands) 
+    : Cy86Instruction(size, move(operands)) {
+    checkOperandNumber(name, 3);
+    checkWriteable(name);
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    {
+      auto inst = FLD(size(), move(operands()[1])).translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = FLD(size(), move(operands()[2])).translate();
+      add(r, move(inst));
+    }
+    add<TX86Instruction>(r);
+    {
+      auto inst = FST(size(), move(operands()[0])).translate();
+      add(r, move(inst));
+    }
+
+    return r;
+  }
+};
+
+#define GEN_FARITH_OP(name) \
+class name : public FArithmeticOperation<X86::name ## P> { \
+ public: \
+  name(int size, vector<UOperand>&& operands) \
+    : FArithmeticOperation<X86::name ## P>(#name, size, move(operands)) { \
+  } \
+};
+
+GEN_FARITH_OP(FADD)
+GEN_FARITH_OP(FSUB)
+GEN_FARITH_OP(FMUL)
+GEN_FARITH_OP(FDIV)
+
+#undef GEN_FARITH_OP
+
+template<typename TX86Instruction>
+class FCompareOperation : public Cy86Instruction {
+ protected:
+  FCompareOperation(const string& name, int size, vector<UOperand>&& operands)
+    : Cy86Instruction(size, move(operands)) {
+    checkOperandNumber(name, 3);
+    checkWriteable(name);
+  }
+  vector<UX86Instruction> translate() {
+    vector<UX86Instruction> r;
+    {
+      auto inst = FLD(size(), move(operands()[2])).translate();
+      add(r, move(inst));
+    }
+    {
+      auto inst = FLD(size(), move(operands()[1])).translate();
+      add(r, move(inst));
+    }
+
+    add<X86::FCOMIP>(r);
+    // save the comparison result to AL
+    add<TX86Instruction>(r, Register::Ax(8)->toX86Operand(8));
+
+    {
+      auto inst = Mov(8, move(Cy86Instruction::operands()[0]), Register::Ax(8))
+                    .translate();
+      add(r, move(inst));
+    }
+
+    return r;
+  }
+};
+
+#define GEN_FCMP_OP(name) \
+class FCMP ## name : public FCompareOperation<X86::SET ## name> { \
+ public: \
+  FCMP ## name(int size, vector<UOperand>&& operands)  \
+    : FCompareOperation<X86::SET ## name>("FCMP" #name, \
+                                          size, \
+                                          move(operands)) { \
+  } \
+};
+
+GEN_FCMP_OP(A)
+GEN_FCMP_OP(AE)
+GEN_FCMP_OP(B)
+GEN_FCMP_OP(BE)
+GEN_FCMP_OP(E)
+GEN_FCMP_OP(NE)
+
+#undef GEN_FCMP_OP
+
+
+
 UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
                                              vector<UOperand>&& operands) {
   if (opcode.substr(0, opcode.size() - 1) == "syscall") {
@@ -761,33 +1000,43 @@ UCy86Instruction Cy86InstructionFactory::get(const string& opcode,
   }
 
   UCy86Instruction ret;
-  (ret = match<Mov>(opcode, move(operands), "move", 64)) ||
-  (ret = match<Add>(opcode, move(operands), "iadd", 64)) ||
-  (ret = match<Sub>(opcode, move(operands), "isub", 64)) ||
-  (ret = match<UMul>(opcode, move(operands), "umul", 64)) ||
-  (ret = match<SMul>(opcode, move(operands), "smul", 64)) ||
-  (ret = match<UDiv>(opcode, move(operands), "udiv", 64)) ||
-  (ret = match<SDiv>(opcode, move(operands), "sdiv", 64)) ||
-  (ret = match<UMod>(opcode, move(operands), "umod", 64)) ||
-  (ret = match<SMod>(opcode, move(operands), "smod", 64)) ||
-  (ret = match<Not>(opcode, move(operands), "not", 64)) ||
-  (ret = match<And>(opcode, move(operands), "and", 64)) ||
-  (ret = match<Or>(opcode, move(operands), "or", 64)) ||
-  (ret = match<Xor>(opcode, move(operands), "xor", 64)) ||
-  (ret = match<SHL>(opcode, move(operands), "lshift", 64)) ||
-  (ret = match<SAR>(opcode, move(operands), "srshift", 64)) ||
-  (ret = match<SHR>(opcode, move(operands), "urshift", 64)) ||
-  (ret = match<CMPE>(opcode, move(operands), "ieq", 64)) ||
-  (ret = match<CMPNE>(opcode, move(operands), "ine", 64)) ||
-  (ret = match<CMPL>(opcode, move(operands), "slt", 64)) ||
-  (ret = match<CMPB>(opcode, move(operands), "ult", 64)) ||
-  (ret = match<CMPG>(opcode, move(operands), "sgt", 64)) ||
-  (ret = match<CMPA>(opcode, move(operands), "ugt", 64)) ||
-  (ret = match<CMPLE>(opcode, move(operands), "sle", 64)) ||
-  (ret = match<CMPBE>(opcode, move(operands), "ule", 64)) ||
-  (ret = match<CMPGE>(opcode, move(operands), "sge", 64)) ||
-  (ret = match<CMPAE>(opcode, move(operands), "uge", 64)) ||
-  (ret = match<Data>(opcode, move(operands), "data", 64));
+  (ret = match<Mov>(opcode, move(operands), "move", {8,16,32,64, 80})) ||
+  (ret = match<Add>(opcode, move(operands), "iadd", {8,16,32,64})) ||
+  (ret = match<Sub>(opcode, move(operands), "isub", {8,16,32,64})) ||
+  (ret = match<UMul>(opcode, move(operands), "umul", {8,16,32,64})) ||
+  (ret = match<SMul>(opcode, move(operands), "smul", {8,16,32,64})) ||
+  (ret = match<UDiv>(opcode, move(operands), "udiv", {8,16,32,64})) ||
+  (ret = match<SDiv>(opcode, move(operands), "sdiv", {8,16,32,64})) ||
+  (ret = match<UMod>(opcode, move(operands), "umod", {8,16,32,64})) ||
+  (ret = match<SMod>(opcode, move(operands), "smod", {8,16,32,64})) ||
+  (ret = match<Not>(opcode, move(operands), "not", {8,16,32,64})) ||
+  (ret = match<And>(opcode, move(operands), "and", {8,16,32,64})) ||
+  (ret = match<Or>(opcode, move(operands), "or", {8,16,32,64})) ||
+  (ret = match<Xor>(opcode, move(operands), "xor", {8,16,32,64})) ||
+  (ret = match<SHL>(opcode, move(operands), "lshift", {8,16,32,64})) ||
+  (ret = match<SAR>(opcode, move(operands), "srshift", {8,16,32,64})) ||
+  (ret = match<SHR>(opcode, move(operands), "urshift", {8,16,32,64})) ||
+  (ret = match<CMPE>(opcode, move(operands), "ieq", {8,16,32,64})) ||
+  (ret = match<CMPNE>(opcode, move(operands), "ine", {8,16,32,64})) ||
+  (ret = match<CMPL>(opcode, move(operands), "slt", {8,16,32,64})) ||
+  (ret = match<CMPB>(opcode, move(operands), "ult", {8,16,32,64})) ||
+  (ret = match<CMPG>(opcode, move(operands), "sgt", {8,16,32,64})) ||
+  (ret = match<CMPA>(opcode, move(operands), "ugt", {8,16,32,64})) ||
+  (ret = match<CMPLE>(opcode, move(operands), "sle", {8,16,32,64})) ||
+  (ret = match<CMPBE>(opcode, move(operands), "ule", {8,16,32,64})) ||
+  (ret = match<CMPGE>(opcode, move(operands), "sge", {8,16,32,64})) ||
+  (ret = match<CMPAE>(opcode, move(operands), "uge", {8,16,32,64})) ||
+  (ret = match<Data>(opcode, move(operands), "data", {8,16,32,64})) ||
+  (ret = match<FADD>(opcode, move(operands), "fadd", {32,64,80})) ||
+  (ret = match<FSUB>(opcode, move(operands), "fsub", {32,64,80})) ||
+  (ret = match<FMUL>(opcode, move(operands), "fmul", {32,64,80})) ||
+  (ret = match<FDIV>(opcode, move(operands), "fdiv", {32,64,80})) ||
+  (ret = match<FCMPE>(opcode, move(operands), "feq", {32,64,80})) ||
+  (ret = match<FCMPNE>(opcode, move(operands), "fne", {32,64,80})) ||
+  (ret = match<FCMPB>(opcode, move(operands), "flt", {32,64,80})) ||
+  (ret = match<FCMPBE>(opcode, move(operands), "fle", {32,64,80})) ||
+  (ret = match<FCMPA>(opcode, move(operands), "fgt", {32,64,80})) ||
+  (ret = match<FCMPAE>(opcode, move(operands), "fge", {32,64,80}));
 
   if (!ret) {
     Throw("Bad opcode: {}", opcode);

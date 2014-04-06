@@ -1,5 +1,6 @@
-// TODO: add ADD support so we can complete the memory mode support
 #include "X86Instruction.h"
+
+#include <algorithm>
 
 namespace compiler {
 
@@ -13,6 +14,10 @@ const Register& toRegister(const Operand& operand) {
   auto p = dynamic_cast<const Register*>(&operand);
   MCHECK(p, "register operand expected");
   return *p;
+}
+
+const Memory& toMemory(const Operand& operand) {
+  return static_cast<const Memory&>(operand);
 }
 
 // TODO: could we merge these two?
@@ -61,11 +66,23 @@ void MachineInstruction::setModRmRegister(const Register& reg) {
   setRegInternal(modRm[0].rm, reg, RexB);
 }
 
-void MachineInstruction::setModRmMemory() {
+void MachineInstruction::setModRmMemory(const Memory& mem) {
   initModRm();
-  modRm[0].mod = 0x0;
-  // TODO: Hard coded to [RDI] for now
-  modRm[0].rm = 0x7;
+  if (mem.isRdi()) {
+    modRm[0].mod = 0x0;
+    modRm[0].rm = 0x7;
+  } else {
+    CHECK(mem.isRsp());
+    modRm[0].mod = 0x1;
+    modRm[0].rm = 0x4;
+
+    initSIB();
+    sib[0].scale = 0x0;
+    sib[0].index = 0x4;
+    sib[0].base = 0x4;
+
+    disp = { static_cast<unsigned char>(mem.disp()) };
+  }
 }
 
 void MachineInstruction::setReg(unsigned char value) {
@@ -108,6 +125,12 @@ void MachineInstruction::initModRm() {
   }
 }
 
+void MachineInstruction::initSIB() {
+  if (sib.empty()) {
+    sib.push_back(SIB{});
+  }
+}
+
 void MachineInstruction::setRel(unsigned char rel) {
   relative = { rel };
 }
@@ -130,6 +153,14 @@ unsigned char MachineInstruction::ModRm::toByte() const {
   return r;
 }
 
+unsigned char MachineInstruction::SIB::toByte() const {
+  unsigned char r = 0;
+  r |= base;
+  r |= index << 3;
+  r |= scale << 6;
+  return r;
+}
+
 vector<unsigned char> MachineInstruction::toBytes() const {
   if (hi8 && !rex.empty()) {
     Throw("AH/BH/CH/DH addressed in an instruction requiring REX");
@@ -148,6 +179,10 @@ vector<unsigned char> MachineInstruction::toBytes() const {
   if (!modRm.empty()) {
     r.push_back(modRm[0].toByte());
   }
+  if (!sib.empty()) {
+    r.push_back(sib[0].toByte());
+  }
+  r.insert(r.end(), disp.begin(), disp.end());
   r.insert(r.end(), immediate.begin(), immediate.end());
   return r;
 }
@@ -200,10 +235,10 @@ MachineInstruction Mov::assemble() const {
   } else if (to_->isRegister() && from_->isMemory()) {
     r.opcode = { size() == 8 ? 0x8A : 0x8B };
     r.setReg(toRegister(*to_));
-    r.setModRmMemory();
+    r.setModRmMemory(toMemory(*from_));
   } else if (to_->isMemory() && from_->isRegister()) {
     r.opcode = { size() == 8 ? 0x88 : 0x89 };
-    r.setModRmMemory();
+    r.setModRmMemory(toMemory(*to_));
     r.setReg(toRegister(*from_));
   } else {
     MCHECK(false, "Mov: invalid operand combination");
@@ -265,6 +300,18 @@ MachineInstruction JE8::assemble() const {
   MachineInstruction r;
   r.opcode = {0x74};
   r.setRel(relative_);
+  return r;
+}
+
+MachineInstruction FLDSTInstruction::assemble() const {
+  MachineInstruction r;
+  auto it = find(sizes_.begin(), sizes_.end(), size());
+  CHECK(it != sizes_.end());
+  auto index = it - sizes_.begin();
+  r.opcode = { opcode_[index] };
+  r.setReg(reg_[index]);
+  r.setModRmMemory(*memory_);
+  // TODO: why it didn't warn and why the ASAN reports wrong?
   return r;
 }
 

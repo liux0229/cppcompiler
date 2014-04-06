@@ -67,7 +67,8 @@ Cy86Compiler::compile(vector<UToken>&& tokens) {
   }
   vector<char> code;
   for (auto& inst : x86Instructions) {
-    auto c = inst->assemble().toBytes();
+    auto machineInst = inst->assemble();
+    auto c = machineInst.toBytes();
     for (auto& label : inst->getLabel()) {
       auto ret = labelToAddress.insert(make_pair(label, code.size()));
       if (!ret.second) {

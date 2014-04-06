@@ -129,13 +129,43 @@ class Immediate : public Operand {
 using UImmediate = std::unique_ptr<Immediate>;
 
 // Assume always use [RDI]; will enhance in the future if necessary
+// We currently support two forms of memory addressing:
+// RDI and RSP + x (8bit) (using SIB and disp8)
+// May enhance to support generic cases
+class Memory;
+using UMemory = std::unique_ptr<Memory>;
+
 class Memory : public Operand {
+  enum Type {
+    RDI,
+    RSP
+  };
  public:
-  Memory(int size) : size_(size) { }
-  int size() const override { return size_; }
+  static UMemory getRdiAddressing(int size) {
+    return make_unique<Memory>(size, RDI, 0);
+  }
+  static UMemory getRspAddressing(int size, char disp) {
+    return make_unique<Memory>(size, RSP, disp);
+  }
+  Memory(int size, Type type, char disp) 
+    : size_(size),
+      type_(type),
+      disp_(disp) { 
+  }
+
   bool isMemory() const override { return true; }
+  int size() const override { return size_; }
+
+  bool isRdi() const { return type_ == RDI; }
+  bool isRsp() const { return type_ == RSP; }
+  char disp() const { 
+    CHECK(isRsp());
+    return disp_; 
+  }
  private:
   int size_;
+  Type type_;
+  char disp_;
 };
 
 struct MachineInstruction {
@@ -169,10 +199,19 @@ struct MachineInstruction {
     int rm {0};
   };
 
+  struct SIB {
+    unsigned char toByte() const;
+
+    int scale {0};
+    int index {0};
+    int base {0};
+  };
+
   void addSizePrefix(int size);
   void addRex(Rex r);
   void setModRmRegister(const Register& reg);
-  void setModRmMemory();
+  // TODO: consider renaming this setMemory()
+  void setModRmMemory(const Memory& mem);
   void setReg(const Register& reg);
   void setReg(unsigned char value);
   void setImmediate(const std::vector<char>& bytes);
@@ -180,6 +219,7 @@ struct MachineInstruction {
   std::vector<unsigned char> toBytes() const;
 
   void initModRm();
+  void initSIB();
   // shared by setModRmRegister && setReg
   void setRegInternal(int& target, const Register& reg, Rex extensionReg);
 
@@ -188,6 +228,8 @@ struct MachineInstruction {
   std::vector<unsigned char> opcode;
   std::vector<unsigned char> relative;
   std::vector<ModRm> modRm;
+  std::vector<SIB> sib;
+  std::vector<unsigned char> disp;
   std::vector<unsigned char> immediate;
   bool hi8 {false};
 };
@@ -393,8 +435,6 @@ class name : public SingleOpcodeInstruction { \
 GEN_SINGLE_OPCODE_INST(SysCall, { 0x0F, 0x05 })
 GEN_SINGLE_OPCODE_INST(RET, { 0xC3 })
 
-#undef GEN_SINGLE_OPCODE_INST
-
 class SizedOpcodeInstruction : public X86Instruction {
  public:
   SizedOpcodeInstruction(unsigned char opcode, int size)
@@ -451,6 +491,59 @@ class Data : public X86Instruction {
  private:
   UImmediate imm_;
 };
+
+// TODO: check size constraint
+class FLDSTInstruction : public X86Instruction {
+ public:
+  FLDSTInstruction(int size, 
+                   UMemory memory, 
+                   int size1, int size2, int size3,
+                   unsigned char op1, unsigned char op2, unsigned char op3,
+                   unsigned char reg1, unsigned char reg2, unsigned char reg3)
+    : X86Instruction(size),
+      memory_(std::move(memory)),
+      sizes_({size1, size2, size3}),
+      opcode_({op1, op2, op3}),
+      reg_({reg1, reg2, reg3}) {
+  }
+  MachineInstruction assemble() const override;
+ private:
+  UMemory memory_;
+  const std::vector<int> sizes_;
+  const std::vector<unsigned char> opcode_;
+  const std::vector<unsigned char> reg_;
+};
+
+#define GEN_FLDST_INST(name, \
+                       size1, size2, size3, \
+                       op1, op2, op3, \
+                       reg1, reg2, reg3) \
+class name : public FLDSTInstruction { \
+ public: \
+  name(int size, UMemory memory) : \
+    FLDSTInstruction(size,  \
+                     std::move(memory),  \
+                     size1, size2, size3, \
+                     op1, op2, op3,  \
+                     reg1, reg2, reg3) { \
+  } \
+};
+
+GEN_FLDST_INST(FLD, 32, 64, 80, 0xD9, 0xDD, 0xDB, 0x0, 0x0, 0x5);
+GEN_FLDST_INST(FSTP, 32, 64, 80, 0xD9, 0xDD, 0xDB, 0x3, 0x3, 0x7);
+GEN_FLDST_INST(FILD, 16, 32, 64, 0xDF, 0xDB, 0xDF, 0x0, 0x0, 0x5);
+GEN_FLDST_INST(FISTP, 16, 32, 64, 0xDF, 0xDB, 0xDF, 0x3, 0x3, 0x7);
+
+GEN_SINGLE_OPCODE_INST(FADDP, { 0xDE, 0xC1 })
+GEN_SINGLE_OPCODE_INST(FSUBP, { 0xDE, 0xE9 })
+GEN_SINGLE_OPCODE_INST(FMULP, { 0xDE, 0xC9 })
+GEN_SINGLE_OPCODE_INST(FDIVP, { 0xDE, 0xF9 })
+// compare ST(0) and ST(1) (0xF0 + 1)
+GEN_SINGLE_OPCODE_INST(FCOMIP, { 0xDF, 0xF1 })
+
+#undef GEN_FLDST_INST
+#undef GEN_SINGLE_OPCODE_INST
+
 
 } // X86
 

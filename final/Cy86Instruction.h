@@ -16,6 +16,7 @@ class Operand {
   virtual X86::UOperand toX86Operand(int size) const = 0;
   virtual bool isMemory() const { return false; }
   virtual bool isRegister() const { return false; }
+  virtual bool isImmediate() const { return false; }
   virtual void output(std::ostream& out) const = 0;
   virtual bool writeable() const = 0;
 };
@@ -128,6 +129,7 @@ class Immediate : public Operand {
     CHECK(!label_.empty() || literal_);
   }
   X86::UOperand toX86Operand(int size) const override;
+  bool isImmediate() const override { return true; }
   void output(std::ostream& out) const override;
   bool writeable() const {
     return false;
@@ -189,6 +191,7 @@ class Cy86Instruction {
  protected:
   void checkOperandNumber(const std::string& name, size_t n) const;
   void checkWriteable(const std::string& name) const;
+
   int size() const { return size_; }
   std::vector<UOperand>& operands() {
     return operands_;

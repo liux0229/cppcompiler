@@ -1,5 +1,5 @@
 CFLAGS=-g -Wall
-CPPFLAGS=-g -Wall -std=gnu++11 -I.
+CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address
 CC=ccache gcc
 CXX=ccache g++
 

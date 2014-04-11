@@ -1,7 +1,14 @@
 CFLAGS=-g -Wall
-CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address
+CPPFLAGS=-g -Wall -std=gnu++11 -I. 
 CC=ccache gcc
 CXX=ccache g++
+
+# Note the clang experiment was not successful: 
+# clang crashed and also was very strict about the code
+# Just capture here the settings I tried.
+# CC=ccache clang
+# CXX=ccache clang++
+# CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address -D__STRICT_ANSI__ -Wno-unused-function -ftemplate-depth=1024 -Wno-parentheses
 
 PPDecoders=Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
 PPFSMs=PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o
@@ -32,7 +39,7 @@ NsInitOBJs=nsinit.o $(NsInitLib) $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) 
 Cy86Lib=Cy86Compiler.o Cy86Parser.o Cy86Instruction.o X86Instruction.o
 Cy86OBJs=cy86.o $(Cy86Lib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
 
-all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
+all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86
 
 pptoken: $(PPTokenOBJs)
 	$(CXX) $(CPPFLAGS) -o pptoken $(PPTokenOBJs)
@@ -62,7 +69,7 @@ cy86: $(Cy86OBJs)
 	$(CXX) $(CPPFLAGS) -o cy86 $(Cy86OBJs)
 
 clean:
-	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit
+	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86
 
 tests: test9 test8 test7 test6 test5 test4 test3 test2 test1
 

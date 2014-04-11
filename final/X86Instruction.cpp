@@ -218,7 +218,7 @@ MachineInstruction Mov::assemble() const {
   r.addSizePrefix(size());
 
   if (to_->isRegister() && from_->isRegister()) {
-    r.opcode = { size() == 8 ? 0x88 : 0x89 };
+    r.opcode = { static_cast<unsigned char>(size() == 8 ? 0x88 : 0x89) };
     r.setModRmRegister(toRegister(*to_));
     r.setReg(toRegister(*from_));
   } else if (to_->isRegister() && from_->isImmediate()) {
@@ -233,11 +233,11 @@ MachineInstruction Mov::assemble() const {
 
     r.setImmediate(from.getBytes());
   } else if (to_->isRegister() && from_->isMemory()) {
-    r.opcode = { size() == 8 ? 0x8A : 0x8B };
+    r.opcode = { static_cast<unsigned char>(size() == 8 ? 0x8A : 0x8B) };
     r.setReg(toRegister(*to_));
     r.setModRmMemory(toMemory(*from_));
   } else if (to_->isMemory() && from_->isRegister()) {
-    r.opcode = { size() == 8 ? 0x88 : 0x89 };
+    r.opcode = { static_cast<unsigned char>(size() == 8 ? 0x88 : 0x89) };
     r.setModRmMemory(toMemory(*to_));
     r.setReg(toRegister(*from_));
   } else {

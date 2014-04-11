@@ -15,10 +15,10 @@ enum class MemberKind {
   Typedef = 0x8,
 };
 
-class NamespaceMember;
-class VariableMember;
-class FunctionMember;
-class TypedefMember;
+struct NamespaceMember;
+struct VariableMember;
+struct FunctionMember;
+struct TypedefMember;
 MakeShared(NamespaceMember);
 MakeShared(VariableMember);
 MakeShared(FunctionMember);

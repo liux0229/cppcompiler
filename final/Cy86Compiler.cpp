@@ -96,9 +96,9 @@ Cy86Compiler::compile(vector<UToken>&& tokens) {
     // apply constant offset
     value += imm->getConstant();
 
-    // TODO: is this the best usage?
-    auto bytes = FundalmentalValue<uint64_t>(FT_UNSIGNED_LONG_INT, value)
-                   .toBytes();
+    auto bytes = ConstantValue::createFundalmentalValue(
+                   static_cast<unsigned long>(value))
+                     ->toBytes();
     // if the bytes is too long then the rightmost bytes are automatically
     // truncated as desired.
     for (int i = 0; i < imm->size() / 8; ++i) {

@@ -40,10 +40,9 @@ MakeUnique(Id);
 
 class Declarator {
  public:
-  Declarator() : abstract_(true) { }
+  Declarator() {}
   explicit Declarator(const Id& id) 
-             : abstract_(false),
-               id_(id) { 
+             : id_(id) { 
   }
 
   Id getId() const { return id_; }
@@ -51,7 +50,6 @@ class Declarator {
   void appendType(SType type) { typeList_.append(type); }
 
  private:
-  bool abstract_;
   Id id_; 
   DerivedTypeList typeList_;
 };

@@ -1,0 +1,4 @@
+start: fadd80 [0x400001] 2.0 start;
+fsub80 [0x400001] 2.0 start;
+fmul80 [0x400001] 2.0 start;
+fdiv80 [0x400001] 2.0 start;

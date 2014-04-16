@@ -1,0 +1,8 @@
+#include "printer.inl"
+
+fsub32 x32 0xd76d18c3 0x000080ff;
+isub64 sp sp 8;
+move64 [sp] x64;
+call my_print;
+iadd64 sp sp 8;
+syscall1 t64 60 0;

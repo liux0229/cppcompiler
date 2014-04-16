@@ -1,0 +1,5 @@
+move8 x8 255;
+start: isub64 x64 x64 1;
+syscall3 t64 1 1 0x400001 1;
+jumpif x8 0x40007b;
+syscall1 t64 60 0;

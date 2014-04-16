@@ -1,0 +1,8 @@
+data: "hello world\n";
+"This is really awesome! We can put strings in side!\n";
+str: "日\u65e5\U000065E5\u6545\U00006544本語A≢Α.한국어\n";
+start: syscall3 t64 1 1 data 12;
+syscall3 t64 1 1 (data + 12) 53;
+syscall3 t64 1 1 str 39;
+syscall1 t64 60 0;
+

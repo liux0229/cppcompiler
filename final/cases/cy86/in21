@@ -1,0 +1,50 @@
+// init
+move64 x64 0;
+move64 t64 0;
+
+// compute
+start_compute: slt64 z8 t64 2000000023;
+jumpif z8 loop;
+jump end;
+loop: iadd64 x64 x64 t64;
+iadd64 t64 t64 1;
+jump start_compute;
+
+// call print(x64)
+isub64 sp sp 8;
+move64 [sp] x64;
+end:
+isub64 sp sp 8;
+move64 [sp] x64;
+call print;
+move8 [0x400001] '\n';
+syscall3 t64 1 1 0x400001 1;
+syscall1 t64 60 0;
+
+print: 
+// stack frame setup
+isub64 sp sp 8;
+move64 [sp] bp;
+move64 bp sp;
+
+// check x == 0
+ieq64 x8 [bp + 16] 0;
+jumpif x8 end_print;
+
+// call print(x/10)
+sdiv64 x64 [bp + 16] 10;
+isub64 sp sp 8;
+move64 [sp] x64;
+call print;
+iadd64 sp sp 8;
+
+// print (x%10)
+smod64 x64 [bp + 16] 10;
+iadd8 x8 x8 '0';
+move8 [0x400001] x8;
+syscall3 t64 1 1 0x400001 1;
+
+end_print: 
+move64 bp [sp];
+iadd64 sp sp 8;
+ret;

@@ -1,0 +1,4 @@
+move64 x64 60;
+move64 y64 255;
+move64 z64 y64;
+syscall1 t64 x64 z64;

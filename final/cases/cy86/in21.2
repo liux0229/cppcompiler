@@ -1,0 +1,13 @@
+move32 x32 0;
+move32 t32 0;
+move64 y64 0x400200
+start: slt32 z8 t32 36;
+jumpif z8 loop;
+jump end;
+loop: iadd32 x32 x32 t32;
+iadd32 t32 t32 1;
+jump start;
+end: move8 [0x400001] x8;
+move64 [y64] 0;
+syscall3 t64 1 1 0x400001 1;
+syscall1 t64 60 0;

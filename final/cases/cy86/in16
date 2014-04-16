@@ -1,0 +1,6 @@
+sle64 y64 1 2;
+iadd32 y32 y32 'a';
+move32 t32 0x400001;
+move8 [t64] y8;
+syscall3 t64 1 1 t64 3;
+syscall1 t64 60 0;

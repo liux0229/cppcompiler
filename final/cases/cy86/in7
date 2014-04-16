@@ -1,0 +1,8 @@
+move64 x64 0x400001;
+move64 y64 0x400002;
+move64 z64 0x400004;
+move8 [y64] [x64];
+move8 [z64] '\n';
+move8 t8 4;
+syscall3 t64 1 1 0x400001 t64;
+syscall1 t64 60 0;

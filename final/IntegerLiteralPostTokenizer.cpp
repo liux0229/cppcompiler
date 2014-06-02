@@ -232,7 +232,7 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
 
   auto it = token.data.end() - 1;
   int count[4] { 0 }; // l, L, u, U
-  while (it >= token.data.end() - 3) {
+  while (it >= token.data.end() - min(static_cast<int>(token.data.size()), 3)) {
     if (*it == 'l') {
       ++count[0];
     } else if (*it == 'L') {

@@ -23,7 +23,7 @@ PPTokenizer::PPTokenizer()
   init<UniversalCharNameDecoder>();
   init<CommentDecoder>();
 
-  int n = decoders_.size();
+  int n = static_cast<int>(decoders_.size());
   for (int i = 0; i < n - 1; i++) {
     decoders_[i]->sendTo([this, i](int x) {
       /* cout << format("decoder {} produced `{}`\n", i, char(x)); */

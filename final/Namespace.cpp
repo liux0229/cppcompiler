@@ -659,10 +659,10 @@ const Namespace* Namespace::getLCA(const Namespace* a, const Namespace* b) {
   int walkDepth;
   if (da > db) {
     walk = &a;
-    walkDepth = da - db;
+    walkDepth = static_cast<int>(da - db);
   } else {
     walk = &b;
-    walkDepth = db - da;
+    walkDepth = static_cast<int>(db - da);
   }
 
   while (walkDepth--) {

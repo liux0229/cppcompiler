@@ -25,7 +25,7 @@ ostream& Utf8Encoder::encode(ostream& oss, int x)
     Throw("{x} too big to encode (>= {x})", x, ranges.back());
   }
 
-  int length = it - ranges.begin();
+  int length = static_cast<int>(it - ranges.begin());
   if (length == 1) {
     // cout << format("1:{x}", x) << endl;
     oss << static_cast<unsigned char>(x);

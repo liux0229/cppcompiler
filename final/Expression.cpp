@@ -301,7 +301,7 @@ bool QualificationConversion::allowed(SPointerType from, SPointerType to) {
   // TODO: probably a QualificationConversion implementation which reduces to
   // empty in this situation
   bool requireConst = false;
-  for (int i = cvFrom.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(cvFrom.size()) - 1; i >= 0; i--) {
     if (!(cvTo[i] >= cvFrom[i])) {
       return false;
     }

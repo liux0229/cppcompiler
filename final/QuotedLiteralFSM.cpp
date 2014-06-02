@@ -20,7 +20,7 @@ bool isOctal(int x) {
 bool lastIsBackSlash(const vector<int>& ch)
 {
   int i;
-  for (i = ch.size() - 1; i >= 0; i--) {
+  for (i = static_cast<int>(ch.size()) - 1; i >= 0; i--) {
     if (ch[i] != '\\') {
       break;
     }

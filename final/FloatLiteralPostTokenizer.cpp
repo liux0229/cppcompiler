@@ -63,7 +63,7 @@ bool floatLiteral(It start, It end)
 {
   try {
     floatLiteralInternal(start, end);
-  } catch (const CompilerException& e) {
+  } catch (const CompilerException&) {
     // Turn on this for more details of float parsing
     // cerr << format("ERROR: {} while parsing {}\n", 
     //                e.what(),

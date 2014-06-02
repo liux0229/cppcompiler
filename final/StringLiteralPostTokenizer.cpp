@@ -43,6 +43,7 @@ EFundamentalType toType(const string& e)
     return FundamentalTypeOf<wchar_t>();
   } else {
     CHECK(false);
+    return FundamentalTypeOf<void>();
   }
 }
 
@@ -107,7 +108,7 @@ string StringLiteralPostTokenizer::getSource() const
 
 void StringLiteralPostTokenizer::handle()
 {
-  int n = tokens_.size();
+  int n = static_cast<int>(tokens_.size());
   string encoding;
   string suffix;
   vector<int> codePoints;

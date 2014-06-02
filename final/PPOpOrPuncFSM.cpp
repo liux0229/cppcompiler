@@ -86,7 +86,7 @@ StateMachine* PPOpOrPuncFSM::put(int c)
     current_ = next;
     ch_.push_back(c);
     if (current_->leaf()) {
-      matched_ = ch_.size();
+      matched_ = static_cast<int>(ch_.size());
     }
     return this;
   }

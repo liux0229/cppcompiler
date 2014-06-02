@@ -45,7 +45,8 @@ void UniversalCharNameDecoder::put(int c)
             sum = sum * 16 + Utf8Utils::hexToInt(ch_[i]);
           }
           checkChar(sum);
-          send_(sum);
+          // TODO: check validity
+          send_(static_cast<int>(sum));
           n_ = 0;
         }
       }

@@ -12,6 +12,7 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include <cstdint>
 
 #define CHECK(f) assert(f)
 #define MCHECK(f, msg) do {\
@@ -35,9 +36,16 @@ namespace compiler {
   // define them as aliases to integers
   // See below for type traits specializations for them.
 
+  // TODO: silence a few conversion warnings until we clean these up
+  // e.g. [warning C4244: 'argument' : conversion from 'const __int64' to 'char16_t', possible loss of data]
+  // note that this supression is very strong.
+#ifdef MSVC
+#pragma warning(disable: 4244)
+#endif
+
   struct Char16_t {
     Char16_t() = default;
-    Char16_t(char16_t value) : value_(value) {}
+    Char16_t(char16_t value) : value_(value) {}    
     operator char16_t() const { return value_; }
     char16_t value_;
   };

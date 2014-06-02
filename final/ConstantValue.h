@@ -4,6 +4,15 @@
 
 #include <type_traits>
 
+// TODO: why in VC++ long is 32 bits and does it matter 
+// [should not otherwise compiler would warn about potential data loss]
+
+// See below for details of supressed warnings
+// TODO: why does supressing 4800 here not working
+#ifdef MSVC
+#pragma warning(disable: 4800 4146 4804)
+#endif
+
 namespace compiler {
 
 template<typename T> struct FundalmentalValue;
@@ -40,7 +49,7 @@ struct FundalmentalValueBase : ConstantValue {
   virtual bool isZero() const = 0;
   virtual bool isPositive() const = 0;
   virtual bool isSigned() const = 0;
-  virtual unsigned long getValue() const = 0;
+  virtual uint64_t getValue() const = 0;
   virtual std::shared_ptr<FundalmentalValueBase> negate() const = 0;
 };
 
@@ -136,13 +145,14 @@ struct FundalmentalValue : FundalmentalValueBase {
   bool isSigned() const override {
     return std::is_signed<T>::value;
   }
-  unsigned long getValue() const override {
-    return data;
+  uint64_t getValue() const override {
+    // TODO: examine this: [warning C4244: 'return' : conversion from 'const float' to 'uint64_t', possible loss of data]
+    return static_cast<uint64_t>(data);
   }
   std::shared_ptr<FundalmentalValueBase> negate() const override {
-    // Note:
+    // Note: supressed for VC++
     // [warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)]
-    // is supressed for VC++.
+    // [warning C4146: unary minus operator applied to unsigned type, result still unsigned]
     return std::make_shared<FundalmentalValue<T>>(type, -data);
   }
 

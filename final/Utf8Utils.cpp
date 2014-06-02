@@ -214,7 +214,8 @@ int Utf8Utils::getEscapedHex(
             Utf8Encoder::encode(vector<int>(begin, end)));
     }
   }
-  return s;
+  // TODO: check validity of this cast
+  return static_cast<int>(s);
 }
 
 int Utf8Utils::getEscapedCodePoint(
@@ -249,8 +250,8 @@ int Utf8Utils::getEscapedCodePoint(
 bool Utf8Utils::dCharMatch(std::vector<int>::const_iterator strStart, 
                            std::vector<int>::const_iterator strEnd, 
                            const std::vector<int>& dChar) {
-  int na = strEnd - strStart;
-  int nb = dChar.size();
+  int na = static_cast<int>(strEnd - strStart);
+  int nb = static_cast<int>(dChar.size());
   CHECK(na >= 1 + nb);
   if (*(strEnd - 1 - nb) == ')') {
     for (int i = 0; i < nb; ++i) {

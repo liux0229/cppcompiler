@@ -5,6 +5,7 @@
 #include <functional>
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 
 namespace compiler {
 

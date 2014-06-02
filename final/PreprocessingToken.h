@@ -85,6 +85,7 @@ struct PPToken
       return PPTokenType::UserDefinedStringLiteral;
     } else {
       CHECK(false);
+      return PPTokenType::Unknown;
     }
   }
 

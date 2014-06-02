@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common.h"
+
 #include <ostream>
 #include <string>
 #include <vector>

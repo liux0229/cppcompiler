@@ -36,12 +36,14 @@ namespace compiler {
   // See below for type traits specializations for them.
 
   struct Char16_t {
+    Char16_t() = default;
     Char16_t(char16_t value) : value_(value) {}
     operator char16_t() const { return value_; }
     char16_t value_;
   };
 
   struct Char32_t {
+    Char32_t() = default;
     Char32_t(char32_t value) : value_(value) {}
     operator char32_t() const { return value_; }
     char32_t value_;
@@ -121,23 +123,19 @@ namespace compiler {
 namespace std {
 
   template<> 
-  struct is_integral<compiler::Char16_t> { 
-    static const bool value = true;
+  struct is_integral<compiler::Char16_t> : integral_constant<bool, true> { 
   };
 
   template<>
-  struct is_integral<compiler::Char32_t> {
-    static const bool value = true;
+  struct is_integral<compiler::Char32_t> : integral_constant<bool, true> {
   };
 
   template<>
-  struct is_signed<compiler::Char16_t> {
-    static const bool value = false;
+  struct is_signed<compiler::Char16_t> : integral_constant<bool, false> {
   };
 
   template<>
-  struct is_signed<compiler::Char32_t> {
-    static const bool value = false;
+  struct is_signed<compiler::Char32_t> : integral_constant<bool, false> {
   };
 
 } // std

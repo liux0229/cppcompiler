@@ -1,7 +1,6 @@
 #include "Utf16Encoder.h"
 #include "format.h"
 #include "Utf8Utils.h"
-#include "common.h"
 #include <ostream>
 #include <sstream>
 #include <algorithm>

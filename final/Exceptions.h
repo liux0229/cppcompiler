@@ -10,7 +10,11 @@ public:
   {
     message_.swap(message);
   }
+#ifdef MSVC
   const char* what() const override
+#else
+  const char* what() const noexcept override
+#endif
   {
     return message_.c_str();
   }

@@ -1,14 +1,14 @@
 CFLAGS=-g -Wall
-CPPFLAGS=-g -Wall -std=gnu++11 -I. 
-CC=ccache gcc
-CXX=ccache g++
+# CPPFLAGS=-g -Wall -std=gnu++11 -I. 
+# CC=ccache gcc
+# CXX=ccache g++
 
-# Note the clang experiment was not successful: 
-# clang crashed and also was very strict about the code
-# Just capture here the settings I tried.
-# CC=ccache clang
-# CXX=ccache clang++
-# CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address -D__STRICT_ANSI__ -Wno-unused-function -ftemplate-depth=1024 -Wno-parentheses
+# Now the clang crash problem was gone after the VC++ integration.
+# It appears that clang compiled code was a bit slower than the g++ one.
+# We need to investigate why the -ftemplate-depth=1024 flag is needed.
+CC=ccache clang
+CXX=ccache clang++
+CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address -D__STRICT_ANSI__ -Wno-unused-function -ftemplate-depth=1024 -Wno-parentheses -Qunused-arguments
 
 PPDecoders=Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
 PPFSMs=PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o

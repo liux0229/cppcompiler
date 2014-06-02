@@ -200,6 +200,7 @@ vector<EFundamentalType> getList(bool _unsigned,
       };
   } else {
     CHECK(false);
+    return {};
   }
 }
 

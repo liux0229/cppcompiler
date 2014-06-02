@@ -36,7 +36,7 @@ struct ConstantValue {
 
 // TODO: provide operators so we can use them truely like directly in C/C++?
 struct FundalmentalValueBase : ConstantValue {
-  using ConstantValue::ConstantValue;
+  FundalmentalValueBase(SType t) : ConstantValue(t) { }
   virtual bool isZero() const = 0;
   virtual bool isPositive() const = 0;
   virtual bool isSigned() const = 0;
@@ -100,10 +100,10 @@ struct FundalmentalValue : FundalmentalValueBase {
         return convert<char>(target);
         break;
       case FT_CHAR16_T:
-        return convert<char16_t>(target);
+        return convert<Char16_t>(target);
         break;
       case FT_CHAR32_T:
-        return convert<char32_t>(target);
+        return convert<Char32_t>(target);
         break;
       case FT_BOOL:
         return convert<bool>(target);
@@ -128,6 +128,9 @@ struct FundalmentalValue : FundalmentalValueBase {
     return data == 0;
   }
   bool isPositive() const override {
+    // Note: 
+    // [warning C4804: '>' : unsafe use of type 'bool' in operation]
+    // is supressed for VC++.
     return data > 0;
   }
   bool isSigned() const override {
@@ -137,6 +140,9 @@ struct FundalmentalValue : FundalmentalValueBase {
     return data;
   }
   std::shared_ptr<FundalmentalValueBase> negate() const override {
+    // Note:
+    // [warning C4800: 'int' : forcing value to bool 'true' or 'false' (performance warning)]
+    // is supressed for VC++.
     return std::make_shared<FundalmentalValue<T>>(type, -data);
   }
 
@@ -189,7 +195,7 @@ ConstantValue::createFundalmentalValue(const T& d) {
 }
 
 struct ArrayValueBase : ConstantValue { 
-  using ConstantValue::ConstantValue;
+  ArrayValueBase(SType t) : ConstantValue(t) { }
 };
 
 template<typename T>
@@ -214,7 +220,9 @@ struct ArrayValue : ArrayValueBase {
 struct LiteralExpression;
 using SLiteralExpression = std::shared_ptr<const LiteralExpression>;
 struct AddressValue : ConstantValue {
-  using ConstantValue::ConstantValue;
+  AddressValue(SType type)
+	: ConstantValue(type) {
+  }
 
   // whether the pointed-to is constant
   virtual bool isConstant() const = 0;

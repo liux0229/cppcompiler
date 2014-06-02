@@ -47,7 +47,7 @@ using namespace X86;
 namespace {
 
 // TODO: pass this in as parameter
-constexpr size_t kStartAddress = 0x400078;
+const size_t kStartAddress = 0x400078;
 
 }
 

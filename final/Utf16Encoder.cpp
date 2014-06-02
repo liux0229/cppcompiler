@@ -11,7 +11,7 @@ using namespace std;
 namespace compiler {
 
 namespace {
-void encodeInternal(int x, vector<char16_t>& v)
+void encodeInternal(int x, vector<Char16_t>& v)
 {
   if (!Utf8Utils::isValidUnicode(x)) {
     Throw("{} is not a valid unicode point", x);
@@ -19,7 +19,7 @@ void encodeInternal(int x, vector<char16_t>& v)
 
   int bound = 0x10000;
   if (x < bound) {
-    v.push_back(static_cast<char16_t>(x));
+    v.push_back(static_cast<Char16_t>(x));
   } else {
     x -= bound;
     int a = 0xD800;
@@ -27,22 +27,22 @@ void encodeInternal(int x, vector<char16_t>& v)
     a |= (x >> 10);
     b |= (x & ((1 << 10) - 1));
 
-    v.push_back(static_cast<char16_t>(a));
-    v.push_back(static_cast<char16_t>(b));
+    v.push_back(static_cast<Char16_t>(a));
+    v.push_back(static_cast<Char16_t>(b));
   }
 }
 }
 
-vector<char16_t> Utf16Encoder::encode(int x)
+vector<Char16_t> Utf16Encoder::encode(int x)
 {
-  vector<char16_t> v;
+  vector<Char16_t> v;
   encodeInternal(x, v);
   return v;
 }
 
-vector<char16_t> Utf16Encoder::encode(const vector<int>& xs)
+vector<Char16_t> Utf16Encoder::encode(const vector<int>& xs)
 {
-  vector<char16_t> v;
+  vector<Char16_t> v;
   for (int x : xs) {
     encodeInternal(x, v);
   }

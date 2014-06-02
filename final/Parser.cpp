@@ -2966,7 +2966,7 @@ private:
    */
   class Trace {
   public:
-    static constexpr const char* padding() {
+    static const char* padding() {
       return "  ";
     }
     Trace(bool isTrace,

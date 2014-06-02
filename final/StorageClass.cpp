@@ -6,7 +6,7 @@ using namespace std;
 
 ostream& operator<<(ostream& out, StorageClass c) {
   static const char names[] = "STE";
-  constexpr int n = sizeof(names) / sizeof(*names) - 1;
+  const int n = sizeof(names) / sizeof(*names) - 1;
   auto v = static_cast<uint32_t>(c);
   out << "[";
   for (int i = 0; i < n; ++i) {

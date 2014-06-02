@@ -22,6 +22,9 @@ template<typename T>
 UTokenLiteral getIntegerConstant(T value) {
   // don't preserve the source for now
   if (is_signed<T>::value) {
+    // TODO: note:
+    // [warning C4244]
+    // is supressed for VC++.
     return make_unique<PostTokenLiteral<T>>(
         "", 
         FT_LONG_LONG_INT, 

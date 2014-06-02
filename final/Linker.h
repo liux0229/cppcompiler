@@ -8,8 +8,8 @@ class Linker {
   using Image = std::vector<char>;
   struct Address : std::pair<size_t, size_t> {
     using Base = std::pair<size_t, size_t>;
-    using Base::Base;
     Address() : Base(0, 0) { }
+    Address(size_t a, size_t b) : Base(a, b) { }
     bool valid() const { return first < second; }
   };
 

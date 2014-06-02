@@ -129,14 +129,14 @@ struct FunctionMember : Member {
                  const std::string& name, 
                  SFunctionType t,
                  Linkage link,
-                 bool _inline,
+                 bool inLine,
                  bool isDef) 
     : Member(owner, 
              name, 
              link,
              isDef), 
       type(t),
-      isInline(_inline) { }
+      isInline(inLine) { }
   MemberKind getKind() const override { return MemberKind::Function; }
   void output(std::ostream& out) const override;
 

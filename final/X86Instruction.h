@@ -295,7 +295,8 @@ class RegRegInstruction : public X86Instruction {
 #define GEN_REG_REG_INST(name, op8, op32) \
 class name : public RegRegInstruction { \
  public: \
-  using RegRegInstruction::RegRegInstruction; \
+  name(int size, UOperand to, UOperand from) \
+    : RegRegInstruction(size, std::move(to), std::move(from)) {} \
   std::vector<int> getOpcode() const override { \
     return { size() == 8 ? op8 : op32 }; \
   } \
@@ -328,7 +329,8 @@ class RegInstruction : public X86Instruction {
 #define GEN_REG_INST(name, op8, op32, reg) \
 class name : public RegInstruction { \
  public: \
-  using RegInstruction::RegInstruction; \
+  name(int size, UOperand r) : RegInstruction(size, std::move(r)) {} \
+  name(int size, UOperand to, UOperand from) : RegInstruction(size, std::move(to), std::move(from)) {} \
  protected: \
   std::vector<int> getOpcode() const override { \
     return { size() == 8 ? op8 : op32 }; \
@@ -395,7 +397,9 @@ class JBE8 : public X86Instruction {
 #define GEN_SET_INST(name, op) \
 class name : public SetInstruction { \
  public: \
-  using SetInstruction::SetInstruction; \
+  name(UOperand r) : SetInstruction(std::move(r)) {} \
+  name(int size, UOperand to, UOperand from) \
+    : SetInstruction(size, std::move(to), std::move(from)) {} \
  protected: \
   int getOpcodeInternal() const override { \
     return op; \

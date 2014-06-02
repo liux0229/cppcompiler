@@ -8,7 +8,7 @@ namespace compiler {
 class Utf8Utils
 {
 public:
-  constexpr static int MaxChars = 4;
+  static const int MaxChars = 4;
 
   static const std::array<int, MaxChars + 1> Ranges;
 

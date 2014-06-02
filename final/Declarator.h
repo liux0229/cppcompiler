@@ -24,7 +24,7 @@ struct Id {
   Id(const std::string& id = "", Namespace* n = nullptr) 
     : unqualified(id), ns(n) { 
   }
-  bool isQualified() const { return ns; }
+  bool isQualified() const { return ns != nullptr; }
   std::string getName() const {
     if (ns) {
       return ns->getName() + "::" + unqualified;

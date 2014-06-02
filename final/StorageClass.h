@@ -17,7 +17,7 @@ inline StorageClass operator|(StorageClass a, StorageClass b) {
            static_cast<uint32_t>(b));
 }
 inline bool operator&(StorageClass a, StorageClass b) {
-  return static_cast<uint32_t>(a) & static_cast<uint32_t>(b);
+  return (static_cast<uint32_t>(a) & static_cast<uint32_t>(b)) > 0;
 }
 inline StorageClass operator~(StorageClass c) {
   return static_cast<StorageClass>(~static_cast<uint32_t>(c));

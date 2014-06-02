@@ -35,11 +35,11 @@ struct CvQualifier {
   }
 
   bool isConst() const {
-    return value & Const;
+    return (value & Const) > 0;
   }
 
   bool isVolatile() const {
-    return value & Volatile;
+    return (value & Volatile) > 0;
   }
 
   Value value { None };

@@ -19,10 +19,10 @@ EFundamentalType getEncoding(const vector<int>& data, int& start)
 {
   if (data[0] == 'u') {
     start = 1;
-    return FundamentalTypeOf<char16_t>();
+    return FundamentalTypeOf<Char16_t>();
   } else if (data[0] == 'U') {
     start = 1;
-    return FundamentalTypeOf<char32_t>();
+    return FundamentalTypeOf<Char32_t>();
   } else if (data[0] == 'L') {
     start = 1;
     return FundamentalTypeOf<wchar_t>();
@@ -45,9 +45,9 @@ void CharLiteralPostTokenizer::output(const PPToken& token,
   if (type == FT_CHAR) {
     pt = get(source, type, (char)codePoint, suffix);
   } else if (type == FT_CHAR16_T) {
-    pt = get(source, type, (char16_t)codePoint, suffix);
+    pt = get(source, type, (Char16_t)codePoint, suffix);
   } else if (type == FT_CHAR32_T) {
-    pt = get(source, type, (char32_t)codePoint, suffix);
+    pt = get(source, type, (Char32_t)codePoint, suffix);
   } else if (type == FT_WCHAR_T) {
     // the requirement says we should treat wchar_t as char32_t but their
     // signedness is different; here we depend on wchar_t has the same in memory

@@ -10,7 +10,7 @@ public:
   {
     message_.swap(message);
   }
-  const char* what() const noexcept(true) override
+  const char* what() const override
   {
     return message_.c_str();
   }

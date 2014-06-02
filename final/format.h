@@ -92,9 +92,10 @@ typename std::enable_if<
          >::type
 setFormatHex(std::ostream& oss, T&& value)
 {
-  int32_t x = static_cast<int32_t>(value);
+  int x = static_cast<int>(value);
   oss << "0x" << std::hex << std::setfill('0');
-  if (x <= std::numeric_limits<uint16_t>::max()) {
+  // TODO: provide uint16_t for VC++
+  if (x <= std::numeric_limits<unsigned short>::max()) {
     oss << std::setw(4);
   } else {
     oss << std::setw(8);

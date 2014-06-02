@@ -194,27 +194,27 @@ namespace {
 
 // FundamentalTypeOf: convert fundamental type T to EFundamentalType
 // for example: `FundamentalTypeOf<long int>()` will return `FT_LONG_INT`
-template<typename T> constexpr EFundamentalType FundamentalTypeOf();
-template<> constexpr EFundamentalType FundamentalTypeOf<signed char>() { return FT_SIGNED_CHAR; }
-template<> constexpr EFundamentalType FundamentalTypeOf<short int>() { return FT_SHORT_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<int>() { return FT_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<long int>() { return FT_LONG_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<long long int>() { return FT_LONG_LONG_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<unsigned char>() { return FT_UNSIGNED_CHAR; }
-template<> constexpr EFundamentalType FundamentalTypeOf<unsigned short int>() { return FT_UNSIGNED_SHORT_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<unsigned int>() { return FT_UNSIGNED_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<unsigned long int>() { return FT_UNSIGNED_LONG_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<unsigned long long int>() { return FT_UNSIGNED_LONG_LONG_INT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<wchar_t>() { return FT_WCHAR_T; }
-template<> constexpr EFundamentalType FundamentalTypeOf<char>() { return FT_CHAR; }
-template<> constexpr EFundamentalType FundamentalTypeOf<char16_t>() { return FT_CHAR16_T; }
-template<> constexpr EFundamentalType FundamentalTypeOf<char32_t>() { return FT_CHAR32_T; }
-template<> constexpr EFundamentalType FundamentalTypeOf<bool>() { return FT_BOOL; }
-template<> constexpr EFundamentalType FundamentalTypeOf<float>() { return FT_FLOAT; }
-template<> constexpr EFundamentalType FundamentalTypeOf<double>() { return FT_DOUBLE; }
-template<> constexpr EFundamentalType FundamentalTypeOf<long double>() { return FT_LONG_DOUBLE; }
-template<> constexpr EFundamentalType FundamentalTypeOf<void>() { return FT_VOID; }
-template<> constexpr EFundamentalType FundamentalTypeOf<std::nullptr_t>() { return FT_NULLPTR_T; }
+template<typename T> EFundamentalType FundamentalTypeOf();
+template<> EFundamentalType FundamentalTypeOf<signed char>() { return FT_SIGNED_CHAR; }
+template<> EFundamentalType FundamentalTypeOf<short int>() { return FT_SHORT_INT; }
+template<> EFundamentalType FundamentalTypeOf<int>() { return FT_INT; }
+template<> EFundamentalType FundamentalTypeOf<long int>() { return FT_LONG_INT; }
+template<> EFundamentalType FundamentalTypeOf<long long int>() { return FT_LONG_LONG_INT; }
+template<> EFundamentalType FundamentalTypeOf<unsigned char>() { return FT_UNSIGNED_CHAR; }
+template<> EFundamentalType FundamentalTypeOf<unsigned short int>() { return FT_UNSIGNED_SHORT_INT; }
+template<> EFundamentalType FundamentalTypeOf<unsigned int>() { return FT_UNSIGNED_INT; }
+template<> EFundamentalType FundamentalTypeOf<unsigned long int>() { return FT_UNSIGNED_LONG_INT; }
+template<> EFundamentalType FundamentalTypeOf<unsigned long long int>() { return FT_UNSIGNED_LONG_LONG_INT; }
+template<> EFundamentalType FundamentalTypeOf<wchar_t>() { return FT_WCHAR_T; }
+template<> EFundamentalType FundamentalTypeOf<char>() { return FT_CHAR; }
+template<> EFundamentalType FundamentalTypeOf<Char16_t>() { return FT_CHAR16_T; }
+template<> EFundamentalType FundamentalTypeOf<Char32_t>() { return FT_CHAR32_T; }
+template<> EFundamentalType FundamentalTypeOf<bool>() { return FT_BOOL; }
+template<> EFundamentalType FundamentalTypeOf<float>() { return FT_FLOAT; }
+template<> EFundamentalType FundamentalTypeOf<double>() { return FT_DOUBLE; }
+template<> EFundamentalType FundamentalTypeOf<long double>() { return FT_LONG_DOUBLE; }
+template<> EFundamentalType FundamentalTypeOf<void>() { return FT_VOID; }
+template<> EFundamentalType FundamentalTypeOf<std::nullptr_t>() { return FT_NULLPTR_T; }
 
 // convert EFundamentalType to a source code
 const std::map<EFundamentalType, std::string> FundamentalTypeToStringMap

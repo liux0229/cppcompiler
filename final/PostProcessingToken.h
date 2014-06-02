@@ -186,10 +186,9 @@ struct GetTypeSpecifier {
       case FT_CHAR32_T:
       case FT_WCHAR_T:
         return "character";
-        break;
       default:
         CHECK(false);
-        break;
+        return "";
     }
   }
 };
@@ -409,7 +408,7 @@ struct PostTokenLiteral : public PostTokenLiteralBase
 
   std::string toIntegralStr() const override {
     CHECK(isIntegral());
-    return format(std::is_signed<T>() ? "{}" : "{}u", data);
+    return format(std::is_signed<T>::value ? "{}" : "{}u", data);
   }
 
   std::string getName() const override { 

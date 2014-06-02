@@ -2,7 +2,13 @@ sync
 add
 *.o
 .*.swp
+*.obj
 out
+*~
+*Debug*
+*.sdf
+*.opensdf
+*.suo
 
 nsinit-ref
 nsinit-ref-stdin

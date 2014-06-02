@@ -36,9 +36,9 @@ EFundamentalType toType(const string& e)
   if (e == "" || e == "u8") {
     return FundamentalTypeOf<char>();
   } else if (e == "u") {
-    return FundamentalTypeOf<char16_t>();
+    return FundamentalTypeOf<Char16_t>();
   } else if (e == "U") {
-    return FundamentalTypeOf<char32_t>();
+    return FundamentalTypeOf<Char32_t>();
   } else if (e == "L") {
     return FundamentalTypeOf<wchar_t>();
   } else {
@@ -162,7 +162,7 @@ void StringLiteralPostTokenizer::handle()
     if (type == FT_CHAR32_T) {
       receiver_.put(*get(getSource(), 
                     type, 
-                    vector<char32_t>(codePoints.begin(), codePoints.end()), 
+                    vector<Char32_t>(codePoints.begin(), codePoints.end()), 
                     suffix));
     } else {
       receiver_.put(*get(getSource(), 

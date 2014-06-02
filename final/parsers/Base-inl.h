@@ -34,6 +34,7 @@
  */
 #include "Declarator.h"
 #include "Expression.h"
+
 #include <type_traits>
 
 #define LOG() cout << format("[{}] index={} [{}]\n", \
@@ -71,7 +72,7 @@ struct Base {
 
   class Trace {
   public:
-    static constexpr const char* padding() {
+    static const char* padding() {
       return "  ";
     }
     Trace(bool isTrace,
@@ -284,12 +285,38 @@ struct Base {
   }
 
   // traced call - provide stack frame's BtControl
-  template<typename F, typename... Args>
-  auto TR(const char* name, F f, Args&&... args) -> 
+  // (two overloads to completely specify the return type)
+
+  // note: this was how the return type was specified
+  // (only one overload was needed),
+  // but that seemed to cause recursive evaluations from the compiler
+  // (and prevented VC++ from compiling)
+  /*
+     template<typename F, typename... Args>
+     auto TR(const char* name, F f, Args&&... args) -> 
        decltype(TR(*static_cast<BtControl*>(nullptr),
                    name, 
                    f, 
-                   forward<Args>(args)...)) {
+                   forward<Args>(args)...));
+   */
+  template<typename F, typename... Args>
+  auto TR(const char* name, F f, Args&&... args) ->
+    typename
+    enable_if<
+    !is_void<decltype(f(forward<Args>(args)...))>::value,
+    decltype(f(forward<Args>(args)...))>
+    ::type {
+    BtControl btControl;
+    return TR(btControl, name, f, forward<Args>(args)...);
+  }
+
+  template<typename F, typename... Args>
+  auto TR(const char* name, F f, Args&&... args) -> 
+       typename
+       enable_if<
+         is_void<decltype(f(forward<Args>(args)...))>::value,
+         bool>
+       ::type {
     BtControl btControl;
     return TR(btControl, name, f, forward<Args>(args)...);
   }

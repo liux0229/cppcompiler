@@ -1108,7 +1108,7 @@ class ConvUF80 : public Cy86Instruction {
       add(r, move(inst));
     }
     {
-      auto constant = ConstantValue::createFundalmentalValue(1L << 63);
+      auto constant = ConstantValue::createFundalmentalValue(1ULL << 63);
       auto inst = Mov(64, 
                       Register::Rbx(), 
                       make_unique<Immediate>("", constant)).translate();
@@ -1155,7 +1155,7 @@ class ConvF80U : public Cy86Instruction {
 
   vector<UX86Instruction> translate() {
     vector<UX86Instruction> r;
-    auto constant = ConstantValue::createFundalmentalValue(1L << 63);
+    auto constant = ConstantValue::createFundalmentalValue(1ULL << 63);
 
     {
       auto inst = FLD(80, move(operands()[1])).translate();

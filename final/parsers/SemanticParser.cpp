@@ -18,10 +18,10 @@
 
 #define EXB(func) #func, make_delegate(&Base::func, static_cast<Base*>(this))
 
-#include "parsers/Base-inl.cpp"
-#include "parsers/Declaration-inl.cpp"
-#include "parsers/SimpleDeclaration-inl.cpp"
-#include "parsers/Expression-inl.cpp"
+#include "parsers/Base-inl.h"
+#include "parsers/Declaration-inl.h"
+#include "parsers/SimpleDeclaration-inl.h"
+#include "parsers/Expression-inl.h"
 
 #define EX(func) #func, make_delegate(&ParserImp::func, this)
 

@@ -2,6 +2,9 @@
 #include "DeclSpecifiers.h"
 #include "Initializer.h"
 
+// List of includes to aid IDE tools only
+#include "Expression.h"
+
 #define EX(func) #func, make_delegate(&SimpleDeclaration::func, this)
 
 namespace compiler {

@@ -2,19 +2,19 @@
  * Design notes:
  *
  * Semantics of disableBt()
- * When the parsing procecure detects a pattern of terminals (which match
+ * When the parsing procedure detects a pattern of terminals (which match
  * a prefix of itself, that cannot match any other non-terminal, it can
  * optionally call disableBt() to signal that information to the parsing
  * framework, which can then disable backtracking on the corresponding path,
  * because, since no other NT can match the terminal prefix, if the parsing
- * procecure fails to parse the remaining terminals, no other NTs can parse
+ * procedure fails to parse the remaining terminals, no other NTs can parse
  * the terminal string.
  *
  * This mechanism not only speeds up parsing but also provides much better
  * error reporting.
  *
  * Note that the currently implemented mechanism does not restrict itself
- * to a one-level-down relationship only - a parsing procecure at level L might
+ * to a one-level-down relationship only - a parsing procedure at level L might
  * have the intelligence to determine that a failure of the above type at level
  * L + x (x > 1) means the parsing at L must fail. The framework provides the
  * basic support to express that in the forms of sharing the same BtControl,
@@ -23,7 +23,7 @@
  *
  * This mechanism is a generalized FIRST set mechanism, and thus FIRST
  * optimization can be implemented on top of this mechanism (e.g. by grouping
- * parsing procecures sharing the same prefix into a single parsing procecure).
+ * parsing procedures sharing the same prefix into a single parsing procedure).
  * However to automatic support every case of FIRST, we need an automatic FIRST
  * / FOLLOW generation mechanism.
  *
@@ -52,7 +52,7 @@ namespace compiler {
     using namespace std;
 
     // Note: postActionCall is abstracted out because VC++ cannot handle
-    // member template functions which are differeniated by
+    // member template functions which are differentiated by
     // an enable_if return type
     // This is probably a cleaner design anyways
 

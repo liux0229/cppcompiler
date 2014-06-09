@@ -58,7 +58,7 @@ private:
 
   void translationUnit() {
     while (!isEof()) {
-      // TR(EXB(declaration));
+      TR(EXB(declaration));
     }
     if (!isEof()) {
       BAD_EXPECT("<eof>");

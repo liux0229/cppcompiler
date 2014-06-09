@@ -51,6 +51,35 @@ namespace SemanticParserImp {
 
 using namespace std;
 
+// Note: postActionCall is abstracted out because VC++ cannot handle
+// member template functions which are differeniated by
+// an enable_if return type
+// This is probably a cleaner design anyways
+
+template<typename F, typename... Args>
+auto postActionCall(function<void ()> postAction, F f, Args&&... args) ->
+typename
+enable_if<
+!is_void<decltype(f(forward<Args>(args)...))>::value,
+decltype(f(forward<Args>(args)...))>::type
+{
+  auto ret = f(forward<Args>(args)...);
+  postAction();
+  return ret;
+}
+
+template<typename F, typename... Args>
+auto postActionCall(function<void()> postAction, F f, Args&&... args) ->
+typename
+enable_if<
+is_void<decltype(f(forward<Args>(args)...))>::value,
+bool>::type
+{
+  f(forward<Args>(args)...);
+  postAction();
+  return true;
+}
+
 struct Base {
   static vector<UToken> emptyTokens_;
 
@@ -60,7 +89,7 @@ struct Base {
 
   Base(const vector<UToken>& tokens, const ParserOption& option)
     : tokens_(tokens),
-      option_(option) { 
+    option_(option) {
     translationUnit_ = make_unique<TranslationUnit>();
   }
 
@@ -76,25 +105,25 @@ struct Base {
       return "  ";
     }
     Trace(bool isTrace,
-          string&& name, 
+          string&& name,
           function<const PostToken& ()> curTokenGetter,
           int& traceDepth)
-      : isTrace_(isTrace),
-        name_(move(name)),
-        curTokenGetter_(curTokenGetter),
-        traceDepth_(traceDepth)  {
+          : isTrace_(isTrace),
+          name_(move(name)),
+          curTokenGetter_(curTokenGetter),
+          traceDepth_(traceDepth)  {
       if (isTrace_) {
         tracePadding();
         cout << format("--> {} [{}]\n", name_, curTokenGetter_().toStr());
         ++traceDepth_;
-      } 
+      }
     }
     ~Trace() {
       if (isTrace_) {
         --traceDepth_;
         tracePadding();
-        cout << format("<-- {} {} [{}]\n", 
-                       name_, 
+        cout << format("<-- {} {} [{}]\n",
+                       name_,
                        ok_ ? "OK" : "BAD",
                        curTokenGetter_().toStr());
       }
@@ -111,10 +140,10 @@ struct Base {
     string name_;
     function<const PostToken& ()> curTokenGetter_;
     int& traceDepth_;
-    bool ok_ { false };
+    bool ok_{ false };
   };
 
-  void adv() { 
+  void adv() {
     if (option_.isTrace) {
       for (int i = 0; i < traceDepth_; ++i) {
         cout << Trace::padding();
@@ -122,7 +151,7 @@ struct Base {
       cout << format("=== MATCH [{}]\n", cur().toStr());
     }
 
-    ++index_; 
+    ++index_;
   }
 
   const PostToken* get() const {
@@ -150,7 +179,7 @@ struct Base {
     return *tokens_[index_ + 1];
   }
 
-  void reset(ParserState&& state) { 
+  void reset(ParserState&& state) {
     index_ = state.index;
   }
 
@@ -186,18 +215,18 @@ struct Base {
   }
 
   void complainExpect(string&& expected, const char* func) const {
-    Throw("[{}] expect {}; got: {}", 
+    Throw("[{}] expect {}; got: {}",
           func,
           move(expected),
           cur().toStr());
   }
 
   const PostTokenSimple*
-  expectSimpleFromFunc(ETokenType type, const char* func) {
-    if (!isSimple(type)) {
-      complainExpect(getSimpleTokenTypeName(type), func);
-    }
-    return getAdvSimple();
+    expectSimpleFromFunc(ETokenType type, const char* func) {
+      if (!isSimple(type)) {
+        complainExpect(getSimpleTokenTypeName(type), func);
+      }
+      return getAdvSimple();
   }
 
   bool isIdentifier() const {
@@ -242,81 +271,51 @@ struct Base {
   }
 
   struct BtControl {
-    bool disableBt { false };
-    bool reportError { false };
+    bool disableBt{ false };
+    bool reportError{ false };
   };
 
-  // traced call - f returns non-void
+  // traced call
   template<typename F, typename... Args>
   auto TR(BtControl& btControl, const char* name, F f, Args&&... args) ->
-       typename
-       enable_if<
-         !is_void<decltype(f(forward<Args>(args)...))>::value,
-         decltype(f(forward<Args>(args)...))>
-       ::type {
+    typename
+    conditional<
+      is_void<decltype(f(forward<Args>(args)...))>::value,
+      bool,
+      decltype(f(forward<Args>(args)...))
+    >::type {
     BtControlGuard guard(this, btControl);
-    Trace trace(option_.isTrace, 
-                name, 
-                bind(&Base::cur, this), 
+    Trace trace(option_.isTrace,
+                name,
+                bind(&Base::cur, this),
                 traceDepth_);
-    auto ret = f(forward<Args>(args)...);
-    trace.success();
-    return ret;
-  }
-
-  // traced call - f returns void
-  // transform f into a function which returns true on the success path,
-  // which makes the backtrack implementation easier
-  template<typename F, typename... Args>
-  auto TR(BtControl& btControl, const char* name, F f, Args&&... args) ->
-       typename
-       enable_if<
-         is_void<decltype(f(forward<Args>(args)...))>::value,
-         bool>
-       ::type {
-    BtControlGuard guard(this, btControl);
-    Trace trace(option_.isTrace, 
-                name, 
-                bind(&Base::cur, this), 
-                traceDepth_);
-    f(forward<Args>(args)...);
-    trace.success();
-    return true;
+    function<void()> postAction = [&trace]() { trace.success(); };
+    return postActionCall(postAction, f, forward<Args>(args)...);
   }
 
   // traced call - provide stack frame's BtControl
-  // (two overloads to completely specify the return type)
 
   // note: this was how the return type was specified
-  // (only one overload was needed),
-  // but that seemed to cause recursive evaluations from the compiler
-  // (and prevented VC++ from compiling)
+  // but that seemed to cause recursive evaluations from the VC++
+  // (and prevented it from compiling)
+  // However the new signature is probably cleaner anyways
   /*
      template<typename F, typename... Args>
-     auto TR(const char* name, F f, Args&&... args) -> 
-       decltype(TR(*static_cast<BtControl*>(nullptr),
-                   name, 
-                   f, 
-                   forward<Args>(args)...));
-   */
+     auto TR(const char* name, F f, Args&&... args) ->
+     decltype(TR(*static_cast<BtControl*>(nullptr),
+     name,
+     f,
+     forward<Args>(args)...));
+     */
   template<typename F, typename... Args>
   auto TR(const char* name, F f, Args&&... args) ->
     typename
-    enable_if<
-    !is_void<decltype(f(forward<Args>(args)...))>::value,
-    decltype(f(forward<Args>(args)...))>
-    ::type {
-    BtControl btControl;
-    return TR(btControl, name, f, forward<Args>(args)...);
-  }
-
-  template<typename F, typename... Args>
-  auto TR(const char* name, F f, Args&&... args) -> 
-       typename
-       enable_if<
-         is_void<decltype(f(forward<Args>(args)...))>::value,
-         bool>
-       ::type {
+    conditional<
+    is_void<decltype(f(forward<Args>(args)...))>::value,
+    bool,
+    decltype(f(forward<Args>(args)...))
+    >::type
+  {
     BtControl btControl;
     return TR(btControl, name, f, forward<Args>(args)...);
   }
@@ -324,12 +323,13 @@ struct Base {
   // backtrack
   template<typename F, typename... Args>
   auto BT(BtControl& btControl, const char* name, F f, Args&&... args) ->
-       decltype(TR(btControl, name, f, forward<Args>(args)...)) {
+    decltype(TR(btControl, name, f, forward<Args>(args)...)) {
     using Ret = decltype(TR(btControl, name, f, forward<Args>(args)...));
-    ParserState state { index_ };
+    ParserState state{ index_ };
     try {
       return TR(btControl, name, f, forward<Args>(args)...);
-    } catch (const CompilerException& e) {
+    }
+    catch (const CompilerException& e) {
       if (btControl.reportError) {
         cerr << "ERROR: " << e.what() << endl;
       }
@@ -346,16 +346,16 @@ struct Base {
   // backtrack - provide stack frame's BtControl
   template<typename F, typename... Args>
   auto BT(const char* name, F f, Args&&... args) ->
-       decltype(TR(name, f, forward<Args>(args)...)) {
-    BtControl btControl; 
+    decltype(TR(name, f, forward<Args>(args)...)) {
+    BtControl btControl;
     return BT(btControl, name, f, forward<Args>(args)...);
   }
 
   // TODO: assess the usability of this
   template<typename F, typename... Args>
   auto BT(bool reportError, const char* name, F f, Args&&... args) ->
-       decltype(TR(name, f, forward<Args>(args)...)) {
-    BtControl btControl; 
+    decltype(TR(name, f, forward<Args>(args)...)) {
+    BtControl btControl;
     btControl.reportError = true;
     return BT(btControl, name, f, forward<Args>(args)...);
   }
@@ -380,7 +380,7 @@ struct Base {
   }
 
   struct BtControlGuard {
-    BtControlGuard(Base* base, BtControl& btControl) : base_(base) { 
+    BtControlGuard(Base* base, BtControl& btControl) : base_(base) {
       base_->addBtControl(btControl);
     }
     ~BtControlGuard() {

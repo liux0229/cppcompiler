@@ -18,6 +18,11 @@ namespace {
 typedef unsigned long long ULL;
 typedef long long LL;
 
+#ifdef MSVC
+// TODO: why cannot we disable 4244 this way?
+#pragma warning(disable: 4244)
+#endif
+
 template<typename T>
 UTokenLiteral getIntegerConstant(T value) {
   // don't preserve the source for now
@@ -413,7 +418,7 @@ public:
   }
 
   UTokenLiteral binary(bool eval) {
-    return binary(binaryOpTable.size() - 1, eval);
+    return binary(static_cast<int>(binaryOpTable.size()) - 1, eval);
   }
 
   UTokenLiteral logicalAnd(bool eval) {

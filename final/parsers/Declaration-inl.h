@@ -85,8 +85,10 @@ struct Declaration : virtual Base {
       ns = curNamespace()->lookupNamespace(name, false);
     }
     if (!ns) {
+      // note: change string() below to string{} causes
+      // [fatal error C1001: An internal error has occurred in the compiler.]
       Throw("expect namespace-name; got: {}{}", 
-            root ? root->getName() + "::" : string{},  
+            root ? root->getName() + "::" : string(),  
             name);
     }
     return ns;

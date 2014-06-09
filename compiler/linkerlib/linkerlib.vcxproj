@@ -19,45 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\pptokenlib\pptokenlib.vcxproj">
-      <Project>{5967823e-dc29-4bc0-ada2-3dbfbec5e0e7}</Project>
+    <ProjectReference Include="..\semanticparserlib\semanticparserlib.vcxproj">
+      <Project>{66a682b0-cc12-4bb2-94c8-0ca24269f8b0}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\final\CharLiteralPostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\ConstantValue.cpp" />
-    <ClCompile Include="..\..\final\DeclSpecifiers.cpp" />
-    <ClCompile Include="..\..\final\Expression.cpp" />
-    <ClCompile Include="..\..\final\FloatLiteralPostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\IntegerLiteralPostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\Member.cpp" />
-    <ClCompile Include="..\..\final\Namespace.cpp" />
-    <ClCompile Include="..\..\final\PostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\StorageClass.cpp" />
-    <ClCompile Include="..\..\final\StringLiteralPostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\Type.cpp" />
-    <ClCompile Include="..\..\final\Utf16Encoder.cpp" />
+    <ClInclude Include="..\..\final\Linker.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\final\CharLiteralPostTokenizer.h" />
-    <ClInclude Include="..\..\final\ConstantValue.h" />
-    <ClInclude Include="..\..\final\DeclSpecifiers.h" />
-    <ClInclude Include="..\..\final\Expression.h" />
-    <ClInclude Include="..\..\final\FloatLiteralPostTokenizer.h" />
-    <ClInclude Include="..\..\final\IntegerLiteralPostTokenizer.h" />
-    <ClInclude Include="..\..\final\Member.h" />
-    <ClInclude Include="..\..\final\Namespace.h" />
-    <ClInclude Include="..\..\final\PostTokenizer.h" />
-    <ClInclude Include="..\..\final\PostTokenUtils.h" />
-    <ClInclude Include="..\..\final\StorageClass.h" />
-    <ClInclude Include="..\..\final\StringLiteralPostTokenizer.h" />
-    <ClInclude Include="..\..\final\Type.h" />
-    <ClInclude Include="..\..\final\Utf16Encoder.h" />
+    <ClCompile Include="..\..\final\Linker.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CD33ED94-A75B-4DE5-8494-15B20397E695}</ProjectGuid>
+    <ProjectGuid>{EA35E831-E385-4DCB-8FE8-6375D594622C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>posttokenlib</RootNamespace>
+    <RootNamespace>linkerlib</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -109,7 +84,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);MSVC</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

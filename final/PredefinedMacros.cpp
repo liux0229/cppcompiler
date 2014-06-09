@@ -37,6 +37,7 @@ PPToken PredefinedMacros::get(const string& name) const
     return it->second;
   } else {
     CHECK(false);
+    return PPToken{};
   }
 }
 

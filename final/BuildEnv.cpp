@@ -7,9 +7,17 @@ namespace compiler {
 
 using namespace std;
 
+#ifdef MSVC
+// TODO: why cannot we disable 4244 this way?
+#pragma warning(disable: 4996)
+#endif
+
 BuildEnv::BuildEnv()
 {
   time_t result = std::time(NULL);
+  // TODO: 
+  // [warning C4996: 'asctime': This function or variable may be unsafe. Consider using asctime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS.]
+  // is supressed for now. But we should understand whether the warning is legit.
   string s = asctime(localtime(&result));
   vector<string> v;
   size_t start = 0;

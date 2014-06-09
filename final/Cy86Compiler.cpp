@@ -92,7 +92,7 @@ Cy86Compiler::compile(vector<UToken>&& tokens) {
     }
 
     // get label value (plus base address)
-    long value = it->second + kStartAddress;
+    long value = static_cast<long>(it->second + kStartAddress);
     // apply constant offset
     value += imm->getConstant();
 

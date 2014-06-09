@@ -104,12 +104,15 @@ struct SimpleDeclaration : virtual Base {
     STypedefMember member;
     if (ns) {
       member = ns->lookupTypedef(name, true);
-    } else {
+    }
+    else {
       member = curNamespace()->lookupTypedef(name, false);
     }
     if (!member) {
-      Throw("typedef name expected; got {}{}", 
-            ns ? ns->getName() + "::" : string{},
+      // note: change string() below to string{} causes
+      // [fatal error C1001: An internal error has occurred in the compiler.]
+      Throw("typedef name expected; got {}{}",
+            ns ? ns->getName() + "::" : string(),
             name);
     }
     return member->type;
@@ -372,7 +375,7 @@ struct SimpleDeclaration : virtual Base {
       }
       declarator = make_unique<Declarator>();
     }
-    for (int i = ops.size() - 1; i >= 0; --i) {
+    for (int i = static_cast<int>(ops.size()) - 1; i >= 0; --i) {
       applyPtrOperator(declarator, ops[i]);
     }
     return declarator;

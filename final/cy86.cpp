@@ -73,7 +73,11 @@ namespace {
   // returns true on success
   bool PA9SetFileExecutable(const string& path)
   {
+#if MSVC
+    int res = 0;
+#else
     int res = syscall(/* chmod */ 90, path.c_str(), 0755);
+#endif
 
     return res == 0;
   }
@@ -119,15 +123,13 @@ private:
     // vector<unsigned char> data(rawData, rawData + strlen(rawData));
     ElfHeader elfHeader;
     ProgramSegmentHeader programSegmentHeader;
-    elfHeader.entry = 0x400000 +
-      sizeof(ElfHeader)+
-      sizeof(ProgramSegmentHeader)+
-      start;
-    // data.size();
-    programSegmentHeader.filesz = sizeof(ElfHeader)+
-      sizeof(ProgramSegmentHeader)+
-      // data.size() + 
-      code.size();
+    elfHeader.entry = static_cast<long>(0x400000 +
+      sizeof(ElfHeader) +
+      sizeof(ProgramSegmentHeader) +
+      start);
+    programSegmentHeader.filesz = static_cast<long>(sizeof(ElfHeader)+
+      sizeof(ProgramSegmentHeader) +
+      code.size());
     programSegmentHeader.memsz = programSegmentHeader.filesz;
 
     {

@@ -29,13 +29,21 @@ namespace compiler {
 
 using namespace std;
 
-namespace SemanticParserImp {
+// note: the following is supressed
+// warning C4250: 'compiler::SemanticParserImp::ParserImp' : 
+// inherits 'compiler::SemanticParserImp::Declaration::compiler::SemanticParserImp::Declaration::declaration' via dominance
+// since it's desired.
+#ifdef MSVC
+#pragma warning(disable: 4250)
+#endif
 
+namespace SemanticParserImp {
 class ParserImp : 
         Declaration,
         SimpleDeclaration,
         Expressions
 {
+
 public:
   ParserImp(const vector<UToken>& tokens, const ParserOption& option)
     : Base(tokens, option) {
@@ -50,13 +58,11 @@ private:
 
   void translationUnit() {
     while (!isEof()) {
-      TR(EXB(declaration));
+      // TR(EXB(declaration));
     }
-#if 0
     if (!isEof()) {
       BAD_EXPECT("<eof>");
     }
-#endif
   }
 };
 

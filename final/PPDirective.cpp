@@ -200,10 +200,10 @@ void PPDirective::handleIf(const vector<PPToken>& directive) {
       defined = ! defined;
     }
     checkTrailing(directive, i + 1);
-    ifBlock_.push_back(defined << 1 | defined);
+    ifBlock_.push_back((static_cast<int>(defined) << 1) | static_cast<int>(defined));
   } else {
     bool r = evaluateIf(directive);
-    ifBlock_.push_back(r << 1 | r);
+    ifBlock_.push_back((static_cast<int>(r) << 1) | static_cast<int>(r));
   }
 }
 

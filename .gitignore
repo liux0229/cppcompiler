@@ -6,6 +6,7 @@ add
 out
 *~
 *Debug*
+*Release*
 *.sdf
 *.opensdf
 *.suo

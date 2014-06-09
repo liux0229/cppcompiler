@@ -79,8 +79,8 @@ Memory* toMemory(const UOperand& op) {
 vector<char> truncateOrExtend(SConstantValue literal, 
                               int desiredSizeInBits) {
   auto bytes = literal->toBytes();
-  int actualSize = bytes.size();
-  int desiredSize = desiredSizeInBits / 8;
+  int actualSize = static_cast<int>(bytes.size());
+  int desiredSize = static_cast<int>(desiredSizeInBits / 8);
   if (actualSize >= desiredSize) {
     bytes = vector<char>(bytes.begin(), bytes.begin() + desiredSize);
   } else {
@@ -567,7 +567,8 @@ class JumpIf : public Cy86Instruction {
 
     // actual JMP
     auto jmp = make_unique<X86::JMP>(64, Register::Rbx()->toX86Operand(64));
-    unsigned char jmpSize = jmp->assemble().toBytes().size();
+    // TODO: is this legit?
+    unsigned char jmpSize = static_cast<unsigned char>(jmp->assemble().toBytes().size());
 
     // if the !operand(0), then do not perform (skip) the actual JMP
     add<X86::JE8>(r, jmpSize);
@@ -1130,7 +1131,7 @@ class ConvUF80 : public Cy86Instruction {
     // Now generate the jump
     int offset = 0;
     for (size_t i = start; i < r.size(); ++i) {
-      offset += r[i]->assemble().toBytes().size();
+      offset += static_cast<int>(r[i]->assemble().toBytes().size());
     }
     CHECK(offset < 127);
 

@@ -111,7 +111,7 @@ class Immediate : public Operand {
   // TODO: figure out a better way to represent size
   // # of bits vs. # of bytes
   int size() const override {
-    return !bytes_.empty() ? bytes_.size() * 8 : size_;
+    return static_cast<int>(!bytes_.empty() ? bytes_.size() * 8 : size_);
   }
 
   std::vector<char> getBytes() const {

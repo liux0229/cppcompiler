@@ -507,7 +507,9 @@ MacroProcessor::applyFunction(const PPToken& root,
                               const Macro& macro,
                               vector<vector<TextToken>>&& args,
                               const vector<string>& parentMacros) {
+
   size_t nparam = macro.paramList.size();
+
   if (nparam == 1 && args.empty()) {
     // consider the invocation to have one empty argument
     args.push_back({});
@@ -531,8 +533,11 @@ MacroProcessor::applyFunction(const PPToken& root,
     if (args.size() > nparam) {
       size_t last = nparam;
       for (size_t i = last + 1; i < args.size(); ++i) {
-        args[last].push_back(
-            TextToken(PPToken(PPTokenType::PPOpOrPunc, {','}), {}));
+        // note:
+        // TextToken textToken(PPToken(PPTokenType::PPOpOrPunc, {','}), {});
+        // would crash VC++2013.
+        PPToken ppToken(PPTokenType::PPOpOrPunc, {','});
+        args[last].push_back(TextToken(ppToken, {}));
         args[last].insert(args[last].end(), args[i].begin(), args[i].end());
       }
       args.erase(args.begin() + last + 1, args.end());
@@ -546,13 +551,15 @@ MacroProcessor::applyFunction(const PPToken& root,
       if (r.isParam()) {
         int param = r.parameter;
         if (param == -2) {
-          param = nparam;
+          param = static_cast<int>(nparam);
         }
         auto& arg = args[param];
         vector<TextToken> argText;
 
         if (r.literal) {
-          argText.push_back(TextToken(getLiteral(move(arg)), {}));
+          // note the compiler crashing comment above.
+          auto ppToken = getLiteral(move(arg));
+          argText.push_back(TextToken(ppToken, {}));
         } else {
           for (auto& t : arg) {
             // cout << format("extract param {}: {}\n", param, t.dataStrU8());
@@ -568,14 +575,15 @@ MacroProcessor::applyFunction(const PPToken& root,
         // now substitue the argument
         for (auto& t : argText) {
           // t.parentMacros tracks the parent macros in the inplace replacement
+          // note the compiler crashing comment above.
+          PPToken ppToken(t.token, root.file, root.line);
           text.push_back(
-              TextToken(PPToken(t.token, root.file, root.line), 
-                        add(t.parentMacros, parentMacros)));
+            TextToken(ppToken, add(t.parentMacros, parentMacros)));
         }
       } else {
+        PPToken ppToken(r.token, root.file, root.line);
         text.push_back(
-            TextToken(PPToken(r.token, root.file, root.line), 
-                      parentMacros));
+            TextToken(ppToken, parentMacros));
       }
     } 
     result.push_back(move(text));

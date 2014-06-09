@@ -24,7 +24,15 @@ bool PA5GetFileId(const string& path, PA5FileId& out_fileid)
 			long int unused[16];
 	} data;
 
+#ifdef MSVC
+  // TODO: find equivalent constructs in Windows
+  // otherwise any functionality which depends on this
+  // (#pragma once)
+  // does not work
+  int res = 0;
+#else
 	int res = syscall(4, path.c_str(), &data);
+#endif
 
 	out_fileid = make_pair(data.dev, data.ino);
 

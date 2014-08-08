@@ -2335,7 +2335,7 @@ private:
       VAST c;
       c.push_back(expect(OP_COLON2));
       if (isIdentifier()) {
-        return getAdv(ASTType::Identifier);
+        c.push_back(getAdv(ASTType::Identifier));
       } else {
         (node = BT(operatorFunctionId)) ||
         (node = BT(literalOperatorId)) ||

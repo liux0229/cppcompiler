@@ -15,6 +15,10 @@
 // 7. Following 6 - most of the cases explicit disambiguation is not needed
 //    the text will be parsed correctly by the implementation. By there can be
 //    cases where explicit disambiguation is needed.
+// 8. Look at this example (why do we require class name to begin with 'C'):
+//    template<typename T>
+//    class C { };
+
 #include "Parser.h"
 #include "NameUtility.h"
 #include <memory>
@@ -91,7 +95,7 @@ public:
       option_(option) { }
   AST process() {
     AST root = TR(translationUnit);
-    cout << root->toStr(option_.isCollapse) << endl;
+    cerr << root->toStr(option_.isCollapse) << endl;
     return root;
   }
 

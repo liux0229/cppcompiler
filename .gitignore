@@ -10,6 +10,7 @@ out
 *.sdf
 *.opensdf
 *.suo
+*.sln.ide*
 
 nsinit-ref
 nsinit-ref-stdin

@@ -39,6 +39,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "formattest", "formattest\formattest.vcxproj", "{8CF35831-A9B6-49BE-B8F1-524C8C69F285}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstVisualizer", "AstVisualizer\AstVisualizer.csproj", "{E95BEC18-6E9F-4D41-AE48-F32172316F8B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{AC90B19A-6712-4B73-B1E9-5DDA0F0104FA} = {AC90B19A-6712-4B73-B1E9-5DDA0F0104FA}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -282,6 +285,7 @@ Global
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Debug|Win32.ActiveCfg = Debug|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Debug|x64.Build.0 = Debug|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU

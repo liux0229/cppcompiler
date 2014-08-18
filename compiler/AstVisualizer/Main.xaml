@@ -24,12 +24,6 @@
                 <Button x:Name="m_Submit" Grid.Column="1" Margin="10" HorizontalAlignment="Center" Click="m_Submit_Click">Generate AST</Button>
             </Grid>
         </Grid>
-        <TreeView x:Name="m_AstTree" Grid.Column="1">
-            <TreeViewItem Header="C++" IsExpanded="True">
-                <TreeViewItem Header="Java" />
-                <TreeViewItem Header="C#" />
-                <TreeViewItem Header="Scala" />
-            </TreeViewItem>
-        </TreeView>
+        <TreeView x:Name="m_AstTree" Grid.Column="1" />
     </Grid>
 </Window>

@@ -12,3 +12,5 @@ int main()
     }
     return 0;
 }
+
+// outputs 1234

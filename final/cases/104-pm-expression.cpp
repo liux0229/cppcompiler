@@ -15,6 +15,10 @@ int main()
    void* ps = &s;
    
    // note (S*)ps binds stronger
+   // because the grammar is pm-expression ->* cast-expression
+   // and cast-expression's grammar is
+   // (type-id) unary-expression
+   // (i.e. cast-expression cannot contain a pm-expression)
    int r = (S *)ps->*px;
    
    cout << r << endl;

@@ -13,7 +13,10 @@ int main()
    S s;
    s.f = 1234;
    void* ps = &s;
+   
+   // note (S*)ps binds stronger
    int r = (S *)ps->*px;
+   
    cout << r << endl;
    
    return 0;

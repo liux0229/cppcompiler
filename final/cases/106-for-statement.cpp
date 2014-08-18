@@ -4,10 +4,11 @@ using namespace std;
 
 int main()
 {
-    int i = 0;
     // note the peculiar for-init-statement
-    for (struct S{} s; i < 10; ++i ) { 
+    // and condition (a declaration is used)
+    for (struct S{} s; int i = 1234; ) { 
         cout << i << endl;
+        break;
     }
     return 0;
 }

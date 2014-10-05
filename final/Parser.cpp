@@ -2670,7 +2670,7 @@ private:
     return make_unique<ASTNode>(type, move(c));
   }
 
-  const PostToken& cur() const {
+  const Token& cur() const {
     return *tokens_[index_];
   }
   size_t curPos() const {
@@ -2683,7 +2683,7 @@ private:
 
   // We rarely need to look ahead 2 chars
   // but in certain cases we do
-  const PostToken& next() const {
+  const Token& next() const {
     CHECK(index_ + 1 < tokens_.size());
     return *tokens_[index_ + 1];
   }
@@ -2840,10 +2840,10 @@ private:
     return getAdv();
   }
   // TODO: move this to util
-  ETokenType getSimpleTokenType(const PostToken& token) const {
+  ETokenType getSimpleTokenType(const Token& token) const {
     // can consider removing this check
     CHECK(token.isSimple());
-    return static_cast<const PostTokenSimple&>(token).type;
+    return static_cast<const TokenSimple&>(token).type;
   }
   bool isSimple(ETokenType type) const {
     if (!cur().isSimple()) {
@@ -2975,7 +2975,7 @@ private:
     }
     Trace(bool isTrace,
           string&& name, 
-          function<const PostToken& ()> curTokenGetter,
+          function<const Token& ()> curTokenGetter,
           int& traceDepth)
       : isTrace_(isTrace),
         name_(move(name)),
@@ -3007,7 +3007,7 @@ private:
 
     bool isTrace_;
     string name_;
-    function<const PostToken& ()> curTokenGetter_;
+    function<const Token& ()> curTokenGetter_;
     int& traceDepth_;
     bool ok_ { false };
   };

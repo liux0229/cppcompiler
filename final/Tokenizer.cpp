@@ -6,7 +6,7 @@ namespace compiler {
 
 using namespace std;
 
-Tokenizer::Tokenizer()
+PPTokenizerHelper::PPTokenizerHelper()
 {
   init<NewLineFSM>();
   init<EofFSM>();
@@ -36,13 +36,13 @@ Tokenizer::Tokenizer()
 }
 
 template<typename T>
-T* Tokenizer::init()
+T* PPTokenizerHelper::init()
 {
   fsms_.push_back(make_unique<T>());
   return static_cast<T* >(fsms_.back().get());
 }
 
-void Tokenizer::sendTo(function<void (const PPToken&)> send) {
+void PPTokenizerHelper::sendTo(function<void(const PPToken&)> send) {
   send_ = send;
   auto s = [this](const PPToken& token) {
     pToken_ = token;
@@ -55,7 +55,7 @@ void Tokenizer::sendTo(function<void (const PPToken&)> send) {
   headerNameFsm_.sendTo(s);
 }
 
-void Tokenizer::put(int c)
+void PPTokenizerHelper::put(int c)
 {
   // printChar(c);
 
@@ -72,7 +72,7 @@ void Tokenizer::put(int c)
   }
 }
 
-void Tokenizer::findFsmAndPut(int c)
+void PPTokenizerHelper::findFsmAndPut(int c)
 {
   // only invoke HeaderNameFSM when the context is right
   if (includeDetector_.canMatchHeader()) {
@@ -92,7 +92,7 @@ void Tokenizer::findFsmAndPut(int c)
   }
 }
 
-void Tokenizer::printChar(int c)
+void PPTokenizerHelper::printChar(int c)
 {
   if (c == EndOfFile) {
     std::cout << "EOF" << std::endl;
@@ -103,13 +103,13 @@ void Tokenizer::printChar(int c)
   }
 }
 
-bool Tokenizer::insideRawString() const
+bool PPTokenizerHelper::insideRawString() const
 {
   auto s = dynamic_cast<RawStringLiteralFSM*>(current_);
   return s != nullptr && s->inside();
 }
 
-bool Tokenizer::insideQuotedLiteral() const
+bool PPTokenizerHelper::insideQuotedLiteral() const
 {
   auto s = dynamic_cast<QuotedLiteralFSM*>(current_);
   return s != nullptr && s->inside();

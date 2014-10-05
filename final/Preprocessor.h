@@ -11,14 +11,14 @@
 namespace compiler {
 
 class PPDirective;
-class PostTokenReceiver;
+class TokenReceiver;
 
 class Preprocessor
 {
 public:
   Preprocessor(BuildEnv buildEnv,
                const std::string& source,
-               std::function<void (const PostToken&)> send)
+               std::function<void (const Token&)> send)
     : buildEnv_(buildEnv),
       sourceReader_(source),
       send_(send) { }
@@ -27,6 +27,6 @@ public:
 private:
   BuildEnv buildEnv_;
   SourceReader sourceReader_;
-  std::function<void (const PostToken&)> send_;
+  std::function<void (const Token&)> send_;
 };
 }

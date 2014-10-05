@@ -10,7 +10,7 @@
 
 namespace compiler {
 
-enum class PostTokenType {
+enum class TokenType {
   Invalid,
   NewLine,
   Simple,
@@ -24,9 +24,9 @@ enum class PostTokenType {
   Eof
 };
 
-struct PostToken
+struct Token
 {
-  PostToken(const std::string& _source = "") 
+  Token(const std::string& _source = "") 
     : source(_source) {
   }
 
@@ -34,7 +34,7 @@ struct PostToken
     return format("{} {}{}", getName(), source, getDataStr());
   }
 
-  // Simple form which is most representative of this PostToken
+  // Simple form which is most representative of this Token
   // e.g. used for parser output
   virtual std::string toSimpleStr() const {
     return toStr();
@@ -42,15 +42,15 @@ struct PostToken
 
   virtual std::string getName() const = 0;
   virtual std::string getDataStr() const { return ""; }
-  virtual PostTokenType getType() const = 0;
-  virtual std::unique_ptr<PostToken> copy() const = 0;
+  virtual TokenType getType() const = 0;
+  virtual std::unique_ptr<Token> copy() const = 0;
 
   // utility functions
-  bool isSimple() const { return getType() == PostTokenType::Simple; }
-  bool isIdentifier() const { return getType() == PostTokenType::Identifier; }
-  bool isNewLine() const { return getType() == PostTokenType::NewLine; }
-  bool isLiteral() const { return getType() == PostTokenType::Literal; }
-  bool isEof() const { return getType() == PostTokenType::Eof; }
+  bool isSimple() const { return getType() == TokenType::Simple; }
+  bool isIdentifier() const { return getType() == TokenType::Identifier; }
+  bool isNewLine() const { return getType() == TokenType::NewLine; }
+  bool isLiteral() const { return getType() == TokenType::Literal; }
+  bool isEof() const { return getType() == TokenType::Eof; }
   // TODO: we can argue whether to put this here or in a more specific place
   bool isEmptyStr() const {
     // isLiteral check should be redundant, but for clarity
@@ -65,55 +65,55 @@ struct PostToken
   std::string source;
 };
 
-typedef std::unique_ptr<PostToken> UToken;
+typedef std::unique_ptr<Token> UToken;
 
-struct PostTokenEof : public PostToken
+struct TokenEof : public Token
 {
-  PostTokenEof() : PostToken("") { }
+  TokenEof() : Token("") { }
   std::string toStr() const override { return "eof"; }
   std::string getName() const override { return ""; }
-  PostTokenType getType() const override { return PostTokenType::Eof; }
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenEof>(*this);
+  TokenType getType() const override { return TokenType::Eof; }
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenEof>(*this);
   }
 };
 
-struct PostTokenNewLine : public PostToken
+struct TokenNewLine : public Token
 {
-  PostTokenNewLine() : PostToken("") { }
+  TokenNewLine() : Token("") { }
   std::string toStr() const override { return "<new-line>"; }
   std::string getName() const override { return ""; }
-  PostTokenType getType() const override { return PostTokenType::NewLine; }
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenNewLine>(*this);
+  TokenType getType() const override { return TokenType::NewLine; }
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenNewLine>(*this);
   }
 };
 
-struct PostTokenInvalid : public PostToken
+struct TokenInvalid : public Token
 {
-  PostTokenInvalid(const std::string& _source) : PostToken(_source) { }
+  TokenInvalid(const std::string& _source) : Token(_source) { }
   std::string getName() const override { return "invalid"; }
-  PostTokenType getType() const override { return PostTokenType::Invalid; }
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenInvalid>(*this);
+  TokenType getType() const override { return TokenType::Invalid; }
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenInvalid>(*this);
   }
 };
 
-struct PostTokenIdentifier : public PostToken
+struct TokenIdentifier : public Token
 {
-  PostTokenIdentifier(const std::string& _source) : PostToken(_source) { }
+  TokenIdentifier(const std::string& _source) : Token(_source) { }
   std::string getName() const override { return "identifier"; }
   std::string toSimpleStr() const override { return source; }
-  PostTokenType getType() const override { return PostTokenType::Identifier; }
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenIdentifier>(*this);
+  TokenType getType() const override { return TokenType::Identifier; }
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenIdentifier>(*this);
   }
 };
 
-struct PostTokenSimple : public PostToken
+struct TokenSimple : public Token
 {
-  PostTokenSimple(const std::string& _source, ETokenType _type) 
-    : PostToken(_source),
+  TokenSimple(const std::string& _source, ETokenType _type) 
+    : Token(_source),
       type(_type) { }
   std::string getName() const override { return "simple"; }
   std::string toSimpleStr() const override { 
@@ -122,9 +122,9 @@ struct PostTokenSimple : public PostToken
   std::string getDataStr() const override {
     return format(" {}", getSimpleTokenTypeName(type));
   }
-  PostTokenType getType() const override { return PostTokenType::Simple; }
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenSimple>(*this);
+  TokenType getType() const override { return TokenType::Simple; }
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenSimple>(*this);
   }
 
   ETokenType type;
@@ -279,17 +279,17 @@ std::string getTypePrefixStr(const T& data, EFundamentalType type) {
 
 } // anonymous
 
-struct PostTokenLiteralBase : public PostToken
+struct TokenLiteralBase : public Token
 {
-  PostTokenLiteralBase(const std::string& _source,
+  TokenLiteralBase(const std::string& _source,
                        EFundamentalType _type, 
                        std::string _udSuffix)
-    : PostToken(_source),
+    : Token(_source),
       type(_type),
       udSuffix(_udSuffix) {
   }
 
-  PostTokenType getType() const override { return PostTokenType::Literal; }
+  TokenType getType() const override { return TokenType::Literal; }
 
   bool isUserDefined() const {
     return !udSuffix.empty();
@@ -305,7 +305,7 @@ struct PostTokenLiteralBase : public PostToken
   virtual long long toSigned64() const = 0;
   virtual unsigned long long toUnsigned64() const = 0;
 
-  virtual std::unique_ptr<PostTokenLiteralBase> promoteTo64() const = 0;
+  virtual std::unique_ptr<TokenLiteralBase> promoteTo64() const = 0;
 
   virtual std::string toIntegralStr() const = 0;
 
@@ -315,7 +315,7 @@ struct PostTokenLiteralBase : public PostToken
   std::string udSuffix;
 };
 
-typedef std::unique_ptr<PostTokenLiteralBase> UTokenLiteral;
+typedef std::unique_ptr<TokenLiteralBase> UTokenLiteral;
 
 template<typename T, typename E = void>
 struct ToInteger {
@@ -347,21 +347,21 @@ struct ToInteger<T,
 };
 
 template<typename T>
-struct PostTokenLiteral : public PostTokenLiteralBase
+struct TokenLiteral : public TokenLiteralBase
 {
-  PostTokenLiteral(const std::string& _source,
+  TokenLiteral(const std::string& _source,
                    EFundamentalType _type, 
                    const T& _data,
                    std::string _udSuffix)
-    : PostTokenLiteralBase(_source, _type, _udSuffix),
+    : TokenLiteralBase(_source, _type, _udSuffix),
       data(_data) { }
 
-  std::unique_ptr<PostToken> copy() const override {
-    return make_unique<PostTokenLiteral<T>>(*this);
+  std::unique_ptr<Token> copy() const override {
+    return make_unique<TokenLiteral<T>>(*this);
   }
   // TODO: find a more elegant way of expressing this
-  std::unique_ptr<PostTokenLiteral<T>> typedCopy() const {
-    return make_unique<PostTokenLiteral<T>>(*this);
+  std::unique_ptr<TokenLiteral<T>> typedCopy() const {
+    return make_unique<TokenLiteral<T>>(*this);
   }
 
   bool isIntegral() const override {
@@ -389,16 +389,16 @@ struct PostTokenLiteral : public PostTokenLiteralBase
     return toUnsigned64() == 0ULL;
   }
 
-  std::unique_ptr<PostTokenLiteralBase> promoteTo64() const override {
+  std::unique_ptr<TokenLiteralBase> promoteTo64() const override {
     CHECK(isIntegral());
     if (std::is_signed<T>::value) {
-      return make_unique<PostTokenLiteral<long long>>(
+      return make_unique<TokenLiteral<long long>>(
                 source, 
                 FT_LONG_LONG_INT, 
                 ToInteger<T>()(data),
                 "");
     } else {
-      return make_unique<PostTokenLiteral<unsigned long long>>(
+      return make_unique<TokenLiteral<unsigned long long>>(
                 source, 
                 FT_UNSIGNED_LONG_LONG_INT, 
                 ToInteger<T>()(data),
@@ -481,22 +481,22 @@ struct PostTokenLiteral : public PostTokenLiteralBase
 
 namespace {
 
-namespace GetPostTokenLiteral {
+namespace GetTokenLiteral {
   template<typename T>
-  std::unique_ptr<PostTokenLiteral<T>> get(const std::string& source,
+  std::unique_ptr<TokenLiteral<T>> get(const std::string& source,
                                  EFundamentalType type, 
                                  const T& data,
                                  const std::string& udSuffix = "") {
-    return make_unique<PostTokenLiteral<T>>(source, 
+    return make_unique<TokenLiteral<T>>(source, 
                                             type, 
                                             data,
                                             udSuffix);
   }
 }
 
-ETokenType getSimpleTokenType(const PostToken& token) {
+ETokenType getSimpleTokenType(const Token& token) {
   CHECK(token.isSimple());
-  return static_cast<const PostTokenSimple&>(token).type;
+  return static_cast<const TokenSimple&>(token).type;
 }
 
 } // anoymous

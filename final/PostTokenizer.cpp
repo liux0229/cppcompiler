@@ -7,20 +7,20 @@ namespace compiler {
 
 using namespace std;
 
-void PostTokenizer::handleSimpleOrIdentifier(const PPToken& token)
+void Tokenizer::handleSimpleOrIdentifier(const PPToken& token)
 {
   string x = token.dataStrU8();
   auto it = StringToTokenTypeMap.find(x);
   if (it != StringToTokenTypeMap.end()) {
-    receiver_.put(PostTokenSimple(x, it->second));
+    receiver_.put(TokenSimple(x, it->second));
   } else if (token.type == PPTokenType::Identifier) {
-    receiver_.put(PostTokenIdentifier(x));
+    receiver_.put(TokenIdentifier(x));
   } else {
-    receiver_.put(PostTokenInvalid(x));
+    receiver_.put(TokenInvalid(x));
   }
 }
 
-void PostTokenizer::put(const PPToken& token)
+void Tokenizer::put(const PPToken& token)
 {
   // printToken(token);
   try {
@@ -52,16 +52,16 @@ void PostTokenizer::put(const PPToken& token)
       case PPTokenType::WhitespaceSequence:
         break;
       case PPTokenType::NewLine:
-        receiver_.put(PostTokenNewLine());
+        receiver_.put(TokenNewLine());
         break;
       case PPTokenType::HeaderName:
-        receiver_.put(PostTokenInvalid(token.dataStrU8()));
+        receiver_.put(TokenInvalid(token.dataStrU8()));
         break;    
       case PPTokenType::NonWhitespaceChar:
-        receiver_.put(PostTokenInvalid(token.dataStrU8()));
+        receiver_.put(TokenInvalid(token.dataStrU8()));
         break;
       case PPTokenType::Eof:
-        receiver_.put(PostTokenEof());
+        receiver_.put(TokenEof());
         break;
       default:
         CHECK(false);
@@ -69,7 +69,7 @@ void PostTokenizer::put(const PPToken& token)
     }
   } catch (const exception& e) {
     cerr << format("ERROR: {}", e.what()) << std::endl;
-    receiver_.put(PostTokenInvalid(token.dataStrU8()));
+    receiver_.put(TokenInvalid(token.dataStrU8()));
   }
 }
   

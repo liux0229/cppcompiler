@@ -17,15 +17,15 @@ int main()
 {
   BuildEnv buildEnv;
 	try {
-    PostTokenReceiver postTokenReceiver([](const PostToken& token) {
-      if (token.getType() != PostTokenType::NewLine) {
+    TokenReceiver postTokenReceiver([](const Token& token) {
+      if (token.getType() != TokenType::NewLine) {
         cout << token.toStr() << endl;
       }
     });
-    PostTokenizer postTokenizer(postTokenReceiver);
+    Tokenizer postTokenizer(postTokenReceiver);
 
     SourceReader sourceReader(cin, "[stdin]");
-    PPDirective ppDirective(bind(&PostTokenizer::put, 
+    PPDirective ppDirective(bind(&Tokenizer::put, 
                                  &postTokenizer,
                                  placeholders::_1),
                             buildEnv,

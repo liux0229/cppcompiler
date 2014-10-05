@@ -12,10 +12,10 @@
 
 namespace compiler {
 
-class Tokenizer
+class PPTokenizerHelper
 {
 public:
-  Tokenizer();
+  PPTokenizerHelper();
   void put(int c);
   void sendTo(std::function<void (const PPToken&)> send);
   bool insideRawString() const;

@@ -206,7 +206,7 @@ vector<EFundamentalType> getList(bool _unsigned,
 
 }
 
-bool IntegerLiteralPostTokenizer::handleUserDefined(
+bool IntegerLiteralTokenizer::handleUserDefined(
         const PPToken& token,
         It start,
         It end,
@@ -215,7 +215,7 @@ bool IntegerLiteralPostTokenizer::handleUserDefined(
     return false;
   }
 
-  receiver_.put(*GetPostTokenLiteral::get(
+  receiver_.put(*GetTokenLiteral::get(
                   token.dataStrU8(), 
                   FT_INT, // internal defined
                   Utf8Encoder::encode(vector<int>(start, end)),
@@ -224,7 +224,7 @@ bool IntegerLiteralPostTokenizer::handleUserDefined(
   return true;
 }
 
-bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
+bool IntegerLiteralTokenizer::handleInteger(const PPToken& token)
 {
   bool _unsigned = false;
   bool _long = false;
@@ -303,7 +303,7 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
     return false;
   }
 
-  using GetPostTokenLiteral::get;
+  using GetTokenLiteral::get;
   string str = token.dataStrU8();
   switch (type) {
     case FT_INT: {
@@ -338,7 +338,7 @@ bool IntegerLiteralPostTokenizer::handleInteger(const PPToken& token)
   return true;
 }
 
-bool IntegerLiteralPostTokenizer::put(const PPToken& token)
+bool IntegerLiteralTokenizer::put(const PPToken& token)
 {
   // to simplify parsing, require ud-suffix to start with '_'
   auto it = find(token.data.begin(), token.data.end(), '_');

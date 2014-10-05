@@ -35,11 +35,11 @@ string postTokenizeToString(const PPToken& token,
 
   string result;
   int count = 0;
-  auto receive = [&](const PostToken& token) {
+  auto receive = [&](const Token& token) {
     if (count++ > 0) {
       return;
     }
-    auto& t = dynamic_cast<const PostTokenLiteralBase&>(token);
+    auto& t = dynamic_cast<const TokenLiteralBase&>(token);
     if (t.isUserDefined()) {
       Throw("Use of user-defined string literal for {}: {}", 
             target,
@@ -49,15 +49,15 @@ string postTokenizeToString(const PPToken& token,
             target,
             t.toStr());
     } else {
-      auto& name = dynamic_cast<const PostTokenLiteral<string>&>(t);
+      auto& name = dynamic_cast<const TokenLiteral<string>&>(t);
       result = name.data;
       // post-tokenizer will produce a trailing 0
       CHECK(result.back() == 0);
       result.pop_back();
     }
   };
-  PostTokenReceiver receiver(receive);
-  PostTokenizer postTokenizer(receiver, 
+  TokenReceiver receiver(receive);
+  Tokenizer postTokenizer(receiver, 
                               /* noStrCatForNewLine, not significant */
                               true);
   postTokenizer.put(token);
@@ -101,8 +101,8 @@ bool PPDirective::evaluateIf(const vector<PPToken>& dirs)
                               // what we return here is standard-undefined
                               return false;
                             });
-  PostTokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));
-  PostTokenizer postTokenizer(receiver, true /* noStrCatForNewLine */);
+  TokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));
+  Tokenizer postTokenizer(receiver, true /* noStrCatForNewLine */);
 
   // we special handle defined x or defined(x) before macro expansion takes
   // place
@@ -282,14 +282,14 @@ void PPDirective::handleLine(const vector<PPToken>& dirs)
   }
   {
     int count = 0;
-    auto receive = [&](const PostToken& token) {
+    auto receive = [&](const Token& token) {
       if (count++ > 0) {
         return;
       }
-      if (token.getType() != PostTokenType::Literal) {
+      if (token.getType() != TokenType::Literal) {
         Throw("expect literal after #line, got {}", token.toStr());
       }
-      auto& t = dynamic_cast<const PostTokenLiteralBase&>(token);
+      auto& t = dynamic_cast<const TokenLiteralBase&>(token);
       if (!t.isIntegral()) {
         Throw("expect integer after #line, got {}", token.toStr());
       }
@@ -298,8 +298,8 @@ void PPDirective::handleLine(const vector<PPToken>& dirs)
       // so the next __LINE__ will get number
       sourceReader_->line() = number - 1; 
     };
-    PostTokenReceiver receiver(receive);
-    PostTokenizer postTokenizer(receiver, 
+    TokenReceiver receiver(receive);
+    Tokenizer postTokenizer(receiver, 
                                 /* noStrCatForNewLine, not significant */
                                 true);
     postTokenizer.put(expanded[i]);

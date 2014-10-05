@@ -7,11 +7,11 @@ namespace compiler {
 
 using namespace std;
 
-void Driver::postTokenProcessor(const PostToken& token) {
+void Driver::postTokenProcessor(const Token& token) {
   if (token.isSimple()) {
-    if (static_cast<const PostTokenSimple&>(token).type == OP_RSHIFT) {
-      tokens_.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_1));
-      tokens_.push_back(make_unique<PostTokenSimple>(">", OP_RSHIFT_2));
+    if (static_cast<const TokenSimple&>(token).type == OP_RSHIFT) {
+      tokens_.push_back(make_unique<TokenSimple>(">", OP_RSHIFT_1));
+      tokens_.push_back(make_unique<TokenSimple>(">", OP_RSHIFT_2));
       return;
     }
   } else if (token.isNewLine()) {

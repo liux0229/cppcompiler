@@ -9,10 +9,10 @@ using namespace std;
 
 void Preprocessor::process()
 {
-  PostTokenReceiver postTokenReceiver(send_);
-  PostTokenizer postTokenizer(postTokenReceiver);
+  TokenReceiver postTokenReceiver(send_);
+  Tokenizer postTokenizer(postTokenReceiver);
 
-  PPDirective ppDirective(bind(&PostTokenizer::put, 
+  PPDirective ppDirective(bind(&Tokenizer::put, 
                                &postTokenizer,
                                placeholders::_1),
                           buildEnv_,

@@ -12,7 +12,7 @@ struct ASTNode;
 typedef std::unique_ptr<ASTNode> AST;
 struct ASTNode
 {
-  ASTNode(ASTType _type, const PostToken* _token)
+  ASTNode(ASTType _type, const Token* _token)
     : type(_type),
       isTerminal(true),
       token(_token) { }
@@ -36,7 +36,7 @@ struct ASTNode
 
   ASTType type;
   bool isTerminal;
-  const PostToken* token;
+  const Token* token;
   std::vector<AST> children; 
 };
 

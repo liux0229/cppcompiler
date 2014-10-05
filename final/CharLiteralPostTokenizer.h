@@ -6,10 +6,10 @@
 
 namespace compiler {
 
-class CharLiteralPostTokenizer
+class CharLiteralTokenizer
 {
 public:
-  CharLiteralPostTokenizer(PostTokenReceiver& receiver)
+  CharLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }
   void put(const PPToken& token);
@@ -20,7 +20,7 @@ private:
               int codePoint, 
               const std::string& suffix);
   void handle(const PPToken& token, const std::string& suffix = "");
-	PostTokenReceiver& receiver_;
+	TokenReceiver& receiver_;
 };
 
 }

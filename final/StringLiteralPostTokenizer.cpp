@@ -95,7 +95,7 @@ void readRawString(const PPToken& token,
 
 }
 
-string StringLiteralPostTokenizer::getSource() const
+string StringLiteralTokenizer::getSource() const
 {
   ostringstream oss;
   const char* sep = "";
@@ -106,7 +106,7 @@ string StringLiteralPostTokenizer::getSource() const
   return oss.str();
 }
 
-void StringLiteralPostTokenizer::handle()
+void StringLiteralTokenizer::handle()
 {
   int n = static_cast<int>(tokens_.size());
   string encoding;
@@ -146,7 +146,7 @@ void StringLiteralPostTokenizer::handle()
   codePoints.push_back(0);
 
   // output according to encoding
-  using GetPostTokenLiteral::get;
+  using GetTokenLiteral::get;
   EFundamentalType type = toType(encoding);
   if (type == FT_CHAR) {
     receiver_.put(*get(getSource(), 
@@ -175,12 +175,12 @@ void StringLiteralPostTokenizer::handle()
   }
 }
 
-void StringLiteralPostTokenizer::put(const PPToken& token)
+void StringLiteralTokenizer::put(const PPToken& token)
 {
   tokens_.push_back(token);
 }
 
-void StringLiteralPostTokenizer::terminate()
+void StringLiteralTokenizer::terminate()
 {
   if (tokens_.empty()) {
     return;
@@ -190,7 +190,7 @@ void StringLiteralPostTokenizer::terminate()
     handle();
   } catch (const CompilerException& e) {
     cerr << format("ERROR: {}\n", e.what());
-    receiver_.put(PostTokenInvalid(getSource()));
+    receiver_.put(TokenInvalid(getSource()));
   }
 
   tokens_.clear();

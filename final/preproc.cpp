@@ -27,10 +27,10 @@ vector<string> PA5StdIncPaths =
 
 void process(BuildEnv buildEnv, const string& source, ostream& out)
 {
-  Preprocessor processor(buildEnv, source, [&out](const PostToken& token) {
-    if (token.getType() == PostTokenType::Invalid) {
+  Preprocessor processor(buildEnv, source, [&out](const Token& token) {
+    if (token.getType() == TokenType::Invalid) {
       Throw("invalid token: {}", token.toStr());
-    } else if (token.getType() != PostTokenType::NewLine) {
+    } else if (token.getType() != TokenType::NewLine) {
       out << token.toStr() << endl;
     }
   });

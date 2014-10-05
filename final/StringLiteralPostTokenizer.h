@@ -8,10 +8,10 @@
 
 namespace compiler {
 
-class StringLiteralPostTokenizer
+class StringLiteralTokenizer
 {
 public:
-  StringLiteralPostTokenizer(PostTokenReceiver& receiver)
+  StringLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }
   void put(const PPToken& token);
@@ -25,7 +25,7 @@ private:
               const void *data, 
               int size, 
               std::string suffix);
-	PostTokenReceiver& receiver_;
+	TokenReceiver& receiver_;
   std::vector<PPToken> tokens_;
 };
 

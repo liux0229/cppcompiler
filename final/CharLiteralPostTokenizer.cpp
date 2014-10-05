@@ -34,14 +34,14 @@ EFundamentalType getEncoding(const vector<int>& data, int& start)
 
 }
 
-void CharLiteralPostTokenizer::output(const PPToken& token, 
+void CharLiteralTokenizer::output(const PPToken& token, 
                                       EFundamentalType type, 
                                       int codePoint,
                                       const string& suffix)
 {
-  using GetPostTokenLiteral::get;
+  using GetTokenLiteral::get;
   string source = token.dataStrU8();
-  unique_ptr<PostToken> pt;
+  unique_ptr<Token> pt;
   if (type == FT_CHAR) {
     pt = get(source, type, (char)codePoint, suffix);
   } else if (type == FT_CHAR16_T) {
@@ -61,7 +61,7 @@ void CharLiteralPostTokenizer::output(const PPToken& token,
   receiver_.put(*pt);
 }
 
-void CharLiteralPostTokenizer::handle(const PPToken& token, 
+void CharLiteralTokenizer::handle(const PPToken& token, 
                                       const string& suffix)
 {
   // get encoding
@@ -107,7 +107,7 @@ void CharLiteralPostTokenizer::handle(const PPToken& token,
   output(token, type, codePoint, suffix);
 }
 
-void CharLiteralPostTokenizer::put(const PPToken& token)
+void CharLiteralTokenizer::put(const PPToken& token)
 {
   // printToken(token);
   handle(token, getSuffix(token, quote()));

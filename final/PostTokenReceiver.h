@@ -7,31 +7,31 @@
 
 namespace compiler {
 
-class  PostTokenReceiver
+class  TokenReceiver
 {
 public:
-  PostTokenReceiver(
-    const std::function<void (const PostToken&)>& send = [](const PostToken&){}) 
+  TokenReceiver(
+    const std::function<void (const Token&)>& send = [](const Token&){}) 
     : send_(send) {
   }
 
-  void put(const PostToken& token) {
+  void put(const Token& token) {
     // debug(token, true);
     send_(token);
   }
 
 private:
-  void printToken(const PostToken& token) const {
+  void printToken(const Token& token) const {
     std::cout << token.toStr() << std::endl;
   }
 
-  void debug(const PostToken& token, bool printNewLine) const {
-    if (token.getType() != PostTokenType::NewLine || printNewLine) {
+  void debug(const Token& token, bool printNewLine) const {
+    if (token.getType() != TokenType::NewLine || printNewLine) {
       printToken(token); 
     }
   }
 
-  std::function<void (const PostToken&)> send_;
+  std::function<void (const Token&)> send_;
 };
 
 }

@@ -8,10 +8,10 @@
 
 namespace compiler {
 
-class IntegerLiteralPostTokenizer
+class IntegerLiteralTokenizer
 {
 public:
-  IntegerLiteralPostTokenizer(PostTokenReceiver& receiver)
+  IntegerLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }
   bool put(const PPToken& token);
@@ -22,7 +22,7 @@ private:
           std::vector<int>::const_iterator end,
           const std::string& udSuffix);
   bool handleInteger(const PPToken& token);
-	PostTokenReceiver& receiver_;
+	TokenReceiver& receiver_;
 };
 
 }

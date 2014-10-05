@@ -76,13 +76,13 @@ bool floatLiteral(It start, It end)
 
 }
 
-bool FloatLiteralPostTokenizer::handleUserDefined(
+bool FloatLiteralTokenizer::handleUserDefined(
         const PPToken& token,
         It start,
         It end,
         const string& udSuffix) {
   if (floatLiteral(start, end)) {
-    receiver_.put(*GetPostTokenLiteral::get(
+    receiver_.put(*GetTokenLiteral::get(
                   token.dataStrU8(),
                   FT_DOUBLE,
                   Utf8Encoder::encode(vector<int>(start, end)),
@@ -93,7 +93,7 @@ bool FloatLiteralPostTokenizer::handleUserDefined(
   }
 }
 
-bool FloatLiteralPostTokenizer::handleFloat(const PPToken& token)
+bool FloatLiteralTokenizer::handleFloat(const PPToken& token)
 {
   EFundamentalType type = FT_DOUBLE;
   It end = token.data.end();
@@ -109,7 +109,7 @@ bool FloatLiteralPostTokenizer::handleFloat(const PPToken& token)
     return false;
   }
   
-  using GetPostTokenLiteral::get;
+  using GetTokenLiteral::get;
   string input = token.dataStrU8();
   if (type == FT_FLOAT) {
     receiver_.put(*get(input, type, PA2Decode_float(input)));
@@ -122,7 +122,7 @@ bool FloatLiteralPostTokenizer::handleFloat(const PPToken& token)
   return true;
 } 
 
-bool FloatLiteralPostTokenizer::put(const PPToken& token)
+bool FloatLiteralTokenizer::put(const PPToken& token)
 {
   // to simplify parsing, require ud-suffix to start with '_'
   auto it = find(token.data.begin(), token.data.end(), '_');

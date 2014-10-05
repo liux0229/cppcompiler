@@ -25,7 +25,7 @@ class Driver {
   UTranslationUnit process();
   const Namespace* getGlobalNamespace() const;
  private:
-  void postTokenProcessor(const PostToken& token);
+  void postTokenProcessor(const Token& token);
   std::vector<UToken> tokens_;
   Preprocessor preprocessor_;
   ParserOption parserOption_;

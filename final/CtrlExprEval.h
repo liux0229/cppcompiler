@@ -14,7 +14,7 @@ public:
                std::function<bool (const std::string&)> isDefined)
     : printResult_(printResult),
       isDefined_(isDefined)  { }
-  void put(const PostToken& token);
+  void put(const Token& token);
   UTokenLiteral getResult() {
     CHECK(hasResult_);
     UTokenLiteral r = move(result_);
@@ -28,7 +28,7 @@ private:
     hasResult_ = false;
   }
 
-  std::vector<std::unique_ptr<PostToken>> tokens_;
+  std::vector<std::unique_ptr<Token>> tokens_;
   UTokenLiteral result_;
   bool printResult_;
   bool hasResult_ { false };

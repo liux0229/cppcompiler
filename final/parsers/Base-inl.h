@@ -106,7 +106,7 @@ namespace compiler {
         }
         Trace(bool isTrace,
               string&& name,
-              function<const PostToken& ()> curTokenGetter,
+              function<const Token& ()> curTokenGetter,
               int& traceDepth)
               : isTrace_(isTrace),
               name_(move(name)),
@@ -138,7 +138,7 @@ namespace compiler {
 
         bool isTrace_;
         string name_;
-        function<const PostToken& ()> curTokenGetter_;
+        function<const Token& ()> curTokenGetter_;
         int& traceDepth_;
         bool ok_{ false };
       };
@@ -154,27 +154,27 @@ namespace compiler {
         ++index_;
       }
 
-      const PostToken* get() const {
+      const Token* get() const {
         return &cur();
       }
 
-      const PostToken* getAdv() {
+      const Token* getAdv() {
         auto r = get();
         adv();
         return r;
       }
 
-      const PostTokenSimple* getAdvSimple() {
-        return static_cast<const PostTokenSimple*>(getAdv());
+      const TokenSimple* getAdvSimple() {
+        return static_cast<const TokenSimple*>(getAdv());
       }
 
-      const PostToken& cur() const {
+      const Token& cur() const {
         return *tokens_[index_];
       }
 
       // We rarely need to look ahead 2 chars
       // but in certain cases we do
-      const PostToken& next() const {
+      const Token& next() const {
         CHECK(index_ + 1 < tokens_.size());
         return *tokens_[index_ + 1];
       }
@@ -200,7 +200,7 @@ namespace compiler {
       }
 
       // TODO: consistent naming (tryAdv vs. tryGet)
-      const PostTokenSimple* tryAdvSimple(ETokenType type) {
+      const TokenSimple* tryAdvSimple(ETokenType type) {
         if (!isSimple(type)) {
           return nullptr;
         }
@@ -221,7 +221,7 @@ namespace compiler {
               cur().toStr());
       }
 
-      const PostTokenSimple*
+      const TokenSimple*
         expectSimpleFromFunc(ETokenType type, const char* func) {
           if (!isSimple(type)) {
             complainExpect(getSimpleTokenTypeName(type), func);
@@ -252,18 +252,18 @@ namespace compiler {
         return cur().isLiteral();
       }
 
-      const PostTokenLiteralBase* tryGetLiteral() {
+      const TokenLiteralBase* tryGetLiteral() {
         if (!isLiteral()) {
           return nullptr;
         }
-        return static_cast<const PostTokenLiteralBase*>(getAdv());
+        return static_cast<const TokenLiteralBase*>(getAdv());
       }
 
-      const PostTokenLiteralBase* expectLiteralFromFunc(const char* func) {
+      const TokenLiteralBase* expectLiteralFromFunc(const char* func) {
         if (!isLiteral()) {
           complainExpect("literal", func);
         }
-        return static_cast<const PostTokenLiteralBase*>(getAdv());
+        return static_cast<const TokenLiteralBase*>(getAdv());
       }
 
       bool isEof() const {

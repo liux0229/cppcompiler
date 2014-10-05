@@ -36,10 +36,10 @@ int main()
 		PPTokenizer ppTokenizer;
     CtrlExprEval ctrlExprEval(true /* print result */,
                               PA3Mock_IsDefinedIdentifier);
-    PostTokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));
+    TokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));
                         
-    PostTokenizer postTokenizer(receiver, true /* noStrCatForNewLine */);
-    ppTokenizer.sendTo(bind(&PostTokenizer::put, 
+    Tokenizer postTokenizer(receiver, true /* noStrCatForNewLine */);
+    ppTokenizer.sendTo(bind(&Tokenizer::put, 
                             &postTokenizer,
                             _1));
 

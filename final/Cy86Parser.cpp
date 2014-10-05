@@ -185,7 +185,7 @@ class Cy86ParserImp {
     return ret;
   }
 
-  const PostToken& cur() const {
+  const Token& cur() const {
     return *tokens_[index_];
   }
 
@@ -193,7 +193,7 @@ class Cy86ParserImp {
     ++index_;
   }
 
-  const PostToken& getAdv() {
+  const Token& getAdv() {
     auto& r = cur();
     adv();
     return r;
@@ -247,7 +247,7 @@ class Cy86ParserImp {
     if (!isLiteral()) {
       complainExpect("literal", func);
     }
-    return static_cast<const PostTokenLiteralBase&>(getAdv()).toConstantValue();
+    return static_cast<const TokenLiteralBase&>(getAdv()).toConstantValue();
   }
 
   vector<UToken> tokens_;

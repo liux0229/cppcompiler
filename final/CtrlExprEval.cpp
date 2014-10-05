@@ -30,13 +30,13 @@ UTokenLiteral getIntegerConstant(T value) {
     // TODO: note:
     // [warning C4244]
     // is supressed for VC++.
-    return make_unique<PostTokenLiteral<T>>(
+    return make_unique<TokenLiteral<T>>(
         "", 
         FT_LONG_LONG_INT, 
         (long long)value, 
         "");
   } else {
-    return make_unique<PostTokenLiteral<T>>(
+    return make_unique<TokenLiteral<T>>(
         "", 
         FT_UNSIGNED_LONG_LONG_INT, 
         (unsigned long long)value, 
@@ -57,12 +57,12 @@ UTokenLiteral getZero(bool isSigned)
 // TODO: more type checks between T and the type specifier
 template<typename T>
 UTokenLiteral getToken(EFundamentalType type, T data) {
-  return make_unique<PostTokenLiteral<T>>("", type, data, "");
+  return make_unique<TokenLiteral<T>>("", type, data, "");
 }
 
 UTokenLiteral toLiteral(UToken&& token) {
-  CHECK(token->getType() == PostTokenType::Literal);
-  return UTokenLiteral(static_cast<PostTokenLiteralBase*>(token.release()));
+  CHECK(token->getType() == TokenType::Literal);
+  return UTokenLiteral(static_cast<TokenLiteralBase*>(token.release()));
 }
 
 UTokenLiteral unaryPlus(const UTokenLiteral& token) {
@@ -297,7 +297,7 @@ public:
     : tokens_(move(tokens)),
       isDefined_(isDefined)  { }
 
-  const PostToken& cur() const {
+  const Token& cur() const {
     if (current_ >= tokens_.size()) {
       Throw("parse index {} out of range: {}", current_, tokens_.size());
     }
@@ -310,8 +310,8 @@ public:
   }
 
   ETokenType getOp() const {
-    CHECK(cur().getType() == PostTokenType::Simple);
-    return static_cast<const PostTokenSimple&>(cur()).type;
+    CHECK(cur().getType() == TokenType::Simple);
+    return static_cast<const TokenSimple&>(cur()).type;
   }
 
   bool isOp(ETokenType type) const {
@@ -319,7 +319,7 @@ public:
       return false;
     }
     auto& token = cur();
-    if (token.getType() != PostTokenType::Simple) {
+    if (token.getType() != TokenType::Simple) {
       return false;
     }
     return getOp() == type;
@@ -327,7 +327,7 @@ public:
 
   bool isIdentifier() const {
     return current_ < tokens_.size() &&
-           cur().getType() == PostTokenType::Identifier;
+           cur().getType() == TokenType::Identifier;
   }
 
   const string& identifierOrKeyword() const {
@@ -365,8 +365,8 @@ public:
       return getIntegerConstant(
                 // Interesting note: bool is unsigned
                 (long long)isDefined_(*target));
-    } else if (cur().getType() == PostTokenType::Literal) {
-      auto& t = static_cast<const PostTokenLiteralBase&>(cur());
+    } else if (cur().getType() == TokenType::Literal) {
+      auto& t = static_cast<const TokenLiteralBase&>(cur());
       if (!t.isIntegral()) {
         Throw("Expected an integral literal, got `{}`", t.toStr());
       }
@@ -516,9 +516,9 @@ void CtrlExprEval::printResult() {
   }
 }
 
-void CtrlExprEval::put(const PostToken& token)
+void CtrlExprEval::put(const Token& token)
 {
-  if (token.getType() == PostTokenType::NewLine) {
+  if (token.getType() == TokenType::NewLine) {
     if (!tokens_.empty()) {
       result_ = ControlExpression::Parser(move(tokens_), isDefined_)
                   .parseAndEvaluate();
@@ -528,11 +528,11 @@ void CtrlExprEval::put(const PostToken& token)
     tokens_.clear();
   } else {
     // converting keywords into identifiers while we are collecting tokens
-    if (token.getType() == PostTokenType::Simple) {
-      auto& sToken = static_cast<const PostTokenSimple&>(token);
+    if (token.getType() == TokenType::Simple) {
+      auto& sToken = static_cast<const TokenSimple&>(token);
       if (sToken.type < TOTAL_KEYWORDS) {
         tokens_.push_back(
-            make_unique<PostTokenIdentifier>(sToken.source));
+            make_unique<TokenIdentifier>(sToken.source));
         return;
       }
     }

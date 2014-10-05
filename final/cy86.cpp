@@ -103,7 +103,7 @@ public:
     BuildEnv env;
     vector<UToken> tokens;
     for (auto& src : input_) {
-      Preprocessor processor(env, src, [&tokens](const PostToken& token) {
+      Preprocessor processor(env, src, [&tokens](const Token& token) {
         // TODO: fatal user defined literals (maybe in immediate)
         if (token.isNewLine()) {
           return;

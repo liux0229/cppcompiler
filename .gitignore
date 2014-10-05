@@ -11,6 +11,7 @@ out
 *.opensdf
 *.suo
 *.sln.ide*
+*.tmp
 
 nsinit-ref
 nsinit-ref-stdin

@@ -26,7 +26,7 @@ public:
 
 private:
   std::vector<std::unique_ptr<Decoder>> decoders_;
-  Tokenizer tokenizer_;
+  PPTokenizerHelper tokenizer_;
   int pCh_ { -1 };
   PPToken pToken_;
   std::function<void (const PPToken&)> send_;

@@ -20,13 +20,13 @@ int main()
 		string input = oss.str();
 
 		PPTokenizer ppTokenizer;
-    PostTokenReceiver postTokenReceiver([](const PostToken& token) {
-      if (token.getType() != PostTokenType::NewLine) {
+    TokenReceiver postTokenReceiver([](const Token& token) {
+      if (token.getType() != TokenType::NewLine) {
         cout << token.toStr() << endl;
       }
     });
-    PostTokenizer postTokenizer(postTokenReceiver);
-    ppTokenizer.sendTo(bind(&PostTokenizer::put, 
+    Tokenizer postTokenizer(postTokenReceiver);
+    ppTokenizer.sendTo(bind(&Tokenizer::put, 
                             &postTokenizer,
                             placeholders::_1));
 

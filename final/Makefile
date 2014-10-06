@@ -10,34 +10,34 @@ CXX=ccache g++
 # CXX=ccache clang++
 # CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address -D__STRICT_ANSI__ -Wno-unused-function -ftemplate-depth=1024 -Wno-parentheses -Qunused-arguments
 
-PPDecoders=Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
+PPDecoders=preprocessing_token/Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
 PPFSMs=PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o
 PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.o PPTokenizerHelper.o PPTokenizer.o
 PPTokenOBJs=pptoken.o $(PPTokenLib)
 
-PostTokenizers=CharLiteralTokenizer.o StringLiteralTokenizer.o FloatLiteralTokenizer.o IntegerLiteralTokenizer.o
-PostTokenLib=Tokenizer.o Utf16Encoder.o Type.o ConstantValue.o Expression.o Member.o Namespace.o DeclSpecifiers.o StorageClass.o $(PostTokenizers)
-PostTokenOBJs=posttoken.o $(PostTokenLib) $(PPTokenLib)
+Tokenizers=CharLiteralTokenizer.o StringLiteralTokenizer.o FloatLiteralTokenizer.o IntegerLiteralTokenizer.o
+TokenLib=Tokenizer.o Utf16Encoder.o Type.o ConstantValue.o Expression.o Member.o Namespace.o DeclSpecifiers.o StorageClass.o $(Tokenizers)
+PostTokenOBJs=posttoken.o $(TokenLib) $(PPTokenLib)
 
-CtrlExprOBJs=CtrlExprEval.o ctrlexpr.o $(PostTokenLib) $(PPTokenLib)
+CtrlExprOBJs=CtrlExprEval.o ctrlexpr.o $(TokenLib) $(PPTokenLib)
 
 PPDirectiveLib=BuildEnv.o PredefinedMacros.o SourceReader.o CtrlExprEval.o MacroProcessor.o PPDirective.o Preprocessor.o
 
-MacroOBJs=macro.o $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+MacroOBJs=macro.o $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
-PreProcOBJs=preproc.o $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+PreProcOBJs=preproc.o $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
 ParserLib=Parser.o
-RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+RecogOBJs=recog.o $(ParserLib) $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
 NsDeclLib=Driver.o parsers/SemanticParser.o
-NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+NsDeclOBJs=nsdecl.o $(NsDeclLib) $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
 NsInitLib=Linker.o
-NsInitOBJs=nsinit.o $(NsInitLib) $(NsDeclLib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+NsInitOBJs=nsinit.o $(NsInitLib) $(NsDeclLib) $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
 Cy86Lib=Cy86Compiler.o Cy86Parser.o Cy86Instruction.o X86Instruction.o
-Cy86OBJs=cy86.o $(Cy86Lib) $(PPDirectiveLib) $(PostTokenLib) $(PPTokenLib)
+Cy86OBJs=cy86.o $(Cy86Lib) $(PPDirectiveLib) $(TokenLib) $(PPTokenLib)
 
 all: clean pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86
 

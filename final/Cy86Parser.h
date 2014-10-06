@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PostProcessingToken.h"
+#include "Token.h"
 #include "Cy86Instruction.h"
 
 #include <vector>

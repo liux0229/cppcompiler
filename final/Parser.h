@@ -1,6 +1,6 @@
 #pragma once
 #include "parsers/ParserCommon.h"
-#include "PostProcessingToken.h"
+#include "Token.h"
 #include "ASTType.h"
 #include <vector>
 

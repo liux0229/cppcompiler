@@ -98,7 +98,7 @@
     <ClInclude Include="..\..\final\PostTokenUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\final\PostProcessingToken.h">
+    <ClInclude Include="..\..\final\Token.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

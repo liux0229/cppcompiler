@@ -1,7 +1,7 @@
 #pragma once
 #include <istream>
 #include <functional>
-#include "PostProcessingToken.h"
+#include "Token.h"
 #include "PostTokenizer.h"
 #include "PostTokenReceiver.h"
 #include "PPDirective.h"

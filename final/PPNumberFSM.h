@@ -4,6 +4,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class PPNumberFSM : public StateMachine
 {
 public:
@@ -13,4 +15,6 @@ private:
   std::vector<int> ch_;
 };
 
-}
+} // ppToken
+
+} // compiler

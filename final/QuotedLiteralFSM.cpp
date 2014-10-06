@@ -9,6 +9,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 namespace {
@@ -33,7 +35,7 @@ bool lastIsBackSlash(const vector<int>& ch)
 
 const unordered_set<int> SimpleEscape =
 {
-	'\'', '"', '?', '\\', 'a', 'b', 'f', 'n', 'r', 't', 'v'
+  '\'', '"', '?', '\\', 'a', 'b', 'f', 'n', 'r', 't', 'v'
 };
 
 bool QuotedLiteralFSM::extend(int x)
@@ -53,15 +55,15 @@ bool QuotedLiteralFSM::extend(int x)
     } else if (x == 'x') {
       hex_ = true;
     } else if (SimpleEscape.find(x) == SimpleEscape.end()) {
-      Throw("Bad escape sequence for {}: {}", 
-            static_cast<char>(x), 
+      Throw("Bad escape sequence for {}: {}",
+            static_cast<char>(x),
             Utf8Encoder::encode(ch_));
     }
     /*
     else {
-      std::cout << format("Escape sequence for {}: {}", 
-                          static_cast<char>(x),
-                          Utf8Encoder::encode(ch_)) << std::endl;
+    std::cout << format("Escape sequence for {}: {}",
+    static_cast<char>(x),
+    Utf8Encoder::encode(ch_)) << std::endl;
     }
     */
   } else {
@@ -90,7 +92,7 @@ StateMachine* QuotedLiteralFSM::put(int x)
     }
     return nullptr;
   }
-  
+
   bool terminated = extend(x);
   if (terminated) {
     send_(PPToken(tokenType(), ch_));
@@ -113,4 +115,6 @@ StateMachine* QuotedLiteralFSM::put(const std::vector<int>& ch)
   return nullptr;
 }
 
-}
+} // ppToken
+
+} // compiler

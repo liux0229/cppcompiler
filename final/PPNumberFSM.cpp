@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 bool PPNumberFSM::canExtend(int c) const
@@ -53,8 +55,8 @@ StateMachine* PPNumberFSM::put(int c)
       // note we must call this overload to let the
       // target fsm know it should not wait for more input
       // also note the use of explicit ctor
-      t->put(vector<int>{ ch_[0] }); 
-                          
+      t->put(vector < int > { ch_[0] });
+
       ch_.erase(ch_.begin());
       ch_.push_back(c);
       return this;
@@ -75,9 +77,11 @@ StateMachine* PPNumberFSM::put(int c)
   } else {
     CHECK(ch_.size() > 0);
     send_(PPToken(PPTokenType::PPNumber, ch_));
-    ch_.clear(); 
+    ch_.clear();
     return nullptr;
   }
 }
 
-}
+} // ppToken
+
+} // compiler

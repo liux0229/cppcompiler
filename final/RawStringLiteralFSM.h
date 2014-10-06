@@ -5,6 +5,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class RawStringLiteralFSM : public StateMachine
 {
 public:
@@ -18,4 +20,6 @@ private:
   std::vector<int> dChar_;
 };
 
-}
+} // ppToken
+
+} // compiler

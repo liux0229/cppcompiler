@@ -6,6 +6,7 @@
 namespace compiler {
 
 using namespace std;
+using namespace ppToken;
 
 void Tokenizer::handleSimpleOrIdentifier(const PPToken& token)
 {

@@ -9,6 +9,7 @@ namespace compiler {
 class CharLiteralTokenizer
 {
 public:
+  using PPToken = ppToken::PPToken;
   CharLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }

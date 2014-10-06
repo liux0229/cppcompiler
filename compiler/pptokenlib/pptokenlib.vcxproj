@@ -34,6 +34,7 @@
     <ClCompile Include="..\..\final\Utf8Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\final\CharacterLiteralFSM.h" />
     <ClInclude Include="..\..\final\CommentDecoder.h" />
     <ClInclude Include="..\..\final\common.h" />
     <ClInclude Include="..\..\final\Decoder.h" />

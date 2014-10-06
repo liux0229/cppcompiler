@@ -8,9 +8,9 @@ namespace compiler {
 
 class PredefinedMacros;
 
-class MacroProcessor 
-{
+class MacroProcessor {
 public:
+  using PPToken = ppToken::PPToken;
   struct TextToken {
     explicit TextToken(const PPToken& _token, 
                        const std::vector<std::string>& _parentMacros)

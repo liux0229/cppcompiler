@@ -7,16 +7,18 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 const vector<string> Operators =
 {
-  "{",  "}",  "[",  "]",  "#",  "##",  "(",  ")",  "<:",  ":>",  "<%",  "%>",
-  "%:", "%:%:",     ";",  ":",  "...", "?",   "::",
-  ".",  ".*", "+",  "-",  "*",  "/",   "%",  "^",  "&",   "|",   "~",   "!",
-  "=",  "<",  ">",  "+=", "-=", "*=",  "/=", "%=", "^=",  "&=",  "|=",  "<<",
-  ">>", ">>=",      "<<=",      "<=",  ">=", "&&",  "==", "!=",  "||",  "++",
-  "--", ",",  "->*",      "->",
+  "{", "}", "[", "]", "#", "##", "(", ")", "<:", ":>", "<%", "%>",
+  "%:", "%:%:", ";", ":", "...", "?", "::",
+  ".", ".*", "+", "-", "*", "/", "%", "^", "&", "|", "~", "!",
+  "=", "<", ">", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<",
+  ">>", ">>=", "<<=", "<=", ">=", "&&", "==", "!=", "||", "++",
+  "--", ",", "->*", "->",
   // this special string is necessary to handle the <:: special case
   // itself is not a token
   "<::"
@@ -25,9 +27,9 @@ const vector<string> Operators =
 // See C++ standard 2.13 Operators and punctuators
 const unordered_set<string> Digraph =
 {
-	"new", "delete", "and", "and_eq", "bitand",
-	"bitor", "compl", "not", "not_eq", "or",
-	"or_eq", "xor", "xor_eq",
+  "new", "delete", "and", "and_eq", "bitand",
+  "bitor", "compl", "not", "not_eq", "or",
+  "or_eq", "xor", "xor_eq",
 };
 
 PPOpOrPuncFSM::PPOpOrPuncFSM()
@@ -55,11 +57,11 @@ StateMachine* PPOpOrPuncFSM::put(int c)
       if (matched_ > 0) {
         if (Utf8Encoder::encode(ch_) == "<::") {
           if (c == ':' || c == '>') {
-            send_(PPToken(PPTokenType::PPOpOrPunc, vector<int> { '<', ':' }));
+            send_(PPToken(PPTokenType::PPOpOrPunc, vector < int > { '<', ':' }));
             matched_ = 2;
           } else {
             // special rule
-            send_(PPToken(PPTokenType::PPOpOrPunc, vector<int> { '<' }));
+            send_(PPToken(PPTokenType::PPOpOrPunc, vector < int > { '<' }));
             matched_ = 1;
           }
         } else {
@@ -71,7 +73,7 @@ StateMachine* PPOpOrPuncFSM::put(int c)
       vector<int> left(ch_.begin() + matched_, ch_.end());
       left.push_back(c);
       clearInput();
-      StateMachine* result{nullptr};
+      StateMachine* result { nullptr };
       // one assumption is that x in left until c must match the current
       // state machine
       for (int x : left) {
@@ -108,4 +110,6 @@ StateMachine* PPOpOrPuncFSM::put(const vector<int>& ch)
   }
 }
 
-}
+} // ppToken
+
+} // compiler

@@ -3,6 +3,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class NewLineFSM : public StateMachine
 {
 public:
@@ -16,4 +18,6 @@ public:
   }
 };
 
-}
+} // ppToken
+
+} // compiler

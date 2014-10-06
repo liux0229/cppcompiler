@@ -8,7 +8,7 @@
 
 namespace compiler {
 
-class StateMachine;
+namespace ppToken {
 
 class StateMachine
 {
@@ -24,7 +24,7 @@ public:
   // handle a list of ch's
   virtual StateMachine* put(const std::vector<int>& ch) { return nullptr; }
 
-  void sendTo(std::function<void (const PPToken&)> send) {
+  void sendTo(std::function<void(const PPToken&)> send) {
     send_ = send;
   }
 
@@ -33,14 +33,16 @@ public:
   }
 
 protected:
-  std::function<void (const PPToken&)> send_;
+  std::function<void(const PPToken&)> send_;
   std::vector<StateMachine*> transfer_;
 private:
   void sendInteral(const PPToken& token) {
-    Throw("send_ not set while receiving {} {}", 
+    Throw("send_ not set while receiving {} {}",
           token.typeName(),
           Utf8Encoder::encode(token.data));
   }
 };
 
-}
+} // ppToken
+
+} // compiler

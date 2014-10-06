@@ -12,12 +12,13 @@
 
 namespace compiler {
 
-class PPTokenizerHelper
-{
+namespace ppToken {
+
+class PPTokenizerHelper {
 public:
   PPTokenizerHelper();
   void put(int c);
-  void sendTo(std::function<void (const PPToken&)> send);
+  void sendTo(std::function<void(const PPToken&)> send);
   bool insideRawString() const;
   bool insideQuotedLiteral() const;
 private:
@@ -29,9 +30,11 @@ private:
   std::vector<std::unique_ptr<StateMachine>> fsms_;
   HeaderNameFSM headerNameFsm_;
   StateMachine* current_ { nullptr };
-  std::function<void (const PPToken&)> send_;
+  std::function<void(const PPToken&)> send_;
   IncludeDetector includeDetector_;
   PPToken pToken_;
 };
 
-}
+} // ppTokenizer
+
+} // compiler

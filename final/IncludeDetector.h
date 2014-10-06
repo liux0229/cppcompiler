@@ -8,6 +8,9 @@ namespace compiler {
 class IncludeDetector
 {
 public:
+  using PPToken = ppToken::PPToken;
+  using PPTokenType = ppToken::PPTokenType;
+
   void put(const PPToken& token) {
     switch (n_) {
       case -1:

@@ -4,6 +4,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class CharacterLiteralFSM : public QuotedLiteralFSM
 {
   // TODO: character literal cannot be empty
@@ -17,4 +19,6 @@ protected:
   }
 };
 
-}
+} // ppToken
+
+} // compiler

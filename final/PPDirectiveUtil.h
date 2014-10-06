@@ -2,44 +2,51 @@
 #include "PreprocessingToken.h"
 
 namespace compiler {
-namespace {
-bool isPound(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isPound(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc && 
          (token.dataStrU8() == "#" ||
           token.dataStrU8() == "%:");
 }
-bool isDoublePound(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isDoublePound(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc &&
          (token.dataStrU8() == "##" ||
           token.dataStrU8() == "%:%:");
 }
-bool isLParen(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isLParen(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc &&
          token.dataStrU8() == "(";
 }
-bool isRParen(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isRParen(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc &&
          token.dataStrU8() == ")";
 }
-bool isEllipse(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isEllipse(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc &&
          token.dataStrU8() == "...";
 }
-bool isComma(const PPToken& token) {
-  return token.type == PPTokenType::PPOpOrPunc && 
+
+inline bool isComma(const ppToken::PPToken& token) {
+  return token.type == ppToken::PPTokenType::PPOpOrPunc &&
          token.dataStrU8() == ",";
 }
-bool isIdentifier(const PPToken& token, const std::string& identifier) {
+
+inline bool isIdentifier(const ppToken::PPToken& token, const std::string& identifier) {
   return token.isId() && token.dataStrU8() == identifier;
 }
-size_t skipWhite(const std::vector<PPToken>& tokens, size_t i) {
+
+inline size_t skipWhite(const std::vector<ppToken::PPToken>& tokens, size_t i) {
   while (i < tokens.size() && tokens[i].isWhite()) {
     ++i;
   }
   return i;
 }
 
-std::vector<int> toVector(const std::string& s)
+inline std::vector<int> toVector(const std::string& s)
 {
   std::vector<int> r;
   r.reserve(s.size());
@@ -49,9 +56,9 @@ std::vector<int> toVector(const std::string& s)
   return r;
 }
 
-std::vector<int> stringify(const std::string& s)
+inline std::vector<int> stringify(const std::string& s)
 {
   return toVector("\"" + s + "\"");
 }
 
-} }
+} // compiler

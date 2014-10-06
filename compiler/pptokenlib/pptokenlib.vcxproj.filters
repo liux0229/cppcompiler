@@ -152,5 +152,8 @@
     <ClInclude Include="..\..\final\StateMachine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\final\CharacterLiteralFSM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

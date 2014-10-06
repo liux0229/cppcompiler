@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class WhiteSpaceFSM : public StateMachine
 {
 public:
@@ -25,4 +27,6 @@ private:
   bool has_ { false };
 };
 
-}
+} // ppToken
+
+} // compiler

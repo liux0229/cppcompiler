@@ -13,6 +13,7 @@ class SourceReader;
 class PPDirective
 {
 public:
+  using PPToken = ppToken::PPToken;
   PPDirective(std::function<void (const PPToken&)> send,
               BuildEnv buildEnv,
               SourceReader* sourceReader = nullptr)

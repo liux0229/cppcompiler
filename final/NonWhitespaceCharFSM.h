@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class NonWhiteSpaceCharFSM : public StateMachine
 {
 public:
@@ -13,9 +15,11 @@ public:
     if (x == '"' || x == '\'') {
       Throw("Unmatched `{}`", static_cast<char>(x));
     }
-    send_(PPToken(PPTokenType::NonWhitespaceChar, {x}));
+    send_(PPToken(PPTokenType::NonWhitespaceChar, { x }));
     return this;
   }
 };
 
-}
+} // ppToken
+
+} // compiler

@@ -7,6 +7,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class QuotedLiteralFSM : public StateMachine
 {
 public:
@@ -23,8 +25,8 @@ private:
   }
   PPTokenType tokenType() {
     return tokenType_ == PPTokenType::Unknown ?
-              (tokenType_ = getTokenType()) :
-              tokenType_;
+      (tokenType_ = getTokenType()) :
+      tokenType_;
   }
   const std::vector<std::string>& encoding() {
     if (encoding_.empty()) {
@@ -45,4 +47,6 @@ private:
   bool hex_ { false };
 };
 
-}
+} // ppToken
+
+} // compiler

@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 bool RawStringLiteralFSM::extend(int x)
@@ -14,7 +16,7 @@ bool RawStringLiteralFSM::extend(int x)
     if (x == '(') {
       rChar_ = true;
     } else {
-      if (Utf8Utils::isWhiteSpace(x) || 
+      if (Utf8Utils::isWhiteSpace(x) ||
           x == '\\' ||
           x == ')') {
         Throw("Bad d-char {x} after {}", x, Utf8Encoder::encode(ch_));
@@ -38,7 +40,7 @@ bool RawStringLiteralFSM::extend(int x)
   return false;
 }
 
-StateMachine* RawStringLiteralFSM::put(int x) 
+StateMachine* RawStringLiteralFSM::put(int x)
 {
   if (ch_.empty()) {
     // we never start from here
@@ -53,18 +55,20 @@ StateMachine* RawStringLiteralFSM::put(int x)
   return this;
 }
 
-StateMachine* RawStringLiteralFSM::put(const std::vector<int>& ch) 
+StateMachine* RawStringLiteralFSM::put(const std::vector<int>& ch)
 {
   string x = Utf8Encoder::encode(ch);
   if (x == "u8R\"" ||
-      x ==  "uR\"" ||
-      x ==  "UR\"" ||
-      x ==  "LR\"" ||
-      x ==   "R\"") {
+      x == "uR\"" ||
+      x == "UR\"" ||
+      x == "LR\"" ||
+      x == "R\"") {
     ch_ = ch;
     return this;
   }
   return nullptr;
 }
 
-}
+} // ppToken
+
+} // compiler

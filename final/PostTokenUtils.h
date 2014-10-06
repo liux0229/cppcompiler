@@ -592,8 +592,8 @@ long double PA2Decode_long_double(const std::string& s)
 	return x;
 }
 
-void printToken(const PPToken& token) {
-  if (token.type == PPTokenType::Eof) {
+void printToken(const ppToken::PPToken& token) {
+  if (token.type == ppToken::PPTokenType::Eof) {
     std::cout << token.typeName() << std::endl;
   } else {
     std::string encoded = token.dataStrU8();
@@ -602,7 +602,7 @@ void printToken(const PPToken& token) {
   }
 }
 
-std::string getSuffix(const PPToken& token, int quote)
+std::string getSuffix(const ppToken::PPToken& token, int quote)
 {
   if (!token.isUserDefined()) {
     return "";

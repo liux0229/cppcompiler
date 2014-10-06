@@ -4,6 +4,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class StringLiteralFSM : public QuotedLiteralFSM
 {
 protected:
@@ -16,4 +18,6 @@ protected:
   }
 };
 
-}
+} // ppToken
+
+} // compiler

@@ -12,6 +12,8 @@ namespace compiler {
 class Tokenizer
 {
 public:
+  using PPToken = ppToken::PPToken;
+
   explicit Tokenizer(const TokenReceiver& receiver,
                          bool noStrCatForNewLine = false)
     : receiver_(receiver),

@@ -8,6 +8,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 struct PPTokenTypes
 {
   static const std::vector<std::string> Names;
@@ -40,21 +42,21 @@ struct PPToken
   }
   PPToken(const PPToken& rhs, const std::string& _file, int64_t _line)
     : type(rhs.type),
-      data(rhs.data),
-      file(_file),
-      line(_line) { }
+    data(rhs.data),
+    file(_file),
+    line(_line) { }
   const std::string& typeName() const {
-    return PPTokenTypes::Names[static_cast<int>(type)]; 
+    return PPTokenTypes::Names[static_cast<int>(type)];
   }
 
   bool isQuotedLiteral() const {
     return type == PPTokenType::CharacterLiteral ||
-           type == PPTokenType::StringLiteral;
+      type == PPTokenType::StringLiteral;
   }
 
   bool isUserDefined() const {
     return type == PPTokenType::UserDefinedCharacterLiteral ||
-           type == PPTokenType::UserDefinedStringLiteral;
+      type == PPTokenType::UserDefinedStringLiteral;
   }
 
   bool isQuotedOrUserDefinedLiteral() const {
@@ -63,7 +65,7 @@ struct PPToken
 
   bool isStringOrUserDefinedLiteral() const {
     return type == PPTokenType::StringLiteral ||
-           type == PPTokenType::UserDefinedStringLiteral;
+      type == PPTokenType::UserDefinedStringLiteral;
   }
 
   bool isWhite() const {
@@ -99,7 +101,7 @@ struct PPToken
 
   bool operator==(const PPToken& rhs) const {
     return type == rhs.type &&
-           data == rhs.data; 
+      data == rhs.data;
   }
   bool operator!=(const PPToken& rhs) const {
     return !(*this == rhs);
@@ -116,4 +118,6 @@ struct PPToken
   int64_t line { -1 };
 };
 
-}
+} // ppToken
+
+} // compiler

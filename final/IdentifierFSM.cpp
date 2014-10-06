@@ -5,6 +5,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 StateMachine* IdentifierFSM::tryTransfer(const vector<int>& ch)
@@ -27,7 +29,7 @@ StateMachine* IdentifierFSM::put(int c)
     }
   } else {
     if (!Utf8Utils::isIdentifierNonDigit(c) && !isdigit(c)) {
-      StateMachine* r{nullptr};
+      StateMachine* r { nullptr };
       if (canTransfer_()) {
         if (c == '\'' || c == '"') {
           vector<int> m = ch_;
@@ -54,4 +56,6 @@ StateMachine* IdentifierFSM::put(int c)
   return this;
 }
 
-}
+} // ppToken
+
+} // compiler

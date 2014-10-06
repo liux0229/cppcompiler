@@ -4,6 +4,7 @@
 namespace compiler {
 
 using namespace std;
+using namespace ppToken;
 
 PredefinedMacros::PredefinedMacros(BuildEnv buildEnv)
 {

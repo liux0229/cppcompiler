@@ -8,6 +8,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class HeaderNameFSM : public StateMachine
 {
 public:
@@ -42,4 +44,6 @@ private:
   std::vector<int> ch_;
 };
 
-}
+} // ppToken
+
+} // compiler

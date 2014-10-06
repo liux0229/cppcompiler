@@ -10,6 +10,7 @@
 namespace compiler {
 
 using namespace std;
+using namespace ppToken;
 
 namespace {
 void checkTrailing(const vector<PPToken>& directive, size_t i) {

@@ -3,6 +3,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class EofFSM : public StateMachine
 {
 public:
@@ -10,10 +12,12 @@ public:
     if (x != EndOfFile) {
       return nullptr;
     }
-    
+
     send_(PPToken(PPTokenType::Eof));
     return this;
   }
 };
 
-}
+} // ppToken
+
+} // compiler

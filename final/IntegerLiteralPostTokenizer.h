@@ -11,6 +11,8 @@ namespace compiler {
 class IntegerLiteralTokenizer
 {
 public:
+  using PPToken = ppToken::PPToken;
+
   IntegerLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }

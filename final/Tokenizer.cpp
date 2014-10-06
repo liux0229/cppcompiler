@@ -4,6 +4,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 PPTokenizerHelper::PPTokenizerHelper()
@@ -22,16 +24,16 @@ PPTokenizerHelper::PPTokenizerHelper()
 
   identifier->setCanTransfer([this]() {
     return pToken_.type != PPTokenType::StringLiteral &&
-           pToken_.type != PPTokenType::CharacterLiteral;
+      pToken_.type != PPTokenType::CharacterLiteral;
   });
   identifier->setTransfer({
-      ppOpOrPunc,
-      characterLiteral,
-      rawStringLiteral,
-      stringLiteral
+    ppOpOrPunc,
+    characterLiteral,
+    rawStringLiteral,
+    stringLiteral
   });
   ppNumber->setTransfer({
-      ppOpOrPunc
+    ppOpOrPunc
   });
 }
 
@@ -39,7 +41,7 @@ template<typename T>
 T* PPTokenizerHelper::init()
 {
   fsms_.push_back(make_unique<T>());
-  return static_cast<T* >(fsms_.back().get());
+  return static_cast<T*>(fsms_.back().get());
 }
 
 void PPTokenizerHelper::sendTo(function<void(const PPToken&)> send) {
@@ -64,7 +66,7 @@ void PPTokenizerHelper::put(int c)
     if (current_ == &headerNameFsm_ && !headerNameFsm_.inside()) {
       current_ = nullptr;
     } else {
-      current_ = current_->put(c); 
+      current_ = current_->put(c);
     }
   }
   if (!current_) {
@@ -97,8 +99,8 @@ void PPTokenizerHelper::printChar(int c)
   if (c == EndOfFile) {
     std::cout << "EOF" << std::endl;
   } else {
-    std::cout 
-      << format("token:{} {x}", Utf8Encoder::encode(c), c) 
+    std::cout
+      << format("token:{} {x}", Utf8Encoder::encode(c), c)
       << std::endl;
   }
 }
@@ -115,4 +117,6 @@ bool PPTokenizerHelper::insideQuotedLiteral() const
   return s != nullptr && s->inside();
 }
 
-}
+} // ppToken
+
+} // compiler

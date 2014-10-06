@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class PPOpOrPuncFSM : public StateMachine
 {
 public:
@@ -20,4 +22,6 @@ private:
   int matched_ { 0 };
 };
 
-}
+} // ppToken
+
+} // compiler

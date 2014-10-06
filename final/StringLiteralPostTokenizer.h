@@ -8,9 +8,10 @@
 
 namespace compiler {
 
-class StringLiteralTokenizer
-{
+class StringLiteralTokenizer {
 public:
+  using PPToken = ppToken::PPToken;
+
   StringLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }

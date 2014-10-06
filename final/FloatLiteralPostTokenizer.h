@@ -11,6 +11,8 @@ namespace compiler {
 class FloatLiteralTokenizer
 {
 public:
+  using PPToken = ppToken::PPToken;
+
   FloatLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }

@@ -48,10 +48,10 @@
     <ClCompile Include="..\..\final\PreprocessingToken.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\final\Tokenizer.cpp">
+    <ClCompile Include="..\..\final\PPTokenizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\final\PPTokenizer.cpp">
+    <ClCompile Include="..\..\final\PPTokenizerHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -99,9 +99,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\final\PreprocessingToken.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\final\Tokenizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\final\PPTokenizer.h">
@@ -153,6 +150,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\final\CharacterLiteralFSM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\final\PPTokenizerHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

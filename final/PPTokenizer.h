@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Decoder.h"
-#include "Tokenizer.h"
+#include "PPTokenizerHelper.h"
 #include "PreprocessingToken.h"
 #include "common.h"
 

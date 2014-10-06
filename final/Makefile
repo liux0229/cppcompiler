@@ -12,7 +12,7 @@ CXX=ccache g++
 
 PPDecoders=Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
 PPFSMs=PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStringLiteralFSM.o
-PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.o Tokenizer.o PPTokenizer.o
+PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.o PPTokenizerHelper.o PPTokenizer.o
 PPTokenOBJs=pptoken.o $(PPTokenLib)
 
 PostTokenizers=CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o FloatLiteralPostTokenizer.o IntegerLiteralPostTokenizer.o

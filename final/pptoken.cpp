@@ -9,6 +9,7 @@
 
 using namespace std;
 using namespace compiler;
+using namespace compiler::ppToken;
 
 void printToken(const PPToken& token) {
   if (token.type == PPTokenType::Eof) {

@@ -18,7 +18,7 @@ void Preprocessor::process()
                           buildEnv_,
                           &sourceReader_);
 
-  PPTokenizer ppTokenizer;
+  ppToken::PPTokenizer ppTokenizer;
   ppTokenizer.sendTo(bind(&PPDirective::put,
                      &ppDirective,
                      placeholders::_1));

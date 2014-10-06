@@ -12,6 +12,8 @@ using compiler::format;
 
 namespace compiler {
 
+namespace ppToken {
+
 namespace {
 
 int getDesiredChars(int c)
@@ -87,8 +89,8 @@ void Utf8Decoder::put(int c)
   if (c == EndOfFile) {
     if (desiredChars_ != nchars_) {
       Throw("Incomplete utf8 character at the end of file. "
-            "Desired:{}, trailing:{}", 
-            desiredChars_, 
+            "Desired:{}, trailing:{}",
+            desiredChars_,
             nchars_);
     }
     return send_(c);
@@ -128,5 +130,7 @@ string Utf8Decoder::getStr() const
   return format("{x}", x);
 }
 #endif
+
+} // ppToken
 
 } // compiler

@@ -6,6 +6,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class LineSplicer : public Decoder {
 public:
   void put(int c) override {
@@ -37,4 +39,6 @@ private:
   int n_ { 0 };
 };
 
-}
+} // ppToken
+
+} // compiler

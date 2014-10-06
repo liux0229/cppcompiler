@@ -7,6 +7,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 template<typename T>
@@ -27,12 +29,13 @@ PPTokenizer::PPTokenizer()
   for (int i = 0; i < n - 1; i++) {
     decoders_[i]->sendTo([this, i](int x) {
       /* cout << format("decoder {} produced `{}`\n", i, char(x)); */
-      if ((tokenizer_.insideRawString() && 
-           decoders_[i + 1]->turnOffForRawString()) ||
-          (tokenizer_.insideQuotedLiteral() &&
-           decoders_[i + 1]->turnOffForQuotedLiteral())) {
+      if ((tokenizer_.insideRawString() &&
+        decoders_[i + 1]->turnOffForRawString()) ||
+        (tokenizer_.insideQuotedLiteral() &&
+        decoders_[i + 1]->turnOffForQuotedLiteral())) {
         receivedChar(x);
-      } else {
+      }
+      else {
         decoders_[i + 1]->put(x);
       }
     });
@@ -61,7 +64,7 @@ void PPTokenizer::receivedChar(int c) {
 
 bool PPTokenizer::canMergeIntoUserDefined(const PPToken& token) const {
   return pToken_.isQuotedLiteral() &&
-         token.type == PPTokenType::Identifier;
+    token.type == PPTokenType::Identifier;
 }
 
 void PPTokenizer::receivedToken(const PPToken& token) {
@@ -69,7 +72,8 @@ void PPTokenizer::receivedToken(const PPToken& token) {
     vector<int> data = pToken_.data;
     data.insert(data.end(), token.data.begin(), token.data.end());
     pToken_ = PPToken(pToken_.getUserDefined(), move(data));
-  } else {
+  }
+  else {
     if (pToken_.isQuotedLiteral()) {
       send_(pToken_);
     }
@@ -80,4 +84,6 @@ void PPTokenizer::receivedToken(const PPToken& token) {
   }
 }
 
-}
+} // ppToken
+
+} // compiler

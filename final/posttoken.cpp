@@ -19,7 +19,7 @@ int main()
 
 		string input = oss.str();
 
-		PPTokenizer ppTokenizer;
+		ppToken::PPTokenizer ppTokenizer;
     TokenReceiver postTokenReceiver([](const Token& token) {
       if (token.getType() != TokenType::NewLine) {
         cout << token.toStr() << endl;

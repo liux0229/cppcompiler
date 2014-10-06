@@ -3,11 +3,13 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 void TrigraphDecoder::put(int c) {
   switch (n_) {
     case 0:
       if (c != '?') {
-        send_(c); 
+        send_(c);
       } else {
         ++n_;
       }
@@ -23,7 +25,7 @@ void TrigraphDecoder::put(int c) {
       break;
     case 2: {
       const char* from = R"(=/'()!<>-)";
-      const char* to   = R"(#\^[]|{}~)";
+      const char* to = R"(#\^[]|{}~)";
       bool fnd = false;
       for (int i = 0; from[i]; ++i) {
         if (from[i] == c) {
@@ -45,7 +47,9 @@ void TrigraphDecoder::put(int c) {
       // a logical error (TODO: add a message)
       CHECK(false);
       break;
-  } 
-} 
-
+  }
 }
+
+} // ppToken
+
+} // compiler

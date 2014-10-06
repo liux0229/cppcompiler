@@ -31,7 +31,7 @@ int main()
                             buildEnv,
                             &sourceReader);
 
-    PPTokenizer ppTokenizer;
+    ppToken::PPTokenizer ppTokenizer;
     ppTokenizer.sendTo(bind(&PPDirective::put,
                        &ppDirective,
                        placeholders::_1));

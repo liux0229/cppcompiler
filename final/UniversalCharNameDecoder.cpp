@@ -4,6 +4,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 using namespace std;
 
 void UniversalCharNameDecoder::put(int c)
@@ -20,7 +22,7 @@ void UniversalCharNameDecoder::put(int c)
       if (c == 'u' || c == 'U') {
         ++n_;
         type_ = c;
-      }  else {
+      } else {
         n_ = 0;
         send_('\\');
         send_(c);
@@ -63,4 +65,6 @@ void UniversalCharNameDecoder::checkChar(int64_t x)
   // TODO: check char outside of string
 }
 
-}
+} // ppToken
+
+} // compiler

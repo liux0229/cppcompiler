@@ -7,6 +7,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 namespace {
 
 void checkEof(int c) {
@@ -74,4 +76,6 @@ private:
   int n_ { 0 };
 };
 
-}
+} // ppToken
+
+} // compiler

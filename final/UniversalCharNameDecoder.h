@@ -9,6 +9,8 @@
 
 namespace compiler {
 
+namespace ppToken {
+
 class UniversalCharNameDecoder : public Decoder {
 public:
   void put(int c) override;
@@ -20,4 +22,6 @@ private:
   int ch_[8];
 };
 
-}
+} // ppToken
+
+} // compiler

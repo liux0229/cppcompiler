@@ -33,7 +33,7 @@ int main()
 		string input = oss.str();
 
     using namespace std::placeholders;
-		PPTokenizer ppTokenizer;
+		ppToken::PPTokenizer ppTokenizer;
     CtrlExprEval ctrlExprEval(true /* print result */,
                               PA3Mock_IsDefinedIdentifier);
     TokenReceiver receiver(bind(&CtrlExprEval::put, &ctrlExprEval, _1));

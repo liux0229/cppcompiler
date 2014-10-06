@@ -1,5 +1,5 @@
 #include "common.h"
-#include "PostTokenizer.h"
+#include "Tokenizer.h"
 #include "PPTokenizer.h"
 #include "PostTokenReceiver.h"
 #include <iostream>

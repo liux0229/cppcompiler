@@ -1,4 +1,4 @@
-#include "IntegerLiteralPostTokenizer.h"
+#include "IntegerLiteralTokenizer.h"
 #include "common.h"
 #include "Utf8Utils.h"
 #include <vector>

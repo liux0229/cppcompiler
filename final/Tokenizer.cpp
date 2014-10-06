@@ -1,6 +1,6 @@
 #include "common.h"
-#include "PostTokenizer.h"
-#include "PostTokenUtils.h"
+#include "Tokenizer.h"
+#include "TokenUtils.h"
 #include "Token.h"
 
 namespace compiler {

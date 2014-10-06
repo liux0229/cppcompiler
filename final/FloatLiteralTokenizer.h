@@ -2,18 +2,18 @@
 
 #include "PreprocessingToken.h"
 #include "PostTokenReceiver.h"
-#include "PostTokenUtils.h"
+#include "TokenUtils.h"
 #include <vector>
 #include <string>
 
 namespace compiler {
 
-class IntegerLiteralTokenizer
+class FloatLiteralTokenizer
 {
 public:
   using PPToken = ppToken::PPToken;
 
-  IntegerLiteralTokenizer(TokenReceiver& receiver)
+  FloatLiteralTokenizer(TokenReceiver& receiver)
     : receiver_(receiver) {
   }
   bool put(const PPToken& token);
@@ -23,7 +23,7 @@ private:
           std::vector<int>::const_iterator start,
           std::vector<int>::const_iterator end,
           const std::string& udSuffix);
-  bool handleInteger(const PPToken& token);
+  bool handleFloat(const PPToken& token);
 	TokenReceiver& receiver_;
 };
 

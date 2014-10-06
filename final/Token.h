@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "PostTokenUtils.h"
+#include "TokenUtils.h"
 #include "ConstantValue.h"
 #include <string>
 #include <vector>

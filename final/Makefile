@@ -15,8 +15,8 @@ PPFSMs=PPOpOrPuncFSM.o IdentifierFSM.o PPNumberFSM.o QuotedLiteralFSM.o RawStrin
 PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.o PPTokenizerHelper.o PPTokenizer.o
 PPTokenOBJs=pptoken.o $(PPTokenLib)
 
-PostTokenizers=CharLiteralPostTokenizer.o StringLiteralPostTokenizer.o FloatLiteralPostTokenizer.o IntegerLiteralPostTokenizer.o
-PostTokenLib=PostTokenizer.o Utf16Encoder.o Type.o ConstantValue.o Expression.o Member.o Namespace.o DeclSpecifiers.o StorageClass.o $(PostTokenizers)
+PostTokenizers=CharLiteralTokenizer.o StringLiteralTokenizer.o FloatLiteralTokenizer.o IntegerLiteralTokenizer.o
+PostTokenLib=Tokenizer.o Utf16Encoder.o Type.o ConstantValue.o Expression.o Member.o Namespace.o DeclSpecifiers.o StorageClass.o $(PostTokenizers)
 PostTokenOBJs=posttoken.o $(PostTokenLib) $(PPTokenLib)
 
 CtrlExprOBJs=CtrlExprEval.o ctrlexpr.o $(PostTokenLib) $(PPTokenLib)

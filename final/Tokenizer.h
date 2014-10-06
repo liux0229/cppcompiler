@@ -2,10 +2,10 @@
 
 #include "PreprocessingToken.h"
 #include "PostTokenReceiver.h"
-#include "CharLiteralPostTokenizer.h"
-#include "StringLiteralPostTokenizer.h"
-#include "FloatLiteralPostTokenizer.h"
-#include "IntegerLiteralPostTokenizer.h"
+#include "CharLiteralTokenizer.h"
+#include "StringLiteralTokenizer.h"
+#include "FloatLiteralTokenizer.h"
+#include "IntegerLiteralTokenizer.h"
 
 namespace compiler {
 

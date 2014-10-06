@@ -2,7 +2,7 @@
 #include "PPDirectiveUtil.h"
 #include "CtrlExprEval.h"
 #include "PostTokenReceiver.h"
-#include "PostTokenizer.h"
+#include "Tokenizer.h"
 #include "SourceReader.h"
 #include "common.h"
 #include <sstream>

@@ -24,34 +24,34 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\final\CharLiteralPostTokenizer.cpp" />
+    <ClCompile Include="..\..\final\CharLiteralTokenizer.cpp" />
     <ClCompile Include="..\..\final\ConstantValue.cpp" />
     <ClCompile Include="..\..\final\DeclSpecifiers.cpp" />
     <ClCompile Include="..\..\final\Expression.cpp" />
-    <ClCompile Include="..\..\final\FloatLiteralPostTokenizer.cpp" />
-    <ClCompile Include="..\..\final\IntegerLiteralPostTokenizer.cpp" />
+    <ClCompile Include="..\..\final\FloatLiteralTokenizer.cpp" />
+    <ClCompile Include="..\..\final\IntegerLiteralTokenizer.cpp" />
     <ClCompile Include="..\..\final\Member.cpp" />
     <ClCompile Include="..\..\final\Namespace.cpp" />
-    <ClCompile Include="..\..\final\PostTokenizer.cpp" />
+    <ClCompile Include="..\..\final\Tokenizer.cpp" />
     <ClCompile Include="..\..\final\StorageClass.cpp" />
-    <ClCompile Include="..\..\final\StringLiteralPostTokenizer.cpp" />
+    <ClCompile Include="..\..\final\StringLiteralTokenizer.cpp" />
     <ClCompile Include="..\..\final\Type.cpp" />
     <ClCompile Include="..\..\final\Utf16Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\final\CharLiteralPostTokenizer.h" />
+    <ClInclude Include="..\..\final\CharLiteralTokenizer.h" />
     <ClInclude Include="..\..\final\ConstantValue.h" />
     <ClInclude Include="..\..\final\DeclSpecifiers.h" />
     <ClInclude Include="..\..\final\Expression.h" />
-    <ClInclude Include="..\..\final\FloatLiteralPostTokenizer.h" />
-    <ClInclude Include="..\..\final\IntegerLiteralPostTokenizer.h" />
+    <ClInclude Include="..\..\final\FloatLiteralTokenizer.h" />
+    <ClInclude Include="..\..\final\IntegerLiteralTokenizer.h" />
     <ClInclude Include="..\..\final\Member.h" />
     <ClInclude Include="..\..\final\Namespace.h" />
     <ClInclude Include="..\..\final\Token.h" />
-    <ClInclude Include="..\..\final\PostTokenizer.h" />
-    <ClInclude Include="..\..\final\PostTokenUtils.h" />
+    <ClInclude Include="..\..\final\Tokenizer.h" />
+    <ClInclude Include="..\..\final\TokenUtils.h" />
     <ClInclude Include="..\..\final\StorageClass.h" />
-    <ClInclude Include="..\..\final\StringLiteralPostTokenizer.h" />
+    <ClInclude Include="..\..\final\StringLiteralTokenizer.h" />
     <ClInclude Include="..\..\final\Type.h" />
     <ClInclude Include="..\..\final\Utf16Encoder.h" />
   </ItemGroup>

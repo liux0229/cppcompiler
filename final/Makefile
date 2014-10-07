@@ -10,7 +10,7 @@ CXX=ccache g++
 # CXX=ccache clang++
 # CPPFLAGS=-g -Wall -std=gnu++11 -I. -fsanitize=address -D__STRICT_ANSI__ -Wno-unused-function -ftemplate-depth=1024 -Wno-parentheses -Qunused-arguments
 
-PPDecoders=preprocessing_token/Utf8Decoder.o TrigraphDecoder.o UniversalCharNameDecoder.o
+PPDecoders=preprocessing_token/Utf8Decoder.o preprocessing_token/TrigraphDecoder.o preprocessing_token/UniversalCharNameDecoder.o
 PPFSMs=preprocessing_token/PPOpOrPuncFSM.o preprocessing_token/IdentifierFSM.o preprocessing_token/PPNumberFSM.o preprocessing_token/QuotedLiteralFSM.o preprocessing_token/RawStringLiteralFSM.o
 PPTokenLib=$(PPDecoders) $(PPFSMs) Utf8Utils.o Utf8Encoder.o PreprocessingToken.o PPTokenizerHelper.o PPTokenizer.o
 PPTokenOBJs=pptoken.o $(PPTokenLib)

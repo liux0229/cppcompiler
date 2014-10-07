@@ -27,25 +27,25 @@
     <ClCompile Include="..\..\final\preprocessing_token\QuotedLiteralFSM.cpp" />
     <ClCompile Include="..\..\final\preprocessing_token\RawStringLiteralFSM.cpp" />
     <ClCompile Include="..\..\final\PPTokenizerHelper.cpp" />
-    <ClCompile Include="..\..\final\TrigraphDecoder.cpp" />
-    <ClCompile Include="..\..\final\UniversalCharNameDecoder.cpp" />
+    <ClCompile Include="..\..\final\preprocessing_token\TrigraphDecoder.cpp" />
+    <ClCompile Include="..\..\final\preprocessing_token\UniversalCharNameDecoder.cpp" />
     <ClCompile Include="..\..\final\preprocessing_token\Utf8Decoder.cpp" />
     <ClCompile Include="..\..\final\Utf8Encoder.cpp" />
     <ClCompile Include="..\..\final\Utf8Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\final\preprocessing_token\CharacterLiteralFSM.h" />
-    <ClInclude Include="..\..\final\CommentDecoder.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\CommentDecoder.h" />
     <ClInclude Include="..\..\final\common.h" />
-    <ClInclude Include="..\..\final\Decoder.h" />
-    <ClInclude Include="..\..\final\Decoders.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\Decoder.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\Decoders.h" />
     <ClInclude Include="..\..\final\preprocessing_token\EofFSM.h" />
     <ClInclude Include="..\..\final\Exceptions.h" />
     <ClInclude Include="..\..\final\format.h" />
     <ClInclude Include="..\..\final\preprocessing_token\HeaderNameFSM.h" />
     <ClInclude Include="..\..\final\preprocessing_token\IdentifierFSM.h" />
     <ClInclude Include="..\..\final\IncludeDetector.h" />
-    <ClInclude Include="..\..\final\LineSplicer.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\LineSplicer.h" />
     <ClInclude Include="..\..\final\preprocessing_token\NewLineFSM.h" />
     <ClInclude Include="..\..\final\preprocessing_token\NonWhitespaceCharFSM.h" />
     <ClInclude Include="..\..\final\PostProcessingToken.h" />
@@ -61,8 +61,8 @@
     <ClInclude Include="..\..\final\preprocessing_token\StringLiteralFSM.h" />
     <ClInclude Include="..\..\final\PPTokenizerHelper.h" />
     <ClInclude Include="..\..\final\Trie.h" />
-    <ClInclude Include="..\..\final\TrigraphDecoder.h" />
-    <ClInclude Include="..\..\final\UniversalCharNameDecoder.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\TrigraphDecoder.h" />
+    <ClInclude Include="..\..\final\preprocessing_token\UniversalCharNameDecoder.h" />
     <ClInclude Include="..\..\final\preprocessing_token\Utf8Decoder.h" />
     <ClInclude Include="..\..\final\Utf8Encoder.h" />
     <ClInclude Include="..\..\final\Utf8Utils.h" />

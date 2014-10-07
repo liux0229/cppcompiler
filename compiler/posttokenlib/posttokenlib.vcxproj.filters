@@ -101,5 +101,8 @@
     <ClInclude Include="..\..\final\TokenUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\final\PostTokenReceiver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@
 
 namespace compiler {
 
-class  TokenReceiver
+class TokenReceiver
 {
 public:
   TokenReceiver(

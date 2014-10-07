@@ -47,6 +47,7 @@
     <ClInclude Include="..\..\final\IntegerLiteralTokenizer.h" />
     <ClInclude Include="..\..\final\Member.h" />
     <ClInclude Include="..\..\final\Namespace.h" />
+    <ClInclude Include="..\..\final\PostTokenReceiver.h" />
     <ClInclude Include="..\..\final\Token.h" />
     <ClInclude Include="..\..\final\Tokenizer.h" />
     <ClInclude Include="..\..\final\TokenUtils.h" />

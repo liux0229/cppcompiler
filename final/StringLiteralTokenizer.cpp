@@ -1,7 +1,7 @@
 #include "StringLiteralTokenizer.h"
 #include "common.h"
-#include "Utf8Utils.h"
-#include "Utf8Encoder.h"
+#include "preprocessing_token/Utf8Utils.h"
+#include "preprocessing_token/Utf8Encoder.h"
 #include "Utf16Encoder.h"
 #include <sstream>
 

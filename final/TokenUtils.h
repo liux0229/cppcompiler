@@ -1,8 +1,8 @@
 #pragma once
 
-#include "PreprocessingToken.h"
+#include "preprocessing_token/PreprocessingToken.h"
 #include "common.h"
-#include "Utf8Encoder.h"
+#include "preprocessing_token/Utf8Encoder.h"
 #include <cstddef>
 #include <map>
 #include <unordered_map>

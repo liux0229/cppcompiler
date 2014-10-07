@@ -1,8 +1,8 @@
 #include "common.h"
 #include "format.h"
 #include "Utf8Encoder.h"
-#include "StateMachine.h"
-#include "HeaderNameFSM.h"
+#include "preprocessing_token/StateMachine.h"
+#include "preprocessing_token/HeaderNameFSM.h"
 #include "PreprocessingToken.h"
 #include "IncludeDetector.h"
 #include <iostream>

@@ -69,7 +69,7 @@ cy86: $(Cy86OBJs)
 	$(CXX) $(CPPFLAGS) -o cy86 $(Cy86OBJs)
 
 clean:
-	rm -f *.o parsers/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86
+	rm -f *.o parsers/*.o preprocessing_token/*.o pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86
 
 tests: test9 test8 test7 test6 test5 test4 test3 test2 test1
 

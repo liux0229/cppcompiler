@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30110.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "compiler", "compiler.vcxproj", "{4224C4CF-0813-4C44-92C3-BD5B5E12F9E9}"
 EndProject
@@ -40,7 +40,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "formattest", "formattest\fo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AstVisualizer", "AstVisualizer\AstVisualizer.csproj", "{E95BEC18-6E9F-4D41-AE48-F32172316F8B}"
 	ProjectSection(ProjectDependencies) = postProject
+		{6B749526-9913-4398-8320-D2993A8D7897} = {6B749526-9913-4398-8320-D2993A8D7897}
 		{AC90B19A-6712-4B73-B1E9-5DDA0F0104FA} = {AC90B19A-6712-4B73-B1E9-5DDA0F0104FA}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parserlib", "parserlib\parserlib.vcxproj", "{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FAAD7673-FA00-40D8-95AF-BA946A8FDA05} = {FAAD7673-FA00-40D8-95AF-BA946A8FDA05}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parser", "parser\parser.vcxproj", "{6B749526-9913-4398-8320-D2993A8D7897}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623} = {DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}
 	EndProjectSection
 EndProject
 Global
@@ -292,6 +303,32 @@ Global
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|Win32.ActiveCfg = Release|Any CPU
 		{E95BEC18-6E9F-4D41-AE48-F32172316F8B}.Release|x64.ActiveCfg = Release|Any CPU
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|Win32.Build.0 = Debug|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|x64.ActiveCfg = Debug|x64
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Debug|x64.Build.0 = Debug|x64
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|Any CPU.ActiveCfg = Release|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|Win32.ActiveCfg = Release|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|Win32.Build.0 = Release|Win32
+		{DAFE2DB2-8EA9-41B6-B7F6-D96BE133A623}.Release|x64.ActiveCfg = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|Win32.Build.0 = Debug|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|x64.ActiveCfg = Debug|x64
+		{6B749526-9913-4398-8320-D2993A8D7897}.Debug|x64.Build.0 = Debug|x64
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|Any CPU.ActiveCfg = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|Win32.ActiveCfg = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|Win32.Build.0 = Release|Win32
+		{6B749526-9913-4398-8320-D2993A8D7897}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

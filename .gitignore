@@ -12,6 +12,7 @@ out
 *.suo
 *.sln.ide*
 *.tmp
+*.opendb
 
 nsinit-ref
 nsinit-ref-stdin

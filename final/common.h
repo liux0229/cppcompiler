@@ -39,7 +39,7 @@ namespace compiler {
   // TODO: silence a few conversion warnings until we clean these up
   // e.g. [warning C4244: 'argument' : conversion from 'const __int64' to 'char16_t', possible loss of data]
   // note that this supression is very strong.
-#ifdef MSVC
+#ifdef WIN32
 #pragma warning(disable: 4244)
 #endif
 
@@ -90,7 +90,7 @@ namespace compiler {
     std::function<void()> action_;
   };
 
-#if MSVC
+#if WIN32
   using std::make_unique;
   using int32_t = int;
 #else

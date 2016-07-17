@@ -9,7 +9,7 @@
 
 // See below for details of supressed warnings
 // TODO: why does supressing 4800 here not working
-#ifdef MSVC
+#ifdef WIN32
 #pragma warning(disable: 4800 4146 4804)
 #endif
 

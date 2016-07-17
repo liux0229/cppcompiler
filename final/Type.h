@@ -158,7 +158,7 @@ class FundalmentalType : public Type {
 
  private:
   struct Compare {
-    bool operator()(const TypeSpecifiers& a, const TypeSpecifiers& b);
+    bool operator()(const TypeSpecifiers& a, const TypeSpecifiers& b) const;
   };
   void setType();
   static std::map<TypeSpecifiers, EFundamentalType, Compare> validCombinations_;

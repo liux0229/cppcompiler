@@ -73,7 +73,7 @@ namespace {
   // returns true on success
   bool PA9SetFileExecutable(const string& path)
   {
-#if MSVC
+#if WIN32
     int res = 0;
 #else
     int res = syscall(/* chmod */ 90, path.c_str(), 0755);

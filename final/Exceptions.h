@@ -10,7 +10,7 @@ public:
   {
     message_.swap(message);
   }
-#ifdef MSVC
+#ifdef WIN32
   const char* what() const override
 #else
   const char* what() const noexcept override

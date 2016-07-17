@@ -24,7 +24,7 @@ bool PA5GetFileId(const string& path, PA5FileId& out_fileid)
 			long int unused[16];
 	} data;
 
-#ifdef MSVC
+#ifdef WIN32
   // TODO: find equivalent constructs in Windows
   // otherwise any functionality which depends on this
   // (#pragma once)

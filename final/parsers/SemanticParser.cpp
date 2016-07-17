@@ -33,7 +33,7 @@ using namespace std;
 // warning C4250: 'compiler::SemanticParserImp::ParserImp' : 
 // inherits 'compiler::SemanticParserImp::Declaration::compiler::SemanticParserImp::Declaration::declaration' via dominance
 // since it's desired.
-#ifdef MSVC
+#ifdef WIN32
 #pragma warning(disable: 4250)
 #endif
 

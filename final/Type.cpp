@@ -135,7 +135,7 @@ map<EFundamentalType, size_t> FundalmentalType::Sizes_ {
 };
 
 bool FundalmentalType::Compare::operator()(const TypeSpecifiers& a, 
-                                           const TypeSpecifiers& b) {
+                                           const TypeSpecifiers& b) const {
   if (a.size() != b.size()) {
     return a.size() < b.size();
   }

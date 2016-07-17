@@ -18,7 +18,7 @@ namespace {
 typedef unsigned long long ULL;
 typedef long long LL;
 
-#ifdef MSVC
+#ifdef WIN32
 // TODO: why cannot we disable 4244 this way?
 #pragma warning(disable: 4244)
 #endif

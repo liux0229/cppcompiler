@@ -7,7 +7,7 @@ namespace compiler {
 
 using namespace std;
 
-#ifdef MSVC
+#ifdef WIN32
 // TODO: why cannot we disable 4244 this way?
 #pragma warning(disable: 4996)
 #endif

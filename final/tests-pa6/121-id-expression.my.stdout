@@ -69,7 +69,9 @@ function-definition:
 |  |  |  |  identifier: foo
 |  |  |  OP_SEMICOLON
 |  |  expression-statement:
-|  |  |  identifier: x
+|  |  |  qualified-id:
+|  |  |  |  OP_COLON2
+|  |  |  |  identifier: x
 |  |  |  OP_SEMICOLON
 |  |  expression-statement:
 |  |  |  qualified-id:

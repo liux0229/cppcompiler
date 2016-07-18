@@ -21,13 +21,13 @@ cy86
 !cy86/
 cy86-ref
 
-nsdecl
-recog
-preproc
-macro
-ctrlexpr
-posttoken
-pptoken
+# nsdecl
+# recog
+# preproc
+# macro
+# ctrlexpr
+# posttoken
+# pptoken
 
 *.my.program*
 *.my.impl*

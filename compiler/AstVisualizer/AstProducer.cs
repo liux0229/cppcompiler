@@ -26,8 +26,8 @@ namespace AstVisualizer
             // we need to perform the following dance to be able to redirect the stderr to a file
             // (asynchronously read from RedirectStandardError does not interact well with
             // the async pattern below)
-            // var parser = @"C:\PortableDocuments\dev\compiler\cppcompiler\compiler\x64\Debug\recog.exe";
-            var parser = @"C:\Users\Xin\Documents\GitHubVisualStudio\cppcompiler\compiler\Debug\parser.exe";
+            var parser = @"C:\Users\Xin\Documents\GitHubVisualStudio\cppcompiler\compiler\Debug\recog.exe";
+            // var parser = @"C:\Users\Xin\Documents\GitHubVisualStudio\cppcompiler\compiler\Debug\parser.exe";
             var arguments = string.Format("/c \"{0} -o {1} {2}\" 2> {3}", parser, output, input, resultFile);
             var result = await getParserResult("cmd.exe", arguments, resultFile);
             return createAst(result);

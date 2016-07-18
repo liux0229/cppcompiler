@@ -17,18 +17,18 @@ out
 
 nsinit-ref
 nsinit-ref-stdin
-# nsinit
+final/nsinit
 cy86
 !cy86/
 cy86-ref
 
-# nsdecl
-# recog
-# preproc
-# macro
-# ctrlexpr
-# posttoken
-# pptoken
+final/nsdecl
+final/recog
+final/preproc
+final/macro
+final/ctrlexpr
+final/posttoken
+final/pptoken
 
 *.my.program*
 *.my.impl*

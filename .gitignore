@@ -13,6 +13,7 @@ out
 *.sln.ide*
 *.tmp
 *.opendb
+*.VC.db
 
 nsinit-ref
 nsinit-ref-stdin
